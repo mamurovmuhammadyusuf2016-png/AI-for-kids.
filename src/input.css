@@ -1,0 +1,9 @@
+@import "tailwindcss";
+@source "../public";
+
+@theme {
+  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+}
+
+html { color-scheme: light; }
+.bubble strong { font-weight: 800; }

@@ -2,104 +2,95 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#eef4ff">
 <title>ИИ-репетитор</title>
-<style>
-  :root {
-    --bg: #f4f6fb; --card: #ffffff; --text: #1f2430; --muted: #6b7280;
-    --accent: #4f6bed; --me: #4f6bed; --me-text: #ffffff; --bot: #eef1f8; --border: #e2e6f0;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #12141a; --card: #1b1e27; --text: #e8eaf0; --muted: #9aa1b2;
-      --accent: #7b91ff; --me: #5a73f0; --bot: #262a36; --border: #2e3342;
-    }
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
-  .app { max-width: 720px; margin: 0 auto; height: 100dvh; display: flex; flex-direction: column; padding: 16px; }
-  header h1 { margin: 0; font-size: 1.4rem; }
-  header p { margin: 4px 0 12px; color: var(--muted); font-size: .95rem; }
-  #chat { flex: 1; overflow-y: auto; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
-  .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; line-height: 1.45; white-space: pre-wrap; word-wrap: break-word; }
-  .me { align-self: flex-end; background: var(--me); color: var(--me-text); border-bottom-right-radius: 4px; }
-  .bot { align-self: flex-start; background: var(--bot); border-bottom-left-radius: 4px; }
-  .typing { color: var(--muted); font-style: italic; }
-  form { display: flex; gap: 8px; margin-top: 12px; }
-  textarea { flex: 1; resize: none; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font: inherit; min-height: 48px; max-height: 140px; }
-  button { padding: 0 18px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
-  button:disabled { opacity: .6; cursor: default; }
-  .note { color: var(--muted); font-size: .8rem; text-align: center; margin-top: 8px; }
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
 </head>
-<body>
-<div class="app">
-  <header>
-    <h1>🎓 ИИ-репетитор / AI-repetitor</h1>
-    <p>Помогу разобраться в задаче шаг за шагом. Masalani bosqichma-bosqich tushunishga yordam beraman.</p>
+<body class="min-h-dvh bg-gradient-to-b from-sky-50 via-indigo-50 to-amber-50 font-sans text-slate-800 antialiased">
+<div class="mx-auto flex h-dvh max-w-3xl flex-col px-3 pb-3 pt-3 sm:px-4">
+
+  <!-- Header -->
+  <header class="mb-3 rounded-3xl bg-white/80 p-3 shadow-sm ring-1 ring-indigo-100 backdrop-blur">
+    <div class="flex items-center gap-3">
+      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-sky-400 text-2xl shadow-md">🦉</div>
+      <div class="min-w-0 flex-1">
+        <h1 class="truncate text-lg font-extrabold leading-tight text-indigo-700 sm:text-xl" data-i18n="title"></h1>
+        <p class="truncate text-sm text-slate-500" data-i18n="subtitle"></p>
+      </div>
+      <div class="flex shrink-0 rounded-2xl bg-indigo-50 p-1 ring-1 ring-indigo-100" role="group" aria-label="Language">
+        <button type="button" data-lang="uz" class="lang-btn min-h-11 rounded-xl px-3 text-sm font-extrabold">UZ</button>
+        <button type="button" data-lang="ru" class="lang-btn min-h-11 rounded-xl px-3 text-sm font-extrabold">RU</button>
+      </div>
+    </div>
+    <div id="statusBar" class="mt-3 hidden flex-wrap items-center gap-2">
+      <button id="changeSetup" type="button" class="flex min-h-11 items-center gap-2 rounded-2xl bg-indigo-50 px-3 text-sm font-bold text-indigo-700 ring-1 ring-indigo-100 hover:bg-indigo-100">
+        <span id="setupChip"></span><span class="text-indigo-400">✎</span>
+      </button>
+      <span class="flex min-h-11 items-center gap-1 rounded-2xl bg-emerald-50 px-3 text-sm font-bold text-emerald-700 ring-1 ring-emerald-100" title="">
+        ⏱️ <span id="timerText">25:00</span>
+      </span>
+      <span class="flex min-h-11 items-center gap-1 rounded-2xl bg-amber-50 px-3 text-sm font-bold text-amber-700 ring-1 ring-amber-100">
+        ❓ <span id="limitText">30/30</span>
+      </span>
+      <button id="reportBtn" type="button" class="ml-auto flex min-h-11 items-center gap-2 rounded-2xl bg-pink-500 px-4 text-sm font-extrabold text-white shadow-sm hover:bg-pink-600 active:scale-95">
+        👨‍👩‍👧 <span data-i18n="reportBtn"></span>
+      </button>
+    </div>
   </header>
-  <div id="chat">
-    <div class="msg bot">Привет! Напиши задачу или вопрос по учёбе — разберём вместе. 😊<br>Salom! O'qishga oid savol yoki masalangni yoz — birga hal qilamiz.</div>
-  </div>
-  <form id="form">
-    <textarea id="input" placeholder="Напиши вопрос... / Savolingni yoz..." rows="1" required></textarea>
-    <button id="send" type="submit">➤</button>
-  </form>
-  <div class="note">Не пиши своё имя, адрес, школу и телефон. / Ism, manzil, maktab va telefoningni yozma.</div>
+
+  <!-- Setup screen: subject + grade -->
+  <main id="setup" class="hidden flex-1 overflow-y-auto rounded-3xl bg-white/80 p-4 shadow-sm ring-1 ring-indigo-100 sm:p-6">
+    <h2 class="text-xl font-extrabold text-slate-800" data-i18n="chooseSubject"></h2>
+    <div id="subjects" class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3"></div>
+    <h2 class="mt-6 text-xl font-extrabold text-slate-800" data-i18n="chooseGrade"></h2>
+    <div id="grades" class="mt-3 grid grid-cols-6 gap-2 sm:grid-cols-11"></div>
+    <button id="startBtn" type="button" disabled class="mt-6 min-h-14 w-full rounded-2xl bg-indigo-600 text-lg font-extrabold text-white shadow-md transition hover:bg-indigo-700 active:scale-[.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none" data-i18n="start"></button>
+  </main>
+
+  <!-- Chat screen -->
+  <main id="chatScreen" class="hidden min-h-0 flex-1 flex-col">
+    <div id="chat" class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-3xl bg-white/80 p-3 shadow-sm ring-1 ring-indigo-100 sm:p-4" aria-live="polite"></div>
+    <div id="notice" class="mt-2 hidden rounded-2xl bg-amber-100 px-4 py-3 text-sm font-bold text-amber-800"></div>
+    <form id="form" class="mt-2 flex items-end gap-2">
+      <textarea id="input" rows="1" required class="max-h-36 min-h-14 flex-1 resize-none rounded-2xl border-0 bg-white px-4 py-4 text-base shadow-sm ring-2 ring-indigo-100 outline-none placeholder:text-slate-400 focus:ring-indigo-400 disabled:bg-slate-100"></textarea>
+      <button id="send" type="submit" class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-2xl text-white shadow-md transition hover:bg-indigo-700 active:scale-95 disabled:bg-slate-300 disabled:shadow-none" aria-label="Send">➤</button>
+    </form>
+    <p class="mt-2 text-center text-xs text-slate-500" data-i18n="privacy"></p>
+  </main>
 </div>
-<script>
-  const chat = document.getElementById('chat');
-  const form = document.getElementById('form');
-  const input = document.getElementById('input');
-  const send = document.getElementById('send');
-  const history = [];
 
-  function add(text, cls) {
-    const div = document.createElement('div');
-    div.className = 'msg ' + cls;
-    div.textContent = text;
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-    return div;
-  }
+<!-- Break overlay -->
+<div id="breakOverlay" class="fixed inset-0 z-50 hidden items-center justify-center bg-emerald-500/95 p-6 text-center text-white">
+  <div class="max-w-sm">
+    <div class="text-7xl">🌳</div>
+    <h2 class="mt-4 text-3xl font-extrabold" data-i18n="breakTitle"></h2>
+    <p class="mt-3 text-lg font-semibold opacity-95" data-i18n="breakText"></p>
+    <div id="breakTimer" class="mt-6 rounded-3xl bg-white/20 py-4 text-5xl font-extrabold tabular-nums">5:00</div>
+  </div>
+</div>
 
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
-  });
+<!-- Parent report modal -->
+<div id="reportModal" class="fixed inset-0 z-40 hidden items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4">
+  <div class="flex max-h-[90dvh] w-full max-w-xl flex-col rounded-t-3xl bg-white shadow-xl sm:rounded-3xl">
+    <div class="flex items-center gap-3 border-b border-slate-100 p-4">
+      <span class="text-2xl">👨‍👩‍👧</span>
+      <h2 class="flex-1 text-xl font-extrabold" data-i18n="reportTitle"></h2>
+      <button id="closeReport" type="button" class="h-11 w-11 rounded-2xl bg-slate-100 text-xl font-bold hover:bg-slate-200" aria-label="Close">✕</button>
+    </div>
+    <div class="overflow-y-auto p-4">
+      <div id="reportStats" class="grid grid-cols-3 gap-2"></div>
+      <div id="reportText" class="bubble mt-4 whitespace-pre-wrap rounded-2xl bg-indigo-50 p-4 leading-relaxed"></div>
+    </div>
+    <div class="flex gap-2 border-t border-slate-100 p-4">
+      <button id="printReport" type="button" class="min-h-12 flex-1 rounded-2xl bg-indigo-600 font-extrabold text-white hover:bg-indigo-700" data-i18n="print"></button>
+    </div>
+  </div>
+</div>
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const text = input.value.trim();
-    if (!text) return;
-    input.value = '';
-    add(text, 'me');
-    history.push({ role: 'user', content: text });
-    send.disabled = true;
-    const typing = add('Думаю... / O\'ylayapman...', 'bot typing');
-    try {
-      const r = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: history })
-      });
-      const data = await r.json();
-      typing.remove();
-      if (data.reply) {
-        history.push({ role: 'assistant', content: data.reply });
-        add(data.reply, 'bot');
-      } else {
-        history.pop();
-        add(data.error || 'Ошибка, попробуй ещё раз.', 'bot');
-      }
-    } catch {
-      typing.remove();
-      history.pop();
-      add('Нет связи с сервером, попробуй ещё раз.', 'bot');
-    } finally {
-      send.disabled = false;
-      input.focus();
-    }
-  });
-</script>
+<script src="/app.js"></script>
 </body>
 </html>
