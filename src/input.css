@@ -2,8 +2,18 @@
 @source "../public";
 
 @theme {
-  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-night-950: #070c18;
+  --color-night-900: #0c1426;
+  --color-night-800: #131d34;
+  --color-night-700: #1b2744;
+  --color-night-600: #26345a;
+  --color-brand-600: #2a45e8;
+  --color-brand-500: #3352ff;
+  --color-brand-400: #5a74ff;
 }
 
-html { color-scheme: light; }
-.bubble strong { font-weight: 800; }
+html { color-scheme: dark; }
+.bubble strong { font-weight: 700; color: #fff; }
+.icon { width: 1.25rem; height: 1.25rem; flex-shrink: 0; }
+#chat::-webkit-scrollbar { width: 0; }

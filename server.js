@@ -11,17 +11,22 @@ const MODEL = process.env.AI_MODEL || 'gemini-flash-latest';
 const FALLBACK_MODEL = process.env.AI_FALLBACK_MODEL || 'gemini-flash-lite-latest';
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const MODEL_TIMEOUT_MS = 20000;
-const FALLBACK_TIMEOUT_MS = 30000;
+const FALLBACK_TIMEOUT_MS = 40000;
 const MAX_HISTORY = 20;
 const DAILY_LIMIT = 30;
 const FREQUENT_WINDOW_MS = 3 * 60 * 1000;
 const FREQUENT_COUNT = 5;
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const STATIC = {
-  '/': ['index.html', 'text/html; charset=utf-8'],
-  '/app.js': ['app.js', 'text/javascript; charset=utf-8'],
-  '/styles.css': ['styles.css', 'text/css; charset=utf-8'],
+const MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.webmanifest': 'application/manifest+json',
 };
 
 // deviceId -> { day, count, recent: [timestamps] }. In memory: resets when the server restarts.
@@ -125,6 +130,12 @@ async function generate(systemText, messages) {
   }
 }
 
+const EMOJI_RE = /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{1F3FB}-\u{1F3FF}\uFE0F\u200D\u20E3]/gu;
+
+function stripEmoji(text) {
+  return text.replace(EMOJI_RE, '').replace(/[ \t]{2,}/g, ' ').replace(/ +([.,!?:;])/g, '$1').trim();
+}
+
 function aiErrorResponse(res, err) {
   if (err.code === 'rate_limited') return sendJson(res, 429, { code: 'rate_limited' });
   if (err.code === 'blocked') return sendJson(res, 200, { code: 'blocked' });
@@ -165,7 +176,7 @@ async function handleChat(req, res) {
 
   let reply;
   try {
-    reply = await generate(systemText, messages);
+    reply = stripEmoji(await generate(systemText, messages));
   } catch (err) {
     return aiErrorResponse(res, err);
   }
@@ -215,18 +226,19 @@ async function handleReport(req, res) {
     const report = await generate(REPORT_PROMPT.replace('{LANG}', lang), [
       { role: 'user', content: `Переписка ученика с репетитором:\n\n${transcript}` },
     ]);
-    sendJson(res, 200, { report });
+    sendJson(res, 200, { report: stripEmoji(report) });
   } catch (err) {
     aiErrorResponse(res, err);
   }
 }
 
 function serveStatic(res, urlPath) {
-  const entry = STATIC[urlPath];
-  if (!entry) return false;
-  fs.readFile(path.join(PUBLIC_DIR, entry[0]), (err, data) => {
+  const file = path.normalize(path.join(PUBLIC_DIR, urlPath === '/' ? 'index.html' : urlPath));
+  const type = MIME[path.extname(file)];
+  if (!file.startsWith(PUBLIC_DIR + path.sep) || !type) return false;
+  fs.readFile(file, (err, data) => {
     if (err) return sendJson(res, 404, { code: 'not_found' });
-    res.writeHead(200, { 'Content-Type': entry[1], 'Cache-Control': 'no-cache' });
+    res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
     res.end(data);
   });
   return true;

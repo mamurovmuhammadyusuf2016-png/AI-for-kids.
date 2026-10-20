@@ -5,42 +5,54 @@
   const RESTED_MS = 5 * 60 * 1000;
   const MAX_SESSIONS = 10;
 
+  // Illustrations; swap a path here to change the picture everywhere.
+  const IMAGES = {
+    avatar: '/img/avatar.svg',
+    welcome: '/img/welcome.svg',
+    break: '/img/break.svg',
+  };
+
   const SUBJECTS = [
-    ['math', '🔢', 'Математика', 'Matematika'],
-    ['russian', '📝', 'Русский язык', 'Rus tili'],
-    ['uzbek', '📖', 'Узбекский язык', 'Ona tili'],
-    ['english', '🇬🇧', 'Английский язык', 'Ingliz tili'],
-    ['literature', '📚', 'Литература', 'Adabiyot'],
-    ['nature', '🌳', 'Окружающий мир', 'Tabiatshunoslik'],
-    ['physics', '⚡', 'Физика', 'Fizika'],
-    ['chemistry', '🧪', 'Химия', 'Kimyo'],
-    ['biology', '🌱', 'Биология', 'Biologiya'],
-    ['history', '🏛️', 'История', 'Tarix'],
-    ['geography', '🌍', 'География', 'Geografiya'],
-    ['informatics', '💻', 'Информатика', 'Informatika'],
+    ['math', 'calculator', 'Математика', 'Matematika'],
+    ['russian', 'pen-line', 'Русский язык', 'Rus tili'],
+    ['uzbek', 'book-open-text', 'Узбекский язык', 'Ona tili'],
+    ['english', 'languages', 'Английский язык', 'Ingliz tili'],
+    ['literature', 'library', 'Литература', 'Adabiyot'],
+    ['nature', 'trees', 'Окружающий мир', 'Tabiatshunoslik'],
+    ['physics', 'zap', 'Физика', 'Fizika'],
+    ['chemistry', 'flask-conical', 'Химия', 'Kimyo'],
+    ['biology', 'sprout', 'Биология', 'Biologiya'],
+    ['history', 'landmark', 'История', 'Tarix'],
+    ['geography', 'globe', 'География', 'Geografiya'],
+    ['informatics', 'monitor', 'Информатика', 'Informatika'],
   ];
 
   const T = {
     ru: {
       title: 'ИИ-репетитор',
-      subtitle: 'Учимся думать сами — шаг за шагом',
-      chooseSubject: '1. Выбери предмет',
-      chooseGrade: '2. Выбери класс',
-      start: 'Начать урок 🚀',
+      subtitle: 'Твой помощник в учёбе',
+      welcomeTitle: 'Привет! Давай учиться вместе',
+      welcomeText: 'Я не даю готовых ответов, а помогаю дойти до них самому.',
+      chooseSubject: 'Выбери предмет',
+      chooseGrade: 'Выбери класс',
+      start: 'Начать урок',
       grade: 'класс',
       reportBtn: 'Отчёт для родителей',
       reportShort: 'Отчёт',
+      menuChange: 'Сменить предмет или класс',
+      menuNew: 'Новый чат',
       placeholder: 'Напиши задачу или вопрос…',
-      privacy: '🔒 Не пиши своё имя, адрес, школу и телефон.',
-      greeting: (s, g) => `Привет! 👋 Сегодня ${s}, ${g} класс. Напиши задачу или вопрос — разберём вместе. Готовый ответ я не дам, но помогу дойти до него самому! 💡`,
+      privacy: 'Не пиши своё имя, адрес, школу и телефон.',
+      greeting: (s, g) => `Привет! Сегодня ${s}, ${g} класс. Напиши задачу или вопрос — разберём вместе. Готовый ответ я не дам, но помогу дойти до него самому.`,
       thinking: 'Думаю…',
       rateLimited: 'Слишком много запросов, попробуй через минуту',
-      dailyLimit: 'На сегодня вопросы закончились (30 из 30). Отдохни и попробуй решить задачи сам — завтра продолжим! 🌙',
-      blocked: 'Давай вернёмся к учёбе 📚 Задай вопрос по школьному предмету.',
+      dailyLimit: 'На сегодня вопросы закончились (30 из 30). Отдохни и попробуй решить задачи сам — завтра продолжим!',
+      blocked: 'Давай вернёмся к учёбе. Задай вопрос по школьному предмету.',
       aiError: 'ИИ сейчас занят. Попробуй ещё раз чуть позже.',
       offline: 'Нет связи с сервером. Проверь интернет и попробуй ещё раз.',
-      tooFrequent: '🤔 Ты спрашиваешь очень часто. Попробуй сначала подумать сам пару минут!',
-      breakTitle: 'Сделай перерыв 5 минут!',
+      tooFrequent: 'Ты спрашиваешь очень часто. Попробуй сначала подумать сам пару минут!',
+      linkCopied: 'Ссылка скопирована',
+      breakTitle: 'Сделай перерыв 5 минут',
       breakText: 'Ты занимался 25 минут — молодец! Встань, потянись, посмотри в окно и попей воды. Чат откроется сам.',
       reportTitle: 'Отчёт для родителей',
       reportLoading: 'Готовлю отчёт…',
@@ -48,28 +60,33 @@
       statQuestions: 'вопросов сегодня',
       statSessions: 'занятий',
       statSubjects: 'предметов',
-      print: 'Распечатать / сохранить 🖨️',
+      print: 'Распечатать / сохранить',
     },
     uz: {
       title: 'AI-repetitor',
-      subtitle: "O'zimiz o'ylashni o'rganamiz — qadamma-qadam",
-      chooseSubject: '1. Fanni tanla',
-      chooseGrade: '2. Sinfni tanla',
-      start: 'Darsni boshlash 🚀',
+      subtitle: "O'qishdagi yordamching",
+      welcomeTitle: "Salom! Keling, birga o'rganamiz",
+      welcomeText: "Men tayyor javob bermayman, balki uni o'zing topishingga yordam beraman.",
+      chooseSubject: 'Fanni tanla',
+      chooseGrade: 'Sinfni tanla',
+      start: 'Darsni boshlash',
       grade: 'sinf',
       reportBtn: 'Ota-onalar uchun hisobot',
       reportShort: 'Hisobot',
+      menuChange: "Fan yoki sinfni o'zgartirish",
+      menuNew: 'Yangi chat',
       placeholder: 'Masala yoki savolingni yoz…',
-      privacy: '🔒 Ismingni, manzilingni, maktabingni va telefoningni yozma.',
-      greeting: (s, g) => `Salom! 👋 Bugun ${s}, ${g}-sinf. Masala yoki savolingni yoz — birga hal qilamiz. Tayyor javob bermayman, lekin o'zing topishingga yordam beraman! 💡`,
+      privacy: 'Ismingni, manzilingni, maktabingni va telefoningni yozma.',
+      greeting: (s, g) => `Salom! Bugun ${s}, ${g}-sinf. Masala yoki savolingni yoz — birga hal qilamiz. Tayyor javob bermayman, lekin o'zing topishingga yordam beraman.`,
       thinking: "O'ylayapman…",
       rateLimited: "Juda ko'p so'rov, bir daqiqadan keyin urinib ko'r",
-      dailyLimit: "Bugungi savollar tugadi (30 dan 30). Dam ol va masalalarni o'zing yechib ko'r — ertaga davom etamiz! 🌙",
-      blocked: "Keling, o'qishga qaytaylik 📚 Maktab fani bo'yicha savol ber.",
+      dailyLimit: "Bugungi savollar tugadi (30 dan 30). Dam ol va masalalarni o'zing yechib ko'r — ertaga davom etamiz!",
+      blocked: "Keling, o'qishga qaytaylik. Maktab fani bo'yicha savol ber.",
       aiError: "AI hozir band. Birozdan keyin qayta urinib ko'r.",
       offline: "Server bilan aloqa yo'q. Internetni tekshirib, qayta urinib ko'r.",
-      tooFrequent: "🤔 Juda tez-tez so'rayapsan. Avval bir-ikki daqiqa o'zing o'ylab ko'r!",
-      breakTitle: 'Tanaffus — 5 daqiqa!',
+      tooFrequent: "Juda tez-tez so'rayapsan. Avval bir-ikki daqiqa o'zing o'ylab ko'r!",
+      linkCopied: 'Havola nusxalandi',
+      breakTitle: 'Tanaffus — 5 daqiqa',
       breakText: "Sen 25 daqiqa shug'ullanding — barakalla! O'rningdan tur, cho'zil, derazaga qara va suv ich. Chat o'zi ochiladi.",
       reportTitle: 'Ota-onalar uchun hisobot',
       reportLoading: 'Hisobot tayyorlanmoqda…',
@@ -77,7 +94,7 @@
       statQuestions: 'bugungi savollar',
       statSessions: 'darslar',
       statSubjects: 'fanlar',
-      print: 'Chop etish / saqlash 🖨️',
+      print: 'Chop etish / saqlash',
     },
   };
 
@@ -98,6 +115,9 @@
 
   const $ = (id) => document.getElementById(id);
   const today = () => new Date().toLocaleDateString('en-CA');
+  const icon = (name, cls = 'icon') =>
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="${cls}" aria-hidden="true">${(window.ICONS || {})[name] || ''}</svg>`;
+  const EMOJI_RE = /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{1F3FB}-\u{1F3FF}️‍⃣]/gu;
 
   let lang = store.get('lang', (navigator.language || '').startsWith('uz') ? 'uz' : 'ru');
   let setup = store.get('setup', null);
@@ -114,6 +134,7 @@
   const t = (key) => T[lang][key];
   const subjectInfo = (key) => SUBJECTS.find((s) => s[0] === key) || SUBJECTS[0];
   const subjectName = (key, l = lang) => subjectInfo(key)[l === 'uz' ? 3 : 2];
+  const gradeLabel = (g) => `${g}${lang === 'uz' ? '-' : ' '}${t('grade')}`;
 
   function usage() {
     const u = store.get('usage', null);
@@ -131,6 +152,10 @@
     sessions = sessions.slice(-MAX_SESSIONS);
     store.set('sessions', sessions);
   }
+  function newSession() {
+    sessions.push({ date: today(), subject: setup.subject, grade: setup.grade, messages: [] });
+    saveSessions();
+  }
 
   // ---------- rendering ----------
   function applyLang() {
@@ -139,28 +164,31 @@
     document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
     document.querySelectorAll('.lang-btn').forEach((b) => {
       const on = b.dataset.lang === lang;
-      b.className = 'lang-btn min-h-11 rounded-xl px-3 text-sm font-extrabold transition ' +
-        (on ? 'bg-indigo-600 text-white shadow-sm' : 'text-indigo-600 hover:bg-indigo-100');
+      b.className = 'lang-btn min-h-12 min-w-12 rounded-xl px-3 text-[15px] font-medium transition ' +
+        (on ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/30' : 'text-slate-300 hover:text-white');
       b.setAttribute('aria-pressed', on);
     });
     $('input').placeholder = t('placeholder');
+    $('newChatBtn').setAttribute('aria-label', t('menuNew'));
+    $('newChatBtn').title = t('menuNew');
     renderSetupOptions();
     renderStatus();
   }
 
   function optionClass(on) {
-    return 'flex min-h-14 items-center gap-2 rounded-2xl px-3 py-2 text-left text-base font-bold ring-2 transition active:scale-95 ' +
-      (on ? 'bg-indigo-600 text-white ring-indigo-600 shadow-md' : 'bg-white text-slate-700 ring-indigo-100 hover:ring-indigo-300');
+    return 'flex min-h-14 items-center gap-3 rounded-2xl p-2 pr-3 text-left text-[15px] ring-1 transition active:scale-95 ' +
+      (on ? 'bg-brand-500/15 text-white ring-brand-400' : 'bg-night-800 text-slate-200 ring-white/5 hover:bg-night-700');
   }
 
   function renderSetupOptions() {
     const subjects = $('subjects');
     subjects.innerHTML = '';
-    SUBJECTS.forEach(([key, icon]) => {
+    SUBJECTS.forEach(([key, ic]) => {
+      const on = key === pendingSubject;
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = optionClass(key === pendingSubject);
-      b.innerHTML = `<span class="text-2xl">${icon}</span><span></span>`;
+      b.className = optionClass(on);
+      b.innerHTML = `<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${on ? 'bg-brand-500 text-white' : 'bg-night-700 text-slate-200'}">${icon(ic)}</span><span class="min-w-0"></span>`;
       b.lastChild.textContent = subjectName(key);
       b.onclick = () => { pendingSubject = key; renderSetupOptions(); };
       subjects.appendChild(b);
@@ -171,7 +199,8 @@
       const b = document.createElement('button');
       b.type = 'button';
       b.textContent = g;
-      b.className = optionClass(g === pendingGrade) + ' justify-center text-xl';
+      b.className = optionClass(g === pendingGrade) + ' justify-center text-lg font-medium' +
+        (g === pendingGrade ? ' bg-brand-500 ring-brand-500' : '');
       b.onclick = () => { pendingGrade = g; renderSetupOptions(); };
       grades.appendChild(b);
     }
@@ -180,13 +209,19 @@
 
   function renderStatus() {
     if (setup) {
-      $('setupChip').textContent = `${subjectInfo(setup.subject)[1]} ${subjectName(setup.subject)} · ${setup.grade}${lang === 'uz' ? '-' : ' '}${t('grade')}`;
+      $('subjectIcon').innerHTML = icon(subjectInfo(setup.subject)[1]);
+      $('setupSubject').textContent = subjectName(setup.subject);
+      $('setupGrade').textContent = gradeLabel(setup.grade);
     }
-    $('limitText').textContent = `${remaining()}/${DAILY_LIMIT}`;
+    const left = remaining();
+    $('limitText').textContent = `${left}/${DAILY_LIMIT}`;
+    $('limitBar').style.width = `${(left / DAILY_LIMIT) * 100}%`;
+    $('limitBar').classList.toggle('bg-amber-400', left <= 5);
+    $('limitBar').classList.toggle('bg-brand-500', left > 5);
   }
 
   function formatReply(text) {
-    const esc = text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const esc = text.replace(EMOJI_RE, '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     return esc
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/^\s*[*-]\s+/gm, '• ')
@@ -194,32 +229,50 @@
       .replace(/\$([^$\n]+)\$/g, '$1');
   }
 
-  function addBubble(role, text, extra = '') {
-    const div = document.createElement('div');
-    const base = 'bubble max-w-[88%] whitespace-pre-wrap break-words rounded-3xl px-4 py-3 text-base leading-relaxed shadow-sm ';
-    div.className = base + (role === 'user'
-      ? 'self-end rounded-br-md bg-indigo-600 text-white'
-      : 'self-start rounded-bl-md bg-sky-50 text-slate-800 ring-1 ring-sky-100') + ' ' + extra;
-    if (role === 'user') div.textContent = text;
-    else div.innerHTML = formatReply(text);
-    $('chat').appendChild(div);
+  const timeLabel = (ts) => (ts ? new Date(ts).toLocaleTimeString(lang === 'uz' ? 'uz-UZ' : 'ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false }) : '');
+
+  function addBubble(role, text, { ts, extra = '' } = {}) {
+    const row = document.createElement('div');
+    const bubble = document.createElement('div');
+    const meta = document.createElement('div');
+    meta.className = 'mt-1.5 flex items-center justify-end gap-1 text-xs';
+    if (role === 'user') {
+      row.className = 'flex justify-end pl-10';
+      bubble.className = 'bubble max-w-[85%] whitespace-pre-wrap break-words rounded-3xl rounded-br-md bg-brand-500 px-4 pb-2 pt-3 text-base leading-relaxed text-white shadow-lg shadow-brand-500/20 ' + extra;
+      bubble.textContent = text;
+      meta.className += ' text-white/70';
+      if (ts) meta.innerHTML = `<span>${timeLabel(ts)}</span>${icon('check-check', 'h-4 w-4')}`;
+    } else {
+      row.className = 'flex items-start gap-3 pr-6';
+      row.innerHTML = `<img src="${IMAGES.avatar}" alt="" class="mt-1 h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-white/10">`;
+      bubble.className = 'bubble max-w-[85%] whitespace-pre-wrap break-words rounded-3xl rounded-tl-md bg-night-800 px-4 pb-2 pt-3 text-base leading-relaxed text-slate-100 ring-1 ring-white/5 ' + extra;
+      bubble.innerHTML = formatReply(text);
+      meta.className += ' text-slate-400';
+      if (ts) meta.textContent = timeLabel(ts);
+    }
+    if (ts) bubble.appendChild(meta);
+    else bubble.classList.add('pb-3');
+    row.appendChild(bubble);
+    $('chat').appendChild(row);
     $('chat').scrollTop = $('chat').scrollHeight;
-    return div;
+    return row;
   }
 
   function renderChat() {
     $('chat').innerHTML = '';
     const s = currentSession();
     addBubble('assistant', t('greeting')(subjectName(setup.subject), setup.grade));
-    s.messages.forEach((m) => addBubble(m.role, m.content));
+    s.messages.forEach((m) => addBubble(m.role, m.content, { ts: m.ts }));
   }
 
   function showNotice(text, ms = 6000) {
     const n = $('notice');
-    n.textContent = text;
+    n.innerHTML = icon('circle-alert', 'icon mt-px') + '<span></span>';
+    n.lastChild.textContent = text;
     n.classList.remove('hidden');
+    n.classList.add('flex');
     clearTimeout(showNotice.timer);
-    if (ms) showNotice.timer = setTimeout(() => n.classList.add('hidden'), ms);
+    if (ms) showNotice.timer = setTimeout(() => { n.classList.add('hidden'); n.classList.remove('flex'); }, ms);
   }
 
   function updateInputState() {
@@ -235,6 +288,7 @@
     $('chatScreen').classList.toggle('flex', name === 'chat');
     $('statusBar').classList.toggle('hidden', name !== 'chat');
     $('statusBar').classList.toggle('flex', name === 'chat');
+    $('backBtn').classList.toggle('invisible', !setup);
     if (name === 'chat') {
       renderChat();
       renderStatus();
@@ -242,6 +296,7 @@
       updateInputState();
     }
   }
+  const onChat = () => !$('chatScreen').classList.contains('hidden');
 
   // ---------- setup ----------
   $('startBtn').onclick = () => {
@@ -249,25 +304,59 @@
     setup = { subject: pendingSubject, grade: pendingGrade };
     store.set('setup', setup);
     const cur = currentSession();
-    if (changed || !cur || cur.date !== today()) {
-      sessions.push({ date: today(), subject: setup.subject, grade: setup.grade, messages: [] });
-      saveSessions();
-    }
+    if (changed || !cur || cur.date !== today()) newSession();
     showScreen('chat');
     $('input').focus();
   };
-  $('changeSetup').onclick = () => {
-    pendingSubject = setup.subject;
-    pendingGrade = setup.grade;
+  function openSetup() {
+    pendingSubject = setup && setup.subject;
+    pendingGrade = setup && setup.grade;
     renderSetupOptions();
     showScreen('setup');
+  }
+  $('changeSetup').onclick = openSetup;
+  $('backBtn').onclick = () => (onChat() ? openSetup() : setup && showScreen('chat'));
+  $('newChatBtn').onclick = () => {
+    if (busy || !currentSession().messages.length) return;
+    newSession();
+    renderChat();
+    $('input').focus();
   };
   document.querySelectorAll('.lang-btn').forEach((b) => {
     b.onclick = () => {
       lang = b.dataset.lang;
       store.set('lang', lang);
       applyLang();
-      if (!$('chatScreen').classList.contains('hidden')) renderChat();
+      if (onChat()) renderChat();
+    };
+  });
+
+  // ---------- header: share + menu ----------
+  $('shareBtn').onclick = async () => {
+    const data = { title: t('title'), text: t('subtitle'), url: location.origin };
+    try {
+      if (navigator.share) return await navigator.share(data);
+      await navigator.clipboard.writeText(data.url);
+      if (onChat()) showNotice(t('linkCopied'), 2500);
+    } catch {}
+  };
+  const menu = $('menu');
+  const closeMenu = () => menu.classList.add('hidden');
+  $('menuBtn').onclick = (e) => {
+    e.stopPropagation();
+    menu.classList.toggle('hidden');
+  };
+  document.addEventListener('click', closeMenu);
+  menu.querySelectorAll('.menu-item').forEach((item) => {
+    item.onclick = () => {
+      closeMenu();
+      const action = item.dataset.action;
+      if (action === 'report') openReport();
+      else if (action === 'change') openSetup();
+      else if (action === 'new' && setup) {
+        if (!onChat()) showScreen('chat');
+        $('newChatBtn').click();
+      }
     };
   });
 
@@ -288,19 +377,20 @@
     if (timerState().breakUntil > Date.now()) return;
 
     const s = currentSession();
-    s.messages.push({ role: 'user', content: text });
+    const userMsg = { role: 'user', content: text, ts: Date.now() };
+    s.messages.push(userMsg);
     saveSessions();
     $('input').value = '';
     $('input').style.height = '';
-    addBubble('user', text);
+    addBubble('user', text, { ts: userMsg.ts });
     busy = true;
     updateInputState();
-    const typing = addBubble('assistant', t('thinking'), 'animate-pulse text-slate-400');
+    const typing = addBubble('assistant', t('thinking'), { extra: 'animate-pulse text-slate-400' });
 
     const fail = (msg) => {
       s.messages.pop();
       saveSessions();
-      addBubble('assistant', msg, 'bg-amber-50 ring-amber-200');
+      addBubble('assistant', msg, { extra: 'bg-amber-400/10! text-amber-100! ring-amber-400/20!' });
     };
 
     try {
@@ -313,15 +403,16 @@
           subject: subjectName(setup.subject, 'ru'),
           grade: setup.grade,
           turn: s.messages.filter((m) => m.role === 'user').length,
-          messages: s.messages,
+          messages: s.messages.map(({ role, content }) => ({ role, content })),
         }),
       });
       const data = await r.json().catch(() => ({}));
       typing.remove();
       if (data.reply) {
-        s.messages.push({ role: 'assistant', content: data.reply });
+        const botMsg = { role: 'assistant', content: data.reply, ts: Date.now() };
+        s.messages.push(botMsg);
         saveSessions();
-        addBubble('assistant', data.reply);
+        addBubble('assistant', data.reply, { ts: botMsg.ts });
         const u = usage();
         u.count += 1;
         u.serverRemaining = typeof data.remaining === 'number' ? data.remaining : u.serverRemaining;
@@ -387,8 +478,8 @@
   }
 
   // ---------- parent report ----------
-  function stat(value, label, color) {
-    return `<div class="rounded-2xl ${color} p-3 text-center"><div class="text-2xl font-extrabold">${value}</div><div class="text-xs font-bold opacity-80">${label}</div></div>`;
+  function stat(value, label) {
+    return `<div class="rounded-2xl bg-night-800 p-3 text-center ring-1 ring-white/5"><div class="text-2xl font-semibold text-white">${value}</div><div class="mt-0.5 text-xs text-slate-400">${label}</div></div>`;
   }
 
   async function openReport() {
@@ -397,9 +488,9 @@
     const withMessages = sessions.filter((s) => s.messages.some((m) => m.role === 'user'));
     const subjects = new Set(withMessages.map((s) => s.subject));
     $('reportStats').innerHTML =
-      stat(usage().count, t('statQuestions'), 'bg-amber-50 text-amber-800') +
-      stat(withMessages.length, t('statSessions'), 'bg-sky-50 text-sky-800') +
-      stat(subjects.size, t('statSubjects'), 'bg-emerald-50 text-emerald-800');
+      stat(usage().count, t('statQuestions')) +
+      stat(withMessages.length, t('statSessions')) +
+      stat(subjects.size, t('statSubjects'));
     const box = $('reportText');
     if (!withMessages.length) { box.textContent = t('reportEmpty'); return; }
     box.textContent = t('reportLoading');
@@ -440,12 +531,12 @@
   };
 
   // ---------- start ----------
-  if (setup && (!currentSession() || currentSession().date !== today())) {
-    sessions.push({ date: today(), subject: setup.subject, grade: setup.grade, messages: [] });
-    saveSessions();
-  }
+  document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = icon(el.dataset.icon); });
+  document.querySelectorAll('[data-img]').forEach((el) => { el.src = IMAGES[el.dataset.img]; });
+  if (setup && (!currentSession() || currentSession().date !== today())) newSession();
   applyLang();
   tick();
   setInterval(tick, 1000);
   showScreen(setup && currentSession() ? 'chat' : 'setup');
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 })();
