@@ -61,6 +61,29 @@
       statSessions: 'занятий',
       statSubjects: 'предметов',
       print: 'Распечатать / сохранить',
+      tabLogin: 'Вход',
+      tabRegister: 'Регистрация',
+      emailPh: 'Электронная почта',
+      passwordPh: 'Пароль',
+      confirmPh: 'Повтори пароль',
+      passwordHint: 'Минимум 8 символов: буквы и хотя бы одна цифра.',
+      loginBtn: 'Войти',
+      registerBtn: 'Создать аккаунт',
+      or: 'или',
+      logout: 'Выйти',
+      authNote: 'Мы храним только твою почту. Пароль хранится в зашифрованном виде, его не видит никто.',
+      errors: {
+        invalid_email: 'Проверь адрес почты — похоже, в нём ошибка.',
+        weak_password: 'Пароль слишком простой: нужно минимум 8 символов, буквы и хотя бы одна цифра.',
+        mismatch: 'Пароли не совпадают.',
+        email_taken: 'Эта почта уже зарегистрирована. Попробуй войти.',
+        invalid_credentials: 'Неверная почта или пароль.',
+        use_google: 'Этот аккаунт создан через Google — нажми «Войти через Google».',
+        too_many_attempts: 'Слишком много неудачных попыток. Подожди 15 минут и попробуй снова.',
+        google_failed: 'Не получилось войти через Google. Попробуй ещё раз.',
+        auth_unavailable: 'Вход временно недоступен. Попробуй позже.',
+        offline: 'Нет связи с сервером. Проверь интернет и попробуй ещё раз.',
+      },
     },
     uz: {
       title: 'Nimi AI',
@@ -95,21 +118,48 @@
       statSessions: 'darslar',
       statSubjects: 'fanlar',
       print: 'Chop etish / saqlash',
+      tabLogin: 'Kirish',
+      tabRegister: "Ro'yxatdan o'tish",
+      emailPh: 'Elektron pochta',
+      passwordPh: 'Parol',
+      confirmPh: 'Parolni takrorla',
+      passwordHint: "Kamida 8 ta belgi: harflar va kamida bitta raqam.",
+      loginBtn: 'Kirish',
+      registerBtn: 'Akkaunt yaratish',
+      or: 'yoki',
+      logout: 'Chiqish',
+      authNote: "Biz faqat pochtangni saqlaymiz. Parol shifrlangan holda saqlanadi, uni hech kim ko'rmaydi.",
+      errors: {
+        invalid_email: "Pochta manzilini tekshir — xato bor shekilli.",
+        weak_password: "Parol juda oddiy: kamida 8 ta belgi, harflar va kamida bitta raqam kerak.",
+        mismatch: 'Parollar mos kelmadi.',
+        email_taken: "Bu pochta allaqachon ro'yxatdan o'tgan. Kirishga urinib ko'r.",
+        invalid_credentials: "Pochta yoki parol noto'g'ri.",
+        use_google: "Bu akkaunt Google orqali yaratilgan — «Google orqali kirish» tugmasini bos.",
+        too_many_attempts: "Juda ko'p muvaffaqiyatsiz urinish. 15 daqiqa kutib, qayta urinib ko'r.",
+        google_failed: "Google orqali kirib bo'lmadi. Qayta urinib ko'r.",
+        auth_unavailable: "Kirish vaqtincha ishlamayapti. Keyinroq urinib ko'r.",
+        offline: "Server bilan aloqa yo'q. Internetni tekshirib, qayta urinib ko'r.",
+      },
     },
   };
 
   // ---------- storage (best-effort; works without it) ----------
+  // Chats, subject and counters are kept per account, so children sharing a device don't mix.
+  const ACCOUNT_KEYS = new Set(['setup', 'sessions', 'usage']);
+  let account = '';
+  const storageKey = (key) => 'tutor.' + (ACCOUNT_KEYS.has(key) ? `u:${account}.` : '') + key;
   const store = {
     get(key, fallback) {
       try {
-        const v = localStorage.getItem('tutor.' + key);
+        const v = localStorage.getItem(storageKey(key));
         return v === null ? fallback : JSON.parse(v);
       } catch {
         return fallback;
       }
     },
     set(key, value) {
-      try { localStorage.setItem('tutor.' + key, JSON.stringify(value)); } catch {}
+      try { localStorage.setItem(storageKey(key), JSON.stringify(value)); } catch {}
     },
   };
 
@@ -120,15 +170,13 @@
   const EMOJI_RE = /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{1F3FB}-\u{1F3FF}️‍⃣]/gu;
 
   let lang = store.get('lang', (navigator.language || '').startsWith('uz') ? 'uz' : 'ru');
-  let setup = store.get('setup', null);
-  let sessions = store.get('sessions', []);
-  let deviceId = store.get('deviceId', null);
-  if (!deviceId) {
-    deviceId = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now());
-    store.set('deviceId', deviceId);
-  }
-  let pendingSubject = setup && setup.subject;
-  let pendingGrade = setup && setup.grade;
+  let user = null;
+  let config = { googleClientId: '', accounts: false };
+  let authMode = 'login';
+  let setup = null;
+  let sessions = [];
+  let pendingSubject = null;
+  let pendingGrade = null;
   let busy = false;
 
   const t = (key) => T[lang][key];
@@ -136,13 +184,13 @@
   const subjectName = (key, l = lang) => subjectInfo(key)[l === 'uz' ? 3 : 2];
   const gradeLabel = (g) => `${g}${lang === 'uz' ? '-' : ' '}${t('grade')}`;
 
-  function usage() {
-    const u = store.get('usage', null);
-    return u && u.day === today() ? u : { day: today(), count: 0, serverRemaining: DAILY_LIMIT };
-  }
+  // The server counts questions per account; this is the last number it reported.
   function remaining() {
-    const u = usage();
-    return Math.max(0, Math.min(DAILY_LIMIT - u.count, u.serverRemaining));
+    const u = store.get('usage', null);
+    return u && u.day === today() ? u.remaining : DAILY_LIMIT;
+  }
+  function setRemaining(n) {
+    if (typeof n === 'number') store.set('usage', { day: today(), remaining: Math.max(0, n) });
   }
 
   function currentSession() {
@@ -169,6 +217,11 @@
       b.setAttribute('aria-pressed', on);
     });
     $('input').placeholder = t('placeholder');
+    $('authEmail').placeholder = t('emailPh');
+    $('authPassword').placeholder = t('passwordPh');
+    $('authConfirm').placeholder = t('confirmPh');
+    renderAuthMode();
+    renderGoogleButton();
     $('newChatBtn').setAttribute('aria-label', t('menuNew'));
     $('newChatBtn').title = t('menuNew');
     renderSetupOptions();
@@ -283,12 +336,14 @@
   }
 
   function showScreen(name) {
+    $('auth').classList.toggle('hidden', name !== 'auth');
+    $('menuWrap').classList.toggle('hidden', name === 'auth');
     $('setup').classList.toggle('hidden', name !== 'setup');
     $('chatScreen').classList.toggle('hidden', name !== 'chat');
     $('chatScreen').classList.toggle('flex', name === 'chat');
     $('statusBar').classList.toggle('hidden', name !== 'chat');
     $('statusBar').classList.toggle('flex', name === 'chat');
-    $('backBtn').classList.toggle('invisible', !setup);
+    $('backBtn').classList.toggle('invisible', name === 'auth' || !setup);
     if (name === 'chat') {
       renderChat();
       renderStatus();
@@ -351,7 +406,8 @@
     item.onclick = () => {
       closeMenu();
       const action = item.dataset.action;
-      if (action === 'report') openReport();
+      if (action === 'logout') logout();
+      else if (action === 'report') openReport();
       else if (action === 'change') openSetup();
       else if (action === 'new' && setup) {
         if (!onChat()) showScreen('chat');
@@ -398,7 +454,6 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          deviceId,
           lang,
           subject: subjectName(setup.subject, 'ru'),
           grade: setup.grade,
@@ -413,15 +468,14 @@
         s.messages.push(botMsg);
         saveSessions();
         addBubble('assistant', data.reply, { ts: botMsg.ts });
-        const u = usage();
-        u.count += 1;
-        u.serverRemaining = typeof data.remaining === 'number' ? data.remaining : u.serverRemaining;
-        store.set('usage', u);
+        setRemaining(data.remaining);
         if (data.tooFrequent) showNotice(t('tooFrequent'));
+      } else if (data.code === 'unauthorized') {
+        s.messages.pop();
+        saveSessions();
+        signedOut();
       } else if (data.code === 'daily_limit') {
-        const u = usage();
-        u.serverRemaining = 0;
-        store.set('usage', u);
+        setRemaining(0);
         fail(t('dailyLimit'));
       } else if (data.code === 'rate_limited') {
         fail(t('rateLimited'));
@@ -488,7 +542,7 @@
     const withMessages = sessions.filter((s) => s.messages.some((m) => m.role === 'user'));
     const subjects = new Set(withMessages.map((s) => s.subject));
     $('reportStats').innerHTML =
-      stat(usage().count, t('statQuestions')) +
+      stat(DAILY_LIMIT - remaining(), t('statQuestions')) +
       stat(withMessages.length, t('statSessions')) +
       stat(subjects.size, t('statSubjects'));
     const box = $('reportText');
@@ -531,12 +585,157 @@
   };
 
   // ---------- start ----------
+  // ---------- accounts ----------
+  function renderAuthMode() {
+    const reg = authMode === 'register';
+    document.querySelectorAll('.auth-tab').forEach((b) => {
+      const on = b.dataset.mode === authMode;
+      b.className = 'auth-tab min-h-12 rounded-xl text-[15px] font-medium transition ' +
+        (on ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/30' : 'text-slate-300 hover:text-white');
+      b.setAttribute('aria-selected', on);
+    });
+    $('confirmWrap').classList.toggle('hidden', !reg);
+    $('confirmWrap').classList.toggle('flex', reg);
+    $('passwordHint').classList.toggle('hidden', !reg);
+    $('authPassword').autocomplete = reg ? 'new-password' : 'current-password';
+    $('authSubmit').textContent = t(reg ? 'registerBtn' : 'loginBtn');
+  }
+
+  function showAuthError(code) {
+    const box = $('authError');
+    if (!code) { box.classList.add('hidden'); box.classList.remove('flex'); return; }
+    box.innerHTML = icon('circle-alert', 'icon mt-px') + '<span></span>';
+    box.lastChild.textContent = t('errors')[code] || t('errors').auth_unavailable;
+    box.classList.remove('hidden');
+    box.classList.add('flex');
+  }
+
+  async function postJson(url, body) {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    return r.json().catch(() => ({ code: 'auth_unavailable' }));
+  }
+
+  // Loads this account's local data and opens the app.
+  function signedIn(u, left) {
+    user = u;
+    account = u.email;
+    $('menuEmail').textContent = u.email;
+    setup = store.get('setup', null);
+    sessions = store.get('sessions', []);
+    pendingSubject = setup && setup.subject;
+    pendingGrade = setup && setup.grade;
+    setRemaining(left);
+    if (setup && (!currentSession() || currentSession().date !== today())) newSession();
+    $('authForm').reset();
+    showAuthError(null);
+    renderSetupOptions();
+    showScreen(setup && currentSession() ? 'chat' : 'setup');
+  }
+
+  function signedOut() {
+    user = null;
+    account = '';
+    setup = null;
+    sessions = [];
+    showScreen('auth');
+    renderGoogleButton();
+  }
+
+  async function logout() {
+    try { await postJson('/api/auth/logout', {}); } catch {}
+    if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
+    signedOut();
+  }
+
+  async function finishAuth(promise) {
+    $('authSubmit').disabled = true;
+    try {
+      const data = await promise;
+      if (!data.user) return showAuthError(data.code);
+      const me = await fetch('/api/auth/me').then((r) => r.json());
+      signedIn(me.user || data.user, me.remaining);
+    } catch {
+      showAuthError('offline');
+    } finally {
+      $('authSubmit').disabled = false;
+    }
+  }
+
+  document.querySelectorAll('.auth-tab').forEach((b) => {
+    b.onclick = () => { authMode = b.dataset.mode; showAuthError(null); renderAuthMode(); };
+  });
+  $('togglePassword').onclick = () => {
+    const show = $('authPassword').type === 'password';
+    $('authPassword').type = show ? 'text' : 'password';
+    $('authConfirm').type = show ? 'text' : 'password';
+    $('togglePassword').innerHTML = icon(show ? 'eye-off' : 'eye');
+  };
+  $('authForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = $('authEmail').value.trim();
+    const password = $('authPassword').value;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return showAuthError('invalid_email');
+    if (authMode === 'register') {
+      if (password.length < 8 || !/\p{L}/u.test(password) || !/\d/.test(password)) return showAuthError('weak_password');
+      if (password !== $('authConfirm').value) return showAuthError('mismatch');
+    } else if (!password) {
+      return showAuthError('invalid_credentials');
+    }
+    finishAuth(postJson(authMode === 'register' ? '/api/auth/register' : '/api/auth/login', { email, password }));
+  });
+
+  // "Sign in with Google" button (Google Identity Services).
+  let gisLoading = null;
+  function loadGoogle() {
+    if (!gisLoading) {
+      gisLoading = new Promise((resolve, reject) => {
+        const sc = document.createElement('script');
+        sc.src = 'https://accounts.google.com/gsi/client';
+        sc.async = true;
+        sc.onload = resolve;
+        sc.onerror = reject;
+        document.head.appendChild(sc);
+      });
+    }
+    return gisLoading;
+  }
+  let gisReady = false;
+  async function renderGoogleButton() {
+    if (!config.googleClientId || user) return;
+    try { await loadGoogle(); } catch { return; }
+    if (!gisReady) {
+      google.accounts.id.initialize({
+        client_id: config.googleClientId,
+        callback: (resp) => finishAuth(postJson('/api/auth/google', { credential: resp.credential })),
+        ux_mode: 'popup',
+      });
+      gisReady = true;
+    }
+    $('googleBlock').classList.remove('hidden');
+    $('googleBtn').innerHTML = '';
+    google.accounts.id.renderButton($('googleBtn'), {
+      theme: 'filled_black',
+      size: 'large',
+      shape: 'pill',
+      text: 'continue_with',
+      locale: lang === 'uz' ? 'uz' : 'ru',
+      width: Math.min(400, Math.max(200, $('authForm').offsetWidth || 320)),
+    });
+  }
+
+  // ---------- start ----------
   document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = icon(el.dataset.icon); });
   document.querySelectorAll('[data-img]').forEach((el) => { el.src = IMAGES[el.dataset.img]; });
-  if (setup && (!currentSession() || currentSession().date !== today())) newSession();
   applyLang();
   tick();
   setInterval(tick, 1000);
-  showScreen(setup && currentSession() ? 'chat' : 'setup');
+  (async () => {
+    try {
+      config = await fetch('/api/config').then((r) => r.json());
+      const me = await fetch('/api/auth/me').then((r) => r.json());
+      if (me.user) return signedIn(me.user, me.remaining);
+    } catch {}
+    signedOut();
+  })();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 })();

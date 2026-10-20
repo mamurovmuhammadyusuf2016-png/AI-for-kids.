@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { buildSystemPrompt, REPORT_PROMPT } = require('./prompt');
 const { verifyStudentMessages, findWrongClaims, fmt } = require('./math');
+const auth = require('./auth');
 
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.AI_API_KEY;
@@ -29,24 +30,15 @@ const MIME = {
   '.webmanifest': 'application/manifest+json',
 };
 
-// deviceId -> { day, count, recent: [timestamps] }. In memory: resets when the server restarts.
-const devices = new Map();
+// userId -> [timestamps of recent questions], for the "asking too often" nudge.
+const recentQuestions = new Map();
 
 function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tashkent' });
 }
 
-function deviceState(id) {
-  let s = devices.get(id);
-  if (!s || s.day !== today()) {
-    s = { day: today(), count: 0, recent: [] };
-    devices.set(id, s);
-  }
-  return s;
-}
-
-function sendJson(res, status, data) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+function sendJson(res, status, data, headers = {}) {
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', ...headers });
   res.end(JSON.stringify(data));
 }
 
@@ -142,27 +134,21 @@ function aiErrorResponse(res, err) {
   return sendJson(res, 502, { code: 'ai_error' });
 }
 
-async function handleChat(req, res) {
+async function handleChat(req, res, body, user) {
   if (!API_KEY) return sendJson(res, 500, { code: 'ai_error' });
-  let body;
-  try {
-    body = JSON.parse(await readBody(req));
-  } catch {
-    return sendJson(res, 400, { code: 'bad_request' });
-  }
-  const deviceId = cleanText(body.deviceId, 64);
   const messages = cleanMessages(body.messages, MAX_HISTORY);
-  if (!deviceId || !messages.length || messages[messages.length - 1].role !== 'user') {
+  if (!messages.length || messages[messages.length - 1].role !== 'user') {
     return sendJson(res, 400, { code: 'bad_request' });
   }
 
-  const state = deviceState(deviceId);
-  if (state.count >= DAILY_LIMIT) {
+  const day = today();
+  if ((await auth.usedToday(user.id, day)) >= DAILY_LIMIT) {
     return sendJson(res, 429, { code: 'daily_limit', remaining: 0, limit: DAILY_LIMIT });
   }
   const now = Date.now();
-  state.recent = state.recent.filter((t) => now - t < FREQUENT_WINDOW_MS);
-  const tooFrequent = state.recent.length >= FREQUENT_COUNT - 1;
+  const recent = (recentQuestions.get(user.id) || []).filter((t) => now - t < FREQUENT_WINDOW_MS);
+  recentQuestions.set(user.id, recent);
+  const tooFrequent = recent.length >= FREQUENT_COUNT - 1;
 
   const userTexts = messages.filter((m) => m.role === 'user').map((m) => m.content);
   const systemText = buildSystemPrompt({
@@ -186,29 +172,23 @@ async function handleChat(req, res) {
   if (wrong.length) {
     const fix = wrong.map((c) => `${c.src} = ${fmt(c.value)}`).join('; ');
     reply += body.lang === 'uz'
-      ? `\n\n⚠️ Server tekshiruvi: hisobda xato bor. To'g'risi: ${fix}`
-      : `\n\n⚠️ Проверка сервера: в вычислении ошибка. Правильно: ${fix}`;
+      ? `\n\nServer tekshiruvi: hisobda xato bor. To'g'risi: ${fix}`
+      : `\n\nПроверка сервера: в вычислении ошибка. Правильно: ${fix}`;
   }
 
-  state.count += 1;
-  state.recent.push(now);
+  const used = await auth.countQuestion(user.id, day);
+  recent.push(now);
   sendJson(res, 200, {
     reply,
-    remaining: DAILY_LIMIT - state.count,
+    remaining: Math.max(0, DAILY_LIMIT - used),
     limit: DAILY_LIMIT,
     tooFrequent,
     corrected: wrong.length > 0,
   });
 }
 
-async function handleReport(req, res) {
+async function handleReport(req, res, body) {
   if (!API_KEY) return sendJson(res, 500, { code: 'ai_error' });
-  let body;
-  try {
-    body = JSON.parse(await readBody(req));
-  } catch {
-    return sendJson(res, 400, { code: 'bad_request' });
-  }
   const sessions = Array.isArray(body.sessions) ? body.sessions.slice(-10) : [];
   const transcript = sessions
     .map((s) => {
@@ -244,13 +224,71 @@ function serveStatic(res, urlPath) {
   return true;
 }
 
-const server = http.createServer((req, res) => {
-  const urlPath = req.url.split('?')[0];
-  if (req.method === 'POST' && urlPath === '/api/chat') return handleChat(req, res);
-  if (req.method === 'POST' && urlPath === '/api/report') return handleReport(req, res);
-  if (req.method === 'GET' && urlPath === '/health') return sendJson(res, 200, { ok: true });
-  if (req.method === 'GET' && serveStatic(res, urlPath)) return;
-  sendJson(res, 404, { code: 'not_found' });
-});
+async function handleMe(req, res) {
+  const user = await auth.getUser(req);
+  if (!user) return sendJson(res, 200, { user: null });
+  const used = await auth.usedToday(user.id, today());
+  sendJson(res, 200, { user: auth.publicUser(user), remaining: Math.max(0, DAILY_LIMIT - used), limit: DAILY_LIMIT });
+}
 
-server.listen(PORT, () => console.log(`AI tutor listening on port ${PORT}, model ${MODEL}`));
+// Account actions: each returns { user, cookie }.
+const AUTH_ACTIONS = { '/api/auth/register': auth.register, '/api/auth/login': auth.login, '/api/auth/google': auth.google };
+
+// Blocks cross-site form posts: a browser always sends Origin on POST from another site.
+function sameOrigin(req) {
+  const origin = req.headers.origin;
+  if (!origin) return true;
+  try {
+    return new URL(origin).host === req.headers.host;
+  } catch {
+    return false;
+  }
+}
+
+async function handleApiPost(req, res, urlPath) {
+  if (!sameOrigin(req)) return sendJson(res, 403, { code: 'forbidden' });
+  let body;
+  try {
+    body = JSON.parse(await readBody(req)) || {};
+  } catch {
+    return sendJson(res, 400, { code: 'bad_request' });
+  }
+  if (urlPath === '/api/auth/logout') {
+    return sendJson(res, 200, { ok: true }, { 'Set-Cookie': await auth.logout(req) });
+  }
+  const action = AUTH_ACTIONS[urlPath];
+  if (action) {
+    const { user, cookie } = await action(req, body);
+    return sendJson(res, 200, { user: auth.publicUser(user) }, { 'Set-Cookie': cookie });
+  }
+  const handler = { '/api/chat': handleChat, '/api/report': handleReport }[urlPath];
+  if (!handler) return sendJson(res, 404, { code: 'not_found' });
+  if (!auth.enabled()) return sendJson(res, 503, { code: 'auth_unavailable' });
+  const user = await auth.getUser(req);
+  if (!user) return sendJson(res, 401, { code: 'unauthorized' });
+  return handler(req, res, body, user);
+}
+
+async function route(req, res) {
+  const urlPath = req.url.split('?')[0];
+  try {
+    if (req.method === 'POST' && urlPath.startsWith('/api/')) return await handleApiPost(req, res, urlPath);
+    if (req.method === 'GET' && urlPath === '/api/auth/me') return await handleMe(req, res);
+    if (req.method === 'GET' && urlPath === '/api/config') {
+      return sendJson(res, 200, { googleClientId: auth.GOOGLE_CLIENT_ID, accounts: auth.enabled() });
+    }
+    if (req.method === 'GET' && urlPath === '/health') return sendJson(res, 200, { ok: true });
+    if (req.method === 'GET' && serveStatic(res, urlPath)) return;
+    sendJson(res, 404, { code: 'not_found' });
+  } catch (err) {
+    if (err instanceof auth.AuthError) return sendJson(res, err.status, { code: err.code });
+    console.error('Request failed', urlPath, err);
+    if (!res.headersSent) sendJson(res, 500, { code: 'server_error' });
+  }
+}
+
+auth.init()
+  .catch((err) => console.error('Database init failed', err.message))
+  .finally(() => {
+    http.createServer(route).listen(PORT, () => console.log(`Nimi AI listening on port ${PORT}, model ${MODEL}`));
+  });
