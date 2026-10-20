@@ -7,9 +7,9 @@
 
   // Illustrations; swap a path here to change the picture everywhere.
   const IMAGES = {
-    avatar: '/img/avatar.svg',
-    welcome: '/img/welcome.svg',
-    break: '/img/break.svg',
+    avatar: '/img/avatar.webp',
+    welcome: '/img/welcome.webp',
+    break: '/img/break.webp',
   };
 
   const SUBJECTS = [

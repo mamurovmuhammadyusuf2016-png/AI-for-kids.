@@ -1,7 +1,7 @@
 // Network-first service worker: makes the site installable and shows the
 // last loaded page when offline. API calls always go to the network.
-const CACHE = 'tutor-v1';
-const SHELL = ['/', '/app.js', '/icons.js', '/styles.css', '/manifest.webmanifest'];
+const CACHE = 'tutor-v2';
+const SHELL = ['/', '/app.js', '/icons.js', '/styles.css', '/manifest.webmanifest', '/img/avatar.webp', '/img/welcome.webp', '/img/break.webp'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
