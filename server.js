@@ -32,6 +32,21 @@ const MIME = {
 
 // userId -> [timestamps of recent questions], for the "asking too often" nudge.
 const recentQuestions = new Map();
+// Daily counter used only when there is no database (guest mode): resets on restart.
+const guestUsage = new Map();
+
+async function usedToday(userId, day) {
+  if (auth.enabled()) return auth.usedToday(userId, day);
+  const u = guestUsage.get(userId);
+  return u && u.day === day ? u.count : 0;
+}
+
+async function countQuestion(userId, day) {
+  if (auth.enabled()) return auth.countQuestion(userId, day);
+  const count = (await usedToday(userId, day)) + 1;
+  guestUsage.set(userId, { day, count });
+  return count;
+}
 
 function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tashkent' });
@@ -142,7 +157,7 @@ async function handleChat(req, res, body, user) {
   }
 
   const day = today();
-  if ((await auth.usedToday(user.id, day)) >= DAILY_LIMIT) {
+  if ((await usedToday(user.id, day)) >= DAILY_LIMIT) {
     return sendJson(res, 429, { code: 'daily_limit', remaining: 0, limit: DAILY_LIMIT });
   }
   const now = Date.now();
@@ -176,7 +191,7 @@ async function handleChat(req, res, body, user) {
       : `\n\nПроверка сервера: в вычислении ошибка. Правильно: ${fix}`;
   }
 
-  const used = await auth.countQuestion(user.id, day);
+  const used = await countQuestion(user.id, day);
   recent.push(now);
   sendJson(res, 200, {
     reply,
@@ -263,8 +278,10 @@ async function handleApiPost(req, res, urlPath) {
   }
   const handler = { '/api/chat': handleChat, '/api/report': handleReport }[urlPath];
   if (!handler) return sendJson(res, 404, { code: 'not_found' });
-  if (!auth.enabled()) return sendJson(res, 503, { code: 'auth_unavailable' });
-  const user = await auth.getUser(req);
+  // Without a database the app runs in guest mode, limited per device.
+  const deviceId = cleanText(body.deviceId, 64);
+  if (!auth.enabled() && !deviceId) return sendJson(res, 400, { code: 'bad_request' });
+  const user = auth.enabled() ? await auth.getUser(req) : { id: `device:${deviceId}` };
   if (!user) return sendJson(res, 401, { code: 'unauthorized' });
   return handler(req, res, body, user);
 }

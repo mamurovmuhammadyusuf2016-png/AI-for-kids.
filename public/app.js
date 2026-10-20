@@ -170,6 +170,11 @@
   const EMOJI_RE = /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{1F3FB}-\u{1F3FF}️‍⃣]/gu;
 
   let lang = store.get('lang', (navigator.language || '').startsWith('uz') ? 'uz' : 'ru');
+  let deviceId = store.get('deviceId', null);
+  if (!deviceId) {
+    deviceId = crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now();
+    store.set('deviceId', deviceId);
+  }
   let user = null;
   let config = { googleClientId: '', accounts: false };
   let authMode = 'login';
@@ -454,6 +459,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          deviceId,
           lang,
           subject: subjectName(setup.subject, 'ru'),
           grade: setup.grade,
@@ -554,6 +560,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          deviceId,
           lang,
           sessions: withMessages.map((s) => ({ ...s, subject: subjectName(s.subject, 'ru') })),
         }),
@@ -620,6 +627,8 @@
     user = u;
     account = u.email;
     $('menuEmail').textContent = u.email;
+    $('menuEmail').parentElement.classList.toggle('hidden', !u.email);
+    document.querySelector('[data-action="logout"]').classList.toggle('hidden', !u.email);
     setup = store.get('setup', null);
     sessions = store.get('sessions', []);
     pendingSubject = setup && setup.subject;
@@ -732,6 +741,8 @@
   (async () => {
     try {
       config = await fetch('/api/config').then((r) => r.json());
+      // No accounts database on the server: guest mode, no login screen.
+      if (!config.accounts) return signedIn({ email: '' });
       const me = await fetch('/api/auth/me').then((r) => r.json());
       if (me.user) return signedIn(me.user, me.remaining);
     } catch {}
