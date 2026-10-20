@@ -17,3 +17,5 @@ html { color-scheme: dark; }
 .bubble strong { font-weight: 700; color: #fff; }
 .icon { width: 1.25rem; height: 1.25rem; flex-shrink: 0; }
 #chat::-webkit-scrollbar { width: 0; }
+/* Google button iframe would get a white backdrop under the dark color scheme. */
+#googleBtn iframe { color-scheme: light; }
