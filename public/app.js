@@ -29,6 +29,7 @@
       start: 'Начать урок 🚀',
       grade: 'класс',
       reportBtn: 'Отчёт для родителей',
+      reportShort: 'Отчёт',
       placeholder: 'Напиши задачу или вопрос…',
       privacy: '🔒 Не пиши своё имя, адрес, школу и телефон.',
       greeting: (s, g) => `Привет! 👋 Сегодня ${s}, ${g} класс. Напиши задачу или вопрос — разберём вместе. Готовый ответ я не дам, но помогу дойти до него самому! 💡`,
@@ -57,6 +58,7 @@
       start: 'Darsni boshlash 🚀',
       grade: 'sinf',
       reportBtn: 'Ota-onalar uchun hisobot',
+      reportShort: 'Hisobot',
       placeholder: 'Masala yoki savolingni yoz…',
       privacy: '🔒 Ismingni, manzilingni, maktabingni va telefoningni yozma.',
       greeting: (s, g) => `Salom! 👋 Bugun ${s}, ${g}-sinf. Masala yoki savolingni yoz — birga hal qilamiz. Tayyor javob bermayman, lekin o'zing topishingga yordam beraman! 💡`,
@@ -178,7 +180,7 @@
 
   function renderStatus() {
     if (setup) {
-      $('setupChip').textContent = `${subjectInfo(setup.subject)[1]} ${subjectName(setup.subject)} · ${setup.grade} ${t('grade')}`;
+      $('setupChip').textContent = `${subjectInfo(setup.subject)[1]} ${subjectName(setup.subject)} · ${setup.grade}${lang === 'uz' ? '-' : ' '}${t('grade')}`;
     }
     $('limitText').textContent = `${remaining()}/${DAILY_LIMIT}`;
   }
@@ -360,11 +362,7 @@
   function tick() {
     const now = Date.now();
     const st = timerState();
-    if (st.breakUntil > now) {
-      $('breakOverlay').classList.remove('hidden');
-      $('breakOverlay').classList.add('flex');
-      $('breakTimer').textContent = mmss(st.breakUntil - now);
-    } else {
+    if (st.breakUntil <= now) {
       if (st.breakUntil) {
         // Break finished: start a fresh 25-minute session.
         st.breakUntil = 0;
@@ -373,15 +371,16 @@
         // The page was closed long enough to count as a rest.
         st.start = now;
       }
-      $('breakOverlay').classList.add('hidden');
-      $('breakOverlay').classList.remove('flex');
-      const left = SESSION_MS - (now - st.start);
-      if (left <= 0) {
+      if (now - st.start >= SESSION_MS) {
         st.breakUntil = now + BREAK_MS;
         $('input').blur();
       }
-      $('timerText').textContent = mmss(left);
     }
+    const onBreak = st.breakUntil > now;
+    $('breakOverlay').classList.toggle('hidden', !onBreak);
+    $('breakOverlay').classList.toggle('flex', onBreak);
+    if (onBreak) $('breakTimer').textContent = mmss(st.breakUntil - now);
+    else $('timerText').textContent = mmss(SESSION_MS - (now - st.start));
     st.lastActive = now;
     store.set('timer', st);
     updateInputState();
