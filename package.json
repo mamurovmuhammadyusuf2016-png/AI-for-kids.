@@ -1,7 +1,7 @@
 {
-  "name": "ai-tutor-for-kids",
+  "name": "nimi-ai",
   "version": "2.0.0",
-  "description": "ИИ-репетитор для школьников (Google Gemini)",
+  "description": "Nimi AI — ИИ-репетитор для школьников (Google Gemini)",
   "main": "server.js",
   "scripts": {
     "build": "tailwindcss -i ./src/input.css -o ./public/styles.css --minify",

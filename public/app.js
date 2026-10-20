@@ -29,7 +29,7 @@
 
   const T = {
     ru: {
-      title: 'ИИ-репетитор',
+      title: 'Nimi AI',
       subtitle: 'Твой помощник в учёбе',
       welcomeTitle: 'Привет! Давай учиться вместе',
       welcomeText: 'Я не даю готовых ответов, а помогаю дойти до них самому.',
@@ -63,7 +63,7 @@
       print: 'Распечатать / сохранить',
     },
     uz: {
-      title: 'AI-repetitor',
+      title: 'Nimi AI',
       subtitle: "O'qishdagi yordamching",
       welcomeTitle: "Salom! Keling, birga o'rganamiz",
       welcomeText: "Men tayyor javob bermayman, balki uni o'zing topishingga yordam beraman.",
