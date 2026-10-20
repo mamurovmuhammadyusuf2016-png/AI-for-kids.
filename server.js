@@ -7,7 +7,7 @@ const { verifyStudentMessages, findWrongClaims, fmt } = require('./math');
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.AI_API_KEY;
 const MODEL = process.env.AI_MODEL || 'gemini-flash-latest';
-// Used only when the main model is overloaded (503) or times out.
+// Used only when the main model is overloaded (503), rate-limited (429) or times out.
 const FALLBACK_MODEL = process.env.AI_FALLBACK_MODEL || 'gemini-flash-lite-latest';
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const MODEL_TIMEOUT_MS = 20000;
@@ -119,8 +119,8 @@ async function generate(systemText, messages) {
   try {
     return await callModel(MODEL, systemText, contents, MODEL_TIMEOUT_MS);
   } catch (err) {
-    if (err.code !== 'overloaded' || !FALLBACK_MODEL) throw err;
-    console.log(`Main model unavailable, using ${FALLBACK_MODEL}`);
+    if (!['overloaded', 'rate_limited'].includes(err.code) || !FALLBACK_MODEL) throw err;
+    console.log(`Main model ${err.code}, using ${FALLBACK_MODEL}`);
     return callModel(FALLBACK_MODEL, systemText, contents, FALLBACK_TIMEOUT_MS);
   }
 }
