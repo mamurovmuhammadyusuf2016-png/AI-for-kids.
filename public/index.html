@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ИИ-репетитор</title>
+<style>
+  :root {
+    --bg: #f4f6fb; --card: #ffffff; --text: #1f2430; --muted: #6b7280;
+    --accent: #4f6bed; --me: #4f6bed; --me-text: #ffffff; --bot: #eef1f8; --border: #e2e6f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12141a; --card: #1b1e27; --text: #e8eaf0; --muted: #9aa1b2;
+      --accent: #7b91ff; --me: #5a73f0; --bot: #262a36; --border: #2e3342;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  .app { max-width: 720px; margin: 0 auto; height: 100dvh; display: flex; flex-direction: column; padding: 16px; }
+  header h1 { margin: 0; font-size: 1.4rem; }
+  header p { margin: 4px 0 12px; color: var(--muted); font-size: .95rem; }
+  #chat { flex: 1; overflow-y: auto; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; line-height: 1.45; white-space: pre-wrap; word-wrap: break-word; }
+  .me { align-self: flex-end; background: var(--me); color: var(--me-text); border-bottom-right-radius: 4px; }
+  .bot { align-self: flex-start; background: var(--bot); border-bottom-left-radius: 4px; }
+  .typing { color: var(--muted); font-style: italic; }
+  form { display: flex; gap: 8px; margin-top: 12px; }
+  textarea { flex: 1; resize: none; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font: inherit; min-height: 48px; max-height: 140px; }
+  button { padding: 0 18px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: default; }
+  .note { color: var(--muted); font-size: .8rem; text-align: center; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🎓 ИИ-репетитор / AI-repetitor</h1>
+    <p>Помогу разобраться в задаче шаг за шагом. Masalani bosqichma-bosqich tushunishga yordam beraman.</p>
+  </header>
+  <div id="chat">
+    <div class="msg bot">Привет! Напиши задачу или вопрос по учёбе — разберём вместе. 😊<br>Salom! O'qishga oid savol yoki masalangni yoz — birga hal qilamiz.</div>
+  </div>
+  <form id="form">
+    <textarea id="input" placeholder="Напиши вопрос... / Savolingni yoz..." rows="1" required></textarea>
+    <button id="send" type="submit">➤</button>
+  </form>
+  <div class="note">Не пиши своё имя, адрес, школу и телефон. / Ism, manzil, maktab va telefoningni yozma.</div>
+</div>
+<script>
+  const chat = document.getElementById('chat');
+  const form = document.getElementById('form');
+  const input = document.getElementById('input');
+  const send = document.getElementById('send');
+  const history = [];
+
+  function add(text, cls) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + cls;
+    div.textContent = text;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    return div;
+  }
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    add(text, 'me');
+    history.push({ role: 'user', content: text });
+    send.disabled = true;
+    const typing = add('Думаю... / O\'ylayapman...', 'bot typing');
+    try {
+      const r = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: history })
+      });
+      const data = await r.json();
+      typing.remove();
+      if (data.reply) {
+        history.push({ role: 'assistant', content: data.reply });
+        add(data.reply, 'bot');
+      } else {
+        history.pop();
+        add(data.error || 'Ошибка, попробуй ещё раз.', 'bot');
+      }
+    } catch {
+      typing.remove();
+      history.pop();
+      add('Нет связи с сервером, попробуй ещё раз.', 'bot');
+    } finally {
+      send.disabled = false;
+      input.focus();
+    }
+  });
+</script>
+</body>
+</html>
