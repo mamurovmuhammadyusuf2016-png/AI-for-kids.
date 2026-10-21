@@ -22,6 +22,9 @@
         reading: ['Чтение', 'Текст и вопросы'],
         games: ['Игры на счёт', 'Умножение, устный счёт'],
         chat: ['Спросить учителя', 'Разберём задачу вместе'],
+        exam: ['Экзамены', 'Аттестация и вступительный тест'],
+        olympiad: ['Олимпиада', 'Задачи на смекалку'],
+        photo: ['Фото задачи', 'Сфотографируй — разберём'],
         diary: ['Дневник', 'Домашние задания'],
       },
       undone: (n) => (n ? `Не сделано: ${n}` : 'Всё сделано'),
@@ -32,6 +35,16 @@
       reading: 'Чтение',
       cards: 'Карточки слов',
       games: 'Игры на счёт',
+      exam: 'Экзамены',
+      examFinal: ['Итоговая аттестация', '15 вопросов · 30 минут'],
+      examDtm: ['Вступительный тест (DTM)', '15 вопросов · 30 минут'],
+      examIntro: (s) => `Пробный экзамен по предмету: ${s}. Ответы и разбор — в конце. Предмет и класс меняются в шапке.`,
+      timeLeft: 'Осталось',
+      timeOver: 'Время вышло. Вопросы без ответа засчитаны как неверные.',
+      olympiad: 'Олимпиада',
+      olympiadIntro: '5 нестандартных задач. Не торопись: здесь важна догадка.',
+      noAnswer: '(нет ответа)',
+      listen: 'Послушать',
       loadingTasks: 'Готовлю задания… Это займёт до 30 секунд.',
       loadingText: 'Подбираю текст… Это займёт до 30 секунд.',
       loadingWords: 'Составляю набор слов…',
@@ -146,6 +159,9 @@
         reading: ["O'qish", 'Matn va savollar'],
         games: ["Hisob o'yinlari", "Ko'paytirish, og'zaki hisob"],
         chat: ["O'qituvchidan so'rash", 'Masalani birga yechamiz'],
+        exam: ['Imtihonlar', 'Attestatsiya va kirish testi'],
+        olympiad: ['Olimpiada', 'Zukkolik masalalari'],
+        photo: ['Masala surati', 'Suratga ol — birga yechamiz'],
         diary: ['Kundalik', 'Uy vazifalari'],
       },
       undone: (n) => (n ? `Bajarilmagan: ${n}` : 'Hammasi bajarildi'),
@@ -156,6 +172,16 @@
       reading: "O'qish",
       cards: "So'z kartochkalari",
       games: "Hisob o'yinlari",
+      exam: 'Imtihonlar',
+      examFinal: ['Yakuniy attestatsiya', '15 ta savol · 30 daqiqa'],
+      examDtm: ['Kirish testi (DTM)', '15 ta savol · 30 daqiqa'],
+      examIntro: (s) => `Fan bo'yicha sinov imtihoni: ${s}. Javoblar va tahlil — oxirida. Fan va sinf yuqorida o'zgartiriladi.`,
+      timeLeft: 'Qoldi',
+      timeOver: "Vaqt tugadi. Javobsiz savollar noto'g'ri deb hisoblandi.",
+      olympiad: 'Olimpiada',
+      olympiadIntro: "5 ta nostandart masala. Shoshilma: bu yerda topqirlik muhim.",
+      noAnswer: "(javob yo'q)",
+      listen: 'Tinglash',
       loadingTasks: 'Topshiriqlar tayyorlanmoqda… 30 soniyagacha.',
       loadingText: 'Matn tanlanmoqda… 30 soniyagacha.',
       loadingWords: "So'zlar to'plami tuzilmoqda…",
@@ -279,6 +305,8 @@
     }
     return el;
   }
+  // Element whose text may contain **bold** and $formulas$ (escaped, KaTeX).
+  const R = (tag, props, text) => { const el = h(tag, props); el.innerHTML = N.formatReply(String(text ?? '')); return el; };
   const ico = (name, cls = 'icon') => { const s = h('span', { class: 'inline-flex shrink-0' }); s.innerHTML = N.icon(name, cls); return s; };
   const CARD = 'rounded-3xl bg-night-900/80 p-4 ring-1 ring-white/5';
   const BTN = 'flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-500 px-4 text-base font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-400 active:scale-[.98] disabled:bg-night-700 disabled:text-slate-500 disabled:shadow-none';
@@ -419,13 +447,31 @@
   }
 
   // ---------- task runner (training, test, reading) ----------
-  function runTasks(root, tasks, { mode, title, passage, onFinish }) {
+  function runTasks(root, tasks, { mode, title, passage, onFinish, timeLimit }) {
     const results = [];
     let i = 0;
+    let finished = false;
+    const finish = () => { if (finished) return; finished = true; clearActive(); onFinish(results); };
+    const clock = h('span', { class: 'tabular-nums' });
+    if (timeLimit) {
+      const endAt = Date.now() + timeLimit;
+      const tick = () => {
+        const left = Math.max(0, endAt - Date.now());
+        clock.textContent = `${Math.floor(left / 60000)}:${String(Math.floor((left % 60000) / 1000)).padStart(2, '0')}`;
+        if (left <= 0) {
+          for (let k = results.length; k < tasks.length; k++) results.push({ task: tasks[k], given: t('noAnswer'), ok: false, timeout: true });
+          finish();
+        }
+      };
+      tick();
+      const id = setInterval(tick, 500);
+      stopActive = () => clearInterval(id);
+    }
     const show = () => {
       root.innerHTML = '';
       const task = tasks[i];
       root.append(titleBar(title));
+      if (timeLimit) root.append(h('div', { class: 'flex items-center gap-2 self-start rounded-full bg-night-800 px-3 py-1.5 text-sm text-slate-200 ring-1 ring-white/5' }, ico('hourglass', 'h-4 w-4'), `${t('timeLeft')}: `, clock));
       root.append(h('div', { class: 'flex flex-col gap-2' },
         h('div', { class: 'flex justify-between text-sm text-slate-400' }, h('span', {}, t('questionOf')(i + 1, tasks.length)), h('span', {}, task.topic && task.topic !== 'reading' ? task.topic : '')),
         h('div', { class: 'h-2 overflow-hidden rounded-full bg-night-800' }, h('div', { class: 'h-full rounded-full bg-brand-500 transition-all', style: `width:${(i / tasks.length) * 100}%` }))));
@@ -434,7 +480,7 @@
           h('summary', { class: 'flex cursor-pointer list-none items-center gap-2 font-semibold text-white' }, ico('book-open'), passage.title || t('text'), ico('chevron-down', 'icon ml-auto transition group-open:rotate-180')),
           h('p', { class: 'mt-3 whitespace-pre-wrap leading-relaxed text-slate-200' }, passage.text)));
       }
-      root.append(h('div', { class: `${CARD} text-lg leading-relaxed text-white whitespace-pre-wrap` }, task.question));
+      root.append(R('div', { class: `${CARD} bubble text-lg leading-relaxed text-white whitespace-pre-wrap` }, task.question));
       const answerBox = h('div', { class: 'flex flex-col gap-2' });
       const feedback = h('div', { class: 'flex flex-col gap-3' });
       root.append(answerBox, feedback);
@@ -449,20 +495,21 @@
           if (b.dataset.option === task.answer) b.classList.add('bg-emerald-500/20!', 'ring-emerald-400!', 'text-emerald-100!');
         });
         if (chosenBtn && !ok) chosenBtn.classList.add('bg-rose-500/20!', 'ring-rose-400!', 'text-rose-100!');
+        const ruleP = !ok && task.rule ? R('p', { class: 'bubble mt-2 text-sm text-slate-300' }, `**${t('rule')}:** ${task.rule}`) : null;
         feedback.append(h('div', { class: `rounded-2xl p-4 ring-1 ${ok ? 'bg-emerald-500/10 ring-emerald-400/30 text-emerald-100' : 'bg-rose-500/10 ring-rose-400/30 text-rose-100'}` },
-          h('p', { class: 'flex items-center gap-2 font-semibold' }, ico(ok ? 'circle-check' : 'circle-x'), ok ? t('correct') : t('wrong')(task.answer)),
-          task.explanation ? h('p', { class: 'mt-2 text-slate-200' }, task.explanation) : null,
-          !ok && task.rule ? h('p', { class: 'mt-2 text-sm text-slate-300' }, h('b', { class: 'text-white' }, `${t('rule')}: `), task.rule) : null));
+          h('div', { class: 'flex items-start gap-2 font-semibold' }, ico(ok ? 'circle-check' : 'circle-x'), R('span', { class: 'bubble' }, ok ? t('correct') : t('wrong')(task.answer))),
+          task.explanation ? R('p', { class: 'bubble mt-2 text-slate-200' }, task.explanation) : null,
+          ruleP));
         const nextBtn = h('button', { type: 'button', class: BTN, onclick: next }, i + 1 < tasks.length ? t('next') : t('finish'), ico('chevron-right'));
         feedback.append(nextBtn);
         nextBtn.focus();
         feedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       };
-      const next = () => { i += 1; if (i < tasks.length) show(); else onFinish(results); };
+      const next = () => { if (finished) return; i += 1; if (i < tasks.length) show(); else finish(); };
 
       if (task.type === 'choice') {
         task.options.forEach((opt) => {
-          const b = h('button', { type: 'button', 'data-option': opt, class: 'min-h-14 w-full rounded-2xl bg-night-800 px-4 py-3 text-left text-base text-slate-100 ring-1 ring-white/10 transition hover:bg-night-700 active:scale-[.99] disabled:cursor-default' }, opt);
+          const b = R('button', { type: 'button', 'data-option': opt, class: 'bubble min-h-14 w-full rounded-2xl bg-night-800 px-4 py-3 text-left text-base text-slate-100 ring-1 ring-white/10 transition hover:bg-night-700 active:scale-[.99] disabled:cursor-default' }, opt);
           b.onclick = () => submit(opt, b);
           answerBox.append(b);
         });
@@ -540,7 +587,7 @@
       root.lastChild.replaceWith(errorBox(e.message, () => startTest(topic)));
     }
   }
-  function finishTest(root, results, topic) {
+  function finishTest(root, results, topic, { onBack = openTestPicker, again = () => startTest(topic), note } = {}) {
     const ok = results.filter((r) => r.ok).length;
     const pct = ok / results.length;
     const mark = pct >= 0.9 ? 5 : pct >= 0.7 ? 4 : pct >= 0.5 ? 3 : 2;
@@ -551,21 +598,71 @@
     const color = { 5: 'bg-emerald-500/15 text-emerald-300', 4: 'bg-sky-500/15 text-sky-300', 3: 'bg-amber-400/15 text-amber-200', 2: 'bg-rose-500/15 text-rose-300' }[mark];
     const wrong = results.filter((r) => !r.ok);
     root.innerHTML = '';
-    root.append(titleBar(topic, openTestPicker),
+    root.append(titleBar(topic, onBack),
+      ...(note ? [h('p', { class: 'rounded-2xl bg-amber-400/10 p-3 text-sm text-amber-100' }, note)] : []),
       h('div', { class: `${CARD} flex items-center gap-4` },
         h('div', { class: `flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl ${color}` }, h('span', { class: 'text-xs' }, t('grade')), h('span', { class: 'text-3xl font-bold' }, String(mark))),
         h('div', {}, h('p', { class: 'text-lg font-semibold text-white' }, t('score')(ok, results.length)), h('p', { class: 'text-slate-400' }, topic))),
       h('h3', { class: 'mt-1 text-lg font-semibold text-white' }, t('mistakes')),
       wrong.length ? h('div', { class: 'flex flex-col gap-3' }, wrong.map(({ task, given }) =>
         h('div', { class: `${CARD} flex flex-col gap-2` },
-          h('p', { class: 'whitespace-pre-wrap text-white' }, task.question),
-          h('p', { class: 'flex items-start gap-2 text-sm text-rose-200' }, ico('circle-x'), `${t('yourAnswer')}: ${given}`),
-          h('p', { class: 'flex items-start gap-2 text-sm text-emerald-200' }, ico('circle-check'), `${t('correctAnswer')}: ${task.answer}`),
-          task.rule ? h('p', { class: 'rounded-xl bg-night-800 p-3 text-sm text-slate-200' }, h('b', { class: 'text-white' }, `${t('rule')}: `), task.rule) : null,
-          task.explanation ? h('p', { class: 'text-sm text-slate-400' }, task.explanation) : null)))
+          R('p', { class: 'bubble whitespace-pre-wrap text-white' }, task.question),
+          h('div', { class: 'flex items-start gap-2 text-sm text-rose-200' }, ico('circle-x'), R('span', { class: 'bubble' }, `${t('yourAnswer')}: ${given}`)),
+          h('div', { class: 'flex items-start gap-2 text-sm text-emerald-200' }, ico('circle-check'), R('span', { class: 'bubble' }, `${t('correctAnswer')}: ${task.answer}`)),
+          task.rule ? R('p', { class: 'bubble rounded-xl bg-night-800 p-3 text-sm text-slate-200' }, `**${t('rule')}:** ${task.rule}`) : null,
+          task.explanation ? R('p', { class: 'bubble text-sm text-slate-400' }, task.explanation) : null)))
         : h('p', { class: `${CARD} text-emerald-200` }, t('noMistakes')),
-      h('button', { type: 'button', class: BTN, onclick: () => startTest(topic) }, ico('repeat'), t('newQuestions')),
-      h('button', { type: 'button', class: BTN2, onclick: openTestPicker }, t('otherTopic')));
+      h('button', { type: 'button', class: BTN, onclick: again }, ico('repeat'), t('newQuestions')),
+      h('button', { type: 'button', class: BTN2, onclick: onBack }, onBack === openTestPicker ? t('otherTopic') : t('back')));
+  }
+
+  // ---------- exam practice (timed, review at the end) ----------
+  function openExams() {
+    const root = screen('activity');
+    root.append(titleBar(t('exam')), h('p', { class: 'text-slate-300' }, t('examIntro')(`${N.subjectName(subj())} · ${N.gradeLabel(grade())}`)));
+    [['final', 'graduation-cap', t('examFinal')], ['dtm', 'clipboard-check', t('examDtm')]].forEach(([type, icon, [name, desc]]) => {
+      root.append(h('button', { type: 'button', class: `${CARD} flex items-center gap-4 text-left transition hover:bg-night-800`, onclick: () => startExam(type, name) },
+        h('span', { class: 'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-500/15 text-brand-400' }, ico(icon)),
+        h('div', { class: 'min-w-0 flex-1' }, h('p', { class: 'font-semibold text-white' }, name), h('p', { class: 'text-sm text-slate-400' }, desc)),
+        ico('chevron-right', 'icon text-slate-500')));
+    });
+  }
+  async function startExam(examType, name) {
+    const root = screen('activity');
+    root.append(titleBar(name, openExams), loading(t('loadingTasks')));
+    try {
+      const { tasks } = await gen('exam', { examType });
+      runTasks(root, tasks, {
+        mode: 'test', title: name, timeLimit: 30 * 60 * 1000,
+        onFinish: (r) => finishTest(root, r, name, { onBack: openExams, again: () => startExam(examType, name), note: r.some((x) => x.timeout) ? t('timeOver') : null }),
+      });
+    } catch (e) {
+      root.lastChild.replaceWith(errorBox(e.message, () => startExam(examType, name)));
+    }
+  }
+
+  // ---------- olympiad problems (feedback after each) ----------
+  async function startOlympiad() {
+    const root = screen('activity');
+    root.append(titleBar(t('olympiad')), h('p', { class: 'text-slate-300' }, t('olympiadIntro')), loading(t('loadingTasks')));
+    try {
+      const { tasks } = await gen('olympiad', {});
+      runTasks(root, tasks, {
+        mode: 'training', title: t('olympiad'),
+        onFinish: (results) => {
+          const ok = results.filter((x) => x.ok).length;
+          root.innerHTML = '';
+          root.append(titleBar(t('olympiad')),
+            h('div', { class: `${CARD} flex flex-col items-center gap-2 py-8 text-center` },
+              h('span', { class: 'flex h-16 w-16 items-center justify-center rounded-full bg-amber-400/15 text-amber-200' }, ico('puzzle', 'h-8 w-8')),
+              h('p', { class: 'text-lg font-semibold text-white' }, t('score')(ok, results.length))),
+            h('button', { type: 'button', class: BTN, onclick: startOlympiad }, ico('repeat'), t('newQuestions')),
+            h('button', { type: 'button', class: BTN2, onclick: () => N.showScreen('home') }, t('home')));
+        },
+      });
+    } catch (e) {
+      root.lastChild.replaceWith(errorBox(e.message, startOlympiad));
+    }
   }
 
   // ---------- reading ----------
@@ -665,8 +762,10 @@
       const back = h('div', { class: 'hidden flex-col items-center gap-2' },
         h('p', { class: 'text-2xl font-semibold text-brand-400' }, w.back),
         w.example ? h('p', { class: 'text-sm italic text-slate-400' }, w.example) : null);
+      const say = h('button', { type: 'button', class: 'flex h-11 items-center gap-2 rounded-full bg-night-700 px-4 text-sm text-slate-200 hover:bg-night-600', 'aria-label': t('listen') }, ico('volume-2', 'h-4 w-4'), t('listen'));
+      say.onclick = (e) => { e.stopPropagation(); N.speak(w.front, items[0].d.learn); };
       const card = h('div', { class: 'flex min-h-56 flex-col items-center justify-center gap-4 rounded-3xl bg-night-800 p-6 text-center ring-1 ring-white/10' },
-        h('p', { class: 'text-3xl font-semibold text-white' }, w.front), back);
+        h('p', { class: 'text-3xl font-semibold text-white' }, w.front), 'speechSynthesis' in window ? say : null, back);
       const reveal = h('button', { type: 'button', class: BTN }, t('showBack'));
       const answers = h('div', { class: 'hidden grid-cols-2 gap-2' },
         h('button', { type: 'button', class: 'min-h-14 rounded-2xl bg-rose-500/15 font-semibold text-rose-200 ring-1 ring-rose-400/30', onclick: () => grade_(false) }, t('forgot')),
@@ -870,12 +969,15 @@
     const tile = (key, icon, onclick, extra) => h('button', { type: 'button', class: `${CARD} flex min-h-32 flex-col items-start gap-3 text-left transition hover:bg-night-800 active:scale-[.98]`, onclick },
       h('span', { class: 'flex h-11 w-11 items-center justify-center rounded-2xl bg-night-700 text-brand-400' }, ico(icon)),
       h('span', { class: 'min-w-0' }, h('span', { class: 'block font-semibold text-white' }, tiles[key][0]), h('span', { class: 'block text-xs text-slate-400' }, extra || tiles[key][1])));
+    // Older students get exams; younger ones keep the chat tile. Always 8 tiles.
     root.append(h('div', { class: 'grid grid-cols-2 gap-3' },
+      tile('photo', 'camera', N.askWithPhoto),
       tile('test', 'clipboard-check', openTestPicker),
+      grade() >= 8 ? tile('exam', 'graduation-cap', openExams) : tile('chat', 'message-circle', () => N.showScreen('chat')),
+      tile('olympiad', 'puzzle', startOlympiad),
       tile('cards', 'layers', openCards),
       tile('reading', 'book-open', startReading),
       tile('games', 'gamepad-2', openGames),
-      tile('chat', 'message-circle', () => N.showScreen('chat')),
       tile('diary', 'notebook-pen', () => N.showScreen('diary'), t('undone')(undone))));
   }
 

@@ -41,6 +41,14 @@
       reportShort: 'Отчёт',
       menuChange: 'Сменить предмет или класс',
       menuNew: 'Новый чат',
+      photoTask: 'Фото задачи',
+      photoReady: 'Фото задачи прикреплено. Можешь дописать вопрос.',
+      photoDefault: 'Помоги разобраться с задачей на фото.',
+      photoError: 'Не получилось открыть фото. Попробуй другое.',
+      listen: 'Слушать',
+      noVoice: 'На этом устройстве нет голоса для этого языка.',
+      micDenied: 'Нет доступа к микрофону. Разреши его в настройках браузера.',
+      speakNow: 'Говори, я слушаю…',
       language: 'Язык',
       share: 'Поделиться',
       back: 'Назад',
@@ -49,7 +57,7 @@
       tabChat: 'Чат',
       tabProgress: 'Прогресс',
       tabDiary: 'Дневник',
-      placeholder: 'Напиши задачу или вопрос…',
+      placeholder: 'Задай вопрос…',
       privacy: 'Не пиши своё имя, адрес, школу и телефон.',
       greeting: (s, g) => `Привет! Сегодня ${s}, ${g} класс. Напиши задачу или вопрос — разберём вместе. Готовый ответ я не дам, но помогу дойти до него самому.`,
       thinking: 'Думаю…',
@@ -106,6 +114,14 @@
       reportShort: 'Hisobot',
       menuChange: "Fan yoki sinfni o'zgartirish",
       menuNew: 'Yangi chat',
+      photoTask: 'Masala surati',
+      photoReady: "Masala surati biriktirildi. Savolingni ham yozishing mumkin.",
+      photoDefault: 'Suratdagi masalani tushunishga yordam ber.',
+      photoError: "Suratni ochib bo'lmadi. Boshqasini sinab ko'r.",
+      listen: 'Tinglash',
+      noVoice: "Bu qurilmada bu til uchun ovoz yo'q.",
+      micDenied: "Mikrofonga ruxsat yo'q. Brauzer sozlamalarida ruxsat ber.",
+      speakNow: 'Gapir, tinglayapman…',
       language: 'Til',
       share: 'Ulashish',
       back: 'Orqaga',
@@ -114,7 +130,7 @@
       tabChat: 'Chat',
       tabProgress: 'Natijalar',
       tabDiary: 'Kundalik',
-      placeholder: 'Masala yoki savolingni yoz…',
+      placeholder: 'Savolingni yoz…',
       privacy: 'Ismingni, manzilingni, maktabingni va telefoningni yozma.',
       greeting: (s, g) => `Salom! Bugun ${s}, ${g}-sinf. Masala yoki savolingni yoz — birga hal qilamiz. Tayyor javob bermayman, lekin o'zing topishingga yordam beraman.`,
       thinking: "O'ylayapman…",
@@ -244,8 +260,8 @@
     $('authConfirm').placeholder = t('confirmPh');
     renderAuthMode();
     renderGoogleButton();
-    $('newChatBtn').setAttribute('aria-label', t('menuNew'));
-    $('newChatBtn').title = t('menuNew');
+    $('plusBtn').setAttribute('aria-label', t('photoTask'));
+    $('micBtn').setAttribute('aria-label', t('speakNow'));
     renderSetupOptions();
     renderStatus();
   }
@@ -287,18 +303,68 @@
     $('limitText').textContent = `${remaining()}/${DAILY_LIMIT}`;
   }
 
-  function formatReply(text) {
-    const esc = text.replace(EMOJI_RE, '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    return esc
+  const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function formatPlain(text) {
+    return escapeHtml(text)
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/^\s*[*-]\s+/gm, '• ')
-      .replace(/^#+\s*/gm, '')
-      .replace(/\$([^$\n]+)\$/g, '$1');
+      .replace(/^#+\s*/gm, '');
   }
+  function renderMath(tex, display) {
+    if (!window.katex) return escapeHtml(tex);
+    try {
+      return katex.renderToString(tex, { displayMode: display, throwOnError: false, output: 'html', trust: false, maxSize: 20 });
+    } catch {
+      return escapeHtml(tex);
+    }
+  }
+  // Escaped text with **bold**, bullets and formulas in $...$ / $$...$$ drawn by KaTeX.
+  function formatReply(text) {
+    const src = text.replace(EMOJI_RE, '');
+    // A formula keeps the punctuation right after it on the same line.
+    const re = /\$\$([^$]+)\$\$|\$([^$\n]+)\$([.,;:!?)]*)/g;
+    let out = '', last = 0;
+    for (const m of src.matchAll(re)) {
+      const math = renderMath(m[1] ?? m[2], m[1] !== undefined);
+      out += formatPlain(src.slice(last, m.index)) + (m[3] ? `<span class="whitespace-nowrap">${math}${escapeHtml(m[3])}</span>` : math);
+      last = m.index + m[0].length;
+    }
+    return out + formatPlain(src.slice(last));
+  }
+
+  // ---------- reading aloud (speech synthesis) ----------
+  const canSpeak = 'speechSynthesis' in window;
+  function speechText(text) {
+    return text
+      .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '$1/$2')
+      .replace(/\\sqrt\{([^}]*)\}/g, '√$1')
+      .replace(/\\cdot|\\times/g, '×')
+      .replace(/[$*#_{}\\]/g, ' ')
+      .replace(EMOJI_RE, '');
+  }
+  function voiceFor(code) {
+    return speechSynthesis.getVoices().find((v) => v.lang.toLowerCase().replace('_', '-').startsWith(code));
+  }
+  // code: 'ru' | 'uz' | 'en'. Returns false when the device has no voice for it.
+  function speak(text, code, onEnd) {
+    if (!canSpeak) return false;
+    speechSynthesis.cancel();
+    const voice = voiceFor(code);
+    if (!voice && code !== 'en') return false;
+    const u = new SpeechSynthesisUtterance(speechText(text));
+    u.lang = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' }[code];
+    if (voice) u.voice = voice;
+    u.rate = 0.95;
+    u.onend = u.onerror = () => onEnd?.();
+    speechSynthesis.speak(u);
+    return true;
+  }
+  if (canSpeak) speechSynthesis.getVoices();
+  const textLang = (text) => (/[а-яё]/i.test(text) ? 'ru' : lang === 'uz' ? 'uz' : 'ru');
 
   const timeLabel = (ts) => (ts ? new Date(ts).toLocaleTimeString(lang === 'uz' ? 'uz-UZ' : 'ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false }) : '');
 
-  function addBubble(role, text, { ts, extra = '' } = {}) {
+  function addBubble(role, text, { ts, extra = '', img } = {}) {
     const row = document.createElement('div');
     const bubble = document.createElement('div');
     const meta = document.createElement('div');
@@ -306,7 +372,8 @@
     if (role === 'user') {
       row.className = 'flex justify-end pl-10';
       bubble.className = 'bubble max-w-[85%] whitespace-pre-wrap break-words rounded-3xl rounded-br-md bg-brand-500 px-4 pb-2 pt-3 text-base leading-relaxed text-white shadow-lg shadow-brand-500/20 ' + extra;
-      bubble.textContent = text;
+      if (img) bubble.appendChild(Object.assign(document.createElement('img'), { src: img, alt: '', className: 'mb-2 max-h-48 rounded-2xl object-cover' }));
+      bubble.appendChild(document.createTextNode(text));
       meta.className += ' text-white/70';
       if (ts) meta.innerHTML = `<span>${timeLabel(ts)}</span>${icon('check-check', 'h-4 w-4')}`;
     } else {
@@ -315,7 +382,24 @@
       bubble.className = 'bubble max-w-[85%] whitespace-pre-wrap break-words rounded-3xl rounded-tl-md bg-night-800 px-4 pb-2 pt-3 text-base leading-relaxed text-slate-100 ring-1 ring-white/5 ' + extra;
       bubble.innerHTML = formatReply(text);
       meta.className += ' text-slate-400';
-      if (ts) meta.textContent = timeLabel(ts);
+      if (ts) {
+        if (canSpeak) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'mr-auto -ml-1 flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-white/5 hover:text-white';
+          btn.setAttribute('aria-label', t('listen'));
+          btn.innerHTML = icon('volume-2', 'h-4 w-4');
+          btn.onclick = () => {
+            if (btn.dataset.on) { speechSynthesis.cancel(); return; }
+            const done = () => { delete btn.dataset.on; btn.innerHTML = icon('volume-2', 'h-4 w-4'); };
+            if (!speak(text, textLang(text), done)) return showNotice(t('noVoice'), 3000);
+            btn.dataset.on = '1';
+            btn.innerHTML = icon('square', 'h-4 w-4');
+          };
+          meta.appendChild(btn);
+        }
+        meta.appendChild(Object.assign(document.createElement('span'), { textContent: timeLabel(ts) }));
+      }
     }
     if (ts) bubble.appendChild(meta);
     else bubble.classList.add('pb-3');
@@ -329,7 +413,7 @@
     $('chat').innerHTML = '';
     const s = currentSession();
     addBubble('assistant', t('greeting')(subjectName(setup.subject), setup.grade));
-    s.messages.forEach((m) => addBubble(m.role, m.content, { ts: m.ts }));
+    s.messages.forEach((m) => addBubble(m.role, m.content, { ts: m.ts, img: m.img }));
   }
 
   function showNotice(text, ms = 6000) {
@@ -404,12 +488,12 @@
   $('changeSetup').onclick = openSetup;
   $('backBtn').onclick = () => setup && showScreen('home');
   document.querySelectorAll('.tab-btn').forEach((b) => { b.onclick = () => showScreen(b.dataset.tab); });
-  $('newChatBtn').onclick = () => {
+  function startNewChat() {
     if (busy || !currentSession().messages.length) return;
     newSession();
     renderChat();
     $('input').focus();
-  };
+  }
   document.querySelectorAll('.lang-btn').forEach((b) => {
     b.onclick = () => {
       lang = b.dataset.lang;
@@ -446,7 +530,7 @@
       else if (action === 'change') openSetup();
       else if (action === 'new' && setup) {
         if (!onChat()) showScreen('chat');
-        $('newChatBtn').click();
+        startNewChat();
       }
     };
   });
@@ -460,20 +544,113 @@
     e.target.style.height = Math.min(e.target.scrollHeight, 144) + 'px';
   });
 
+  // ---------- photo of a task ----------
+  let pendingPhoto = null; // { mime, data (base64), thumb (data URL) }
+  const plusMenu = $('plusMenu');
+  $('plusBtn').onclick = (e) => { e.stopPropagation(); plusMenu.classList.toggle('hidden'); };
+  document.addEventListener('click', () => plusMenu.classList.add('hidden'));
+  $('newChatAction').onclick = () => { plusMenu.classList.add('hidden'); startNewChat(); };
+  $('photoAction').onclick = () => { plusMenu.classList.add('hidden'); $('photoInput').click(); };
+  function shrinkImage(img, maxSide, quality) {
+    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.naturalWidth * scale);
+    c.height = Math.round(img.naturalHeight * scale);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', quality);
+  }
+  function setPhoto(photo) {
+    pendingPhoto = photo;
+    $('photoChip').classList.toggle('hidden', !photo);
+    $('photoChip').classList.toggle('flex', !!photo);
+    if (photo) $('photoThumb').src = photo.thumb;
+  }
+  $('photoRemove').onclick = () => setPhoto(null);
+  $('photoInput').addEventListener('change', () => {
+    const file = $('photoInput').files[0];
+    $('photoInput').value = '';
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const full = shrinkImage(img, 1600, 0.85);
+      setPhoto({ mime: 'image/jpeg', data: full.split(',')[1], thumb: shrinkImage(img, 360, 0.7) });
+      URL.revokeObjectURL(url);
+      $('input').focus();
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); showNotice(t('photoError'), 4000); };
+    img.src = url;
+  });
+
+  // ---------- voice input (speech recognition) ----------
+  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognizer = null;
+  if (Recognition) $('micBtn').classList.replace('hidden', 'flex');
+  function setMic(on) {
+    $('micBtn').innerHTML = icon(on ? 'square' : 'mic');
+    $('micBtn').classList.toggle('bg-rose-500', on);
+    $('micBtn').classList.toggle('text-white', on);
+    $('micBtn').classList.toggle('animate-pulse', on);
+  }
+  $('micBtn').onclick = () => {
+    if (recognizer) { recognizer.stop(); return; }
+    recognizer = new Recognition();
+    recognizer.lang = lang === 'uz' ? 'uz-UZ' : 'ru-RU';
+    recognizer.interimResults = true;
+    recognizer.continuous = false;
+    const base = $('input').value ? $('input').value.trimEnd() + ' ' : '';
+    recognizer.onresult = (ev) => {
+      const said = Array.from(ev.results).map((r) => r[0].transcript).join('');
+      $('input').value = base + said;
+      $('input').dispatchEvent(new Event('input'));
+    };
+    recognizer.onerror = (ev) => { if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') showNotice(t('micDenied'), 4000); };
+    recognizer.onend = () => { recognizer = null; setMic(false); };
+    setMic(true);
+    showNotice(t('speakNow'), 2500);
+    recognizer.start();
+  };
+
+  // Reads the server's event stream: {type:'delta'|'done'|'error', ...}.
+  async function readStream(r, onDelta) {
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let end;
+      while ((end = buf.indexOf('\n\n')) >= 0) {
+        const line = buf.slice(0, end).trim();
+        buf = buf.slice(end + 2);
+        if (!line.startsWith('data:')) continue;
+        const ev = JSON.parse(line.slice(5));
+        if (ev.type === 'delta') onDelta(ev.text);
+        else return ev;
+      }
+    }
+    return { type: 'error', code: 'ai_error' };
+  }
+
   $('form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const text = $('input').value.trim();
-    if (!text || busy) return;
+    if (busy) return;
+    const photo = pendingPhoto;
+    const text = $('input').value.trim() || (photo ? t('photoDefault') : '');
+    if (!text) return;
     if (remaining() <= 0) { showNotice(t('dailyLimit'), 0); return; }
     if (timerState().breakUntil > Date.now()) return;
+    if (recognizer) recognizer.stop();
 
     const s = currentSession();
-    const userMsg = { role: 'user', content: text, ts: Date.now() };
+    const userMsg = { role: 'user', content: text, ts: Date.now(), ...(photo ? { img: photo.thumb } : {}) };
     s.messages.push(userMsg);
     saveSessions();
     $('input').value = '';
     $('input').style.height = '';
-    addBubble('user', text, { ts: userMsg.ts });
+    setPhoto(null);
+    addBubble('user', text, { ts: userMsg.ts, img: userMsg.img });
     busy = true;
     updateInputState();
     const typing = addBubble('assistant', t('thinking'), { extra: 'animate-pulse text-slate-400' });
@@ -491,13 +668,29 @@
         body: JSON.stringify({
           deviceId,
           lang,
+          stream: true,
           subject: subjectName(setup.subject, 'ru'),
           grade: setup.grade,
           turn: s.messages.filter((m) => m.role === 'user').length,
           messages: s.messages.map(({ role, content }) => ({ role, content })),
+          image: photo ? { mime: photo.mime, data: photo.data } : undefined,
         }),
       });
-      const data = await r.json().catch(() => ({}));
+      let data;
+      if ((r.headers.get('content-type') || '').includes('text/event-stream')) {
+        // Show the answer as it arrives.
+        let shown = '';
+        const live = typing.querySelector('.bubble');
+        data = await readStream(r, (piece) => {
+          shown += piece;
+          live.classList.remove('animate-pulse', 'text-slate-400');
+          live.innerHTML = formatReply(shown);
+          $('chat').scrollTop = $('chat').scrollHeight;
+        });
+        if (data.type === 'error') data = { code: data.code };
+      } else {
+        data = await r.json().catch(() => ({}));
+      }
       typing.remove();
       if (data.reply) {
         const botMsg = { role: 'assistant', content: data.reply, ts: Date.now() };
@@ -531,6 +724,12 @@
       if (!$('input').disabled) $('input').focus();
     }
   });
+
+  // Opens the chat with the photo picker (used by the home screen).
+  function askWithPhoto() {
+    showScreen('chat');
+    $('photoInput').click();
+  }
 
   // ---------- 25-minute timer + 5-minute break ----------
   function timerState() {
@@ -764,7 +963,7 @@
 
   // Shared with learn-ui.js.
   window.Nimi = {
-    t, icon, store, today, postJson, showScreen, openReport, openSetup, subjectName, gradeLabel, formatReply,
+    t, icon, store, today, postJson, showScreen, openReport, openSetup, subjectName, gradeLabel, formatReply, speak, askWithPhoto,
     SUBJECTS,
     get lang() { return lang; },
     get setup() { return setup; },

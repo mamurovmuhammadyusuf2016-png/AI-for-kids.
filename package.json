@@ -4,13 +4,14 @@
   "description": "Nimi AI — ИИ-репетитор для школьников (Google Gemini)",
   "main": "server.js",
   "scripts": {
-    "build": "tailwindcss -i ./src/input.css -o ./public/styles.css --minify",
+    "build": "tailwindcss -i ./src/input.css -o ./public/styles.css --minify && node scripts/copy-katex.js",
     "postinstall": "npm run build",
     "start": "node server.js",
     "dev": "npm run build && node server.js"
   },
   "dependencies": {
     "@tailwindcss/cli": "4.3.3",
+    "katex": "^0.16.22",
     "pg": "^8.23.1",
     "tailwindcss": "4.3.3"
   },

@@ -33,6 +33,7 @@ const MIME = {
   '.jpg': 'image/jpeg',
   '.webp': 'image/webp',
   '.webmanifest': 'application/manifest+json',
+  '.woff2': 'font/woff2',
 };
 
 // userId -> [timestamps of recent questions], for the "asking too often" nudge.
@@ -62,12 +63,12 @@ function sendJson(res, status, data, headers = {}) {
   res.end(JSON.stringify(data));
 }
 
-function readBody(req) {
+function readBody(req, limit = 400000) {
   return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', (chunk) => {
       body += chunk;
-      if (body.length > 200000) {
+      if (body.length > limit) {
         reject(new Error('Body too large'));
         req.destroy();
       }
@@ -128,12 +129,80 @@ async function callModel(model, systemText, contents, timeoutMs, generationConfi
   }
 }
 
+function toContents(messages) {
+  return messages.map((m) => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: m.image ? [{ inlineData: { mimeType: m.image.mime, data: m.image.data } }, { text: m.content }] : [{ text: m.content }],
+  }));
+}
+
+// Streams the answer piece by piece: onDelta(text) for each piece, returns the whole text.
+async function streamModel(model, systemText, contents, timeoutMs, onDelta) {
+  const ctrl = new AbortController();
+  let timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  let text = '';
+  try {
+    const r = await fetch(`${GEMINI_BASE}/${model}:streamGenerateContent?alt=sse`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-goog-api-key': API_KEY },
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: systemText }] }, contents }),
+      signal: ctrl.signal,
+    });
+    if (r.status === 429) throw new AiError('rate_limited', 429);
+    if (!r.ok) {
+      const data = await r.json().catch(() => ({}));
+      console.error(`Gemini ${model} stream error`, r.status, JSON.stringify(data).slice(0, 500));
+      throw new AiError(r.status >= 500 ? 'overloaded' : 'ai_error', r.status);
+    }
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+      let end;
+      while ((end = buf.indexOf('\n\n')) >= 0) {
+        const event = buf.slice(0, end);
+        buf = buf.slice(end + 2);
+        for (const line of event.split('\n')) {
+          if (!line.startsWith('data:')) continue;
+          let json;
+          try { json = JSON.parse(line.slice(5).trim()); } catch { continue; }
+          const piece = (json.candidates?.[0]?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
+          if (!piece) continue;
+          if (!text) { clearTimeout(timer); timer = setTimeout(() => ctrl.abort(), 90000); }
+          text += piece;
+          onDelta(piece);
+        }
+      }
+    }
+    if (!text.trim()) throw new AiError('blocked', 200);
+    return text.trim();
+  } catch (err) {
+    if (err instanceof AiError) throw err;
+    console.error(`Gemini ${model} stream failed`, err.name, err.message);
+    // Nothing shown yet: the fallback model can still answer.
+    throw new AiError(text ? 'ai_error' : 'overloaded', 0);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function generateStream(systemText, messages, onDelta) {
+  const contents = toContents(messages);
+  try {
+    return await streamModel(MODEL, systemText, contents, MODEL_TIMEOUT_MS, onDelta);
+  } catch (err) {
+    if (!['overloaded', 'rate_limited'].includes(err.code) || !FALLBACK_MODEL) throw err;
+    console.log(`Main model ${err.code}, streaming from ${FALLBACK_MODEL}`);
+    return streamModel(FALLBACK_MODEL, systemText, contents, FALLBACK_TIMEOUT_MS, onDelta);
+  }
+}
+
 // opts.schema asks Gemini for JSON in that shape; opts.slow allows more time (big exercise sets).
 async function generate(systemText, messages, opts = {}) {
-  const contents = messages.map((m) => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }],
-  }));
+  const contents = toContents(messages);
   const config = opts.schema ? { responseMimeType: 'application/json', responseSchema: opts.schema } : undefined;
   const scale = opts.slow ? 2 : 1;
   try {
@@ -163,6 +232,13 @@ async function handleChat(req, res, body, user) {
   if (!messages.length || messages[messages.length - 1].role !== 'user') {
     return sendJson(res, 400, { code: 'bad_request' });
   }
+  const image = body.image;
+  if (image) {
+    const okImage = ['image/jpeg', 'image/png', 'image/webp'].includes(image.mime) &&
+      typeof image.data === 'string' && image.data.length < 3400000 && /^[A-Za-z0-9+/=]+$/.test(image.data);
+    if (!okImage) return sendJson(res, 400, { code: 'bad_image' });
+    messages[messages.length - 1].image = { mime: image.mime, data: image.data };
+  }
 
   const day = today();
   if ((await usedToday(user.id, day)) >= DAILY_LIMIT) {
@@ -183,11 +259,20 @@ async function handleChat(req, res, body, user) {
     verified: verifyStudentMessages(userTexts),
   });
 
+  // Streaming: the student sees the answer appear word by word (Server-Sent Events).
+  let send = null;
+  if (body.stream) {
+    res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no' });
+    send = (obj) => res.write(`data: ${JSON.stringify(obj)}\n\n`);
+  }
   let reply;
   try {
-    reply = stripEmoji(await generate(systemText, messages));
+    const raw = send ? await generateStream(systemText, messages, (text) => send({ type: 'delta', text })) : await generate(systemText, messages);
+    reply = stripEmoji(raw);
   } catch (err) {
-    return aiErrorResponse(res, err);
+    if (!send) return aiErrorResponse(res, err);
+    send({ type: 'error', code: ['rate_limited', 'blocked'].includes(err.code) ? err.code : 'ai_error' });
+    return res.end();
   }
 
   // Function 3: re-check the model's own arithmetic in code.
@@ -201,13 +286,10 @@ async function handleChat(req, res, body, user) {
 
   const used = await countQuestion(user.id, day);
   recent.push(now);
-  sendJson(res, 200, {
-    reply,
-    remaining: Math.max(0, DAILY_LIMIT - used),
-    limit: DAILY_LIMIT,
-    tooFrequent,
-    corrected: wrong.length > 0,
-  });
+  const result = { reply, remaining: Math.max(0, DAILY_LIMIT - used), limit: DAILY_LIMIT, tooFrequent, corrected: wrong.length > 0 };
+  if (!send) return sendJson(res, 200, result);
+  send({ type: 'done', ...result });
+  res.end();
 }
 
 async function handleReport(req, res, body) {
@@ -259,6 +341,16 @@ const LEARN_KINDS = {
     schema: learn.TASK_SCHEMA,
     shape: (d) => ({ tasks: learn.cleanTasks(d, 10) }),
   }),
+  exam: (b) => ({
+    prompt: learn.examPrompt(b),
+    schema: learn.TASK_SCHEMA,
+    shape: (d) => ({ tasks: learn.cleanTasks(d, 15) }),
+  }),
+  olympiad: (b) => ({
+    prompt: learn.olympiadPrompt(b),
+    schema: learn.TASK_SCHEMA,
+    shape: (d) => ({ tasks: learn.cleanTasks(d, 6) }),
+  }),
   reading: (b) => ({
     prompt: learn.readingPrompt(b),
     schema: learn.READING_SCHEMA,
@@ -296,6 +388,7 @@ function learnParams(body) {
     topic: cleanText(body.topic, 80),
     learn: pick(body.learn, ['en', 'ru', 'uz'], 'en'),
     native: pick(body.native, ['ru', 'uz'], 'ru'),
+    examType: pick(body.examType, ['final', 'dtm'], 'final'),
     topics: Array.isArray(body.topics) ? body.topics.map((x) => cleanText(x, 60)).filter(Boolean).slice(0, 12) : [],
   };
 }
@@ -327,7 +420,14 @@ async function handleLearn(req, res, body, user, kind) {
   let data;
   try {
     const text = await generate(spec.prompt, [{ role: 'user', content: 'Составь материал по инструкции.' }], { schema: spec.schema, slow: true });
-    data = spec.shape(JSON.parse(text));
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      // "\sqrt", "\left" etc. are not valid JSON escapes: double such backslashes and retry.
+      parsed = JSON.parse(text.replace(/\\(["\\/bfnrtu]?)/g, (m, c) => (c ? m : '\\\\')));
+    }
+    data = spec.shape(learn.repairLatex(parsed));
   } catch (err) {
     if (err instanceof SyntaxError) return sendJson(res, 502, { code: 'ai_error' });
     return aiErrorResponse(res, err);
@@ -376,7 +476,8 @@ async function handleApiPost(req, res, urlPath) {
   if (!sameOrigin(req)) return sendJson(res, 403, { code: 'forbidden' });
   let body;
   try {
-    body = JSON.parse(await readBody(req)) || {};
+    // A chat message may carry a photo of the task.
+    body = JSON.parse(await readBody(req, urlPath === '/api/chat' ? 3500000 : 400000)) || {};
   } catch {
     return sendJson(res, 400, { code: 'bad_request' });
   }

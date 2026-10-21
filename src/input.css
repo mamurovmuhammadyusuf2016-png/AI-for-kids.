@@ -19,3 +19,4 @@ html { color-scheme: dark; }
 #chat::-webkit-scrollbar { width: 0; }
 /* Google button iframe would get a white backdrop under the dark color scheme. */
 #googleBtn iframe { color-scheme: light; }
+.bubble .katex { font-size: 1.12em; }
