@@ -4,6 +4,7 @@ const path = require('path');
 const { buildSystemPrompt, REPORT_PROMPT } = require('./prompt');
 const { verifyStudentMessages, findWrongClaims, fmt } = require('./math');
 const auth = require('./auth');
+const learn = require('./learn');
 
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.AI_API_KEY;
@@ -15,6 +16,10 @@ const MODEL_TIMEOUT_MS = 20000;
 const FALLBACK_TIMEOUT_MS = 40000;
 const MAX_HISTORY = 20;
 const DAILY_LIMIT = 30;
+// Generated exercise sets (training, tests, reading, cards) per day.
+const LEARN_LIMIT = 20;
+const DATA_KEYS = new Set(['progress', 'diary', 'cards']);
+const MAX_DATA_BYTES = 300000;
 const FREQUENT_WINDOW_MS = 3 * 60 * 1000;
 const FREQUENT_COUNT = 5;
 
@@ -92,14 +97,14 @@ class AiError extends Error {
   }
 }
 
-async function callModel(model, systemText, contents, timeoutMs) {
+async function callModel(model, systemText, contents, timeoutMs, generationConfig) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const r = await fetch(`${GEMINI_BASE}/${model}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-goog-api-key': API_KEY },
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: systemText }] }, contents }),
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: systemText }] }, contents, generationConfig }),
       signal: ctrl.signal,
     });
     const data = await r.json().catch(() => ({}));
@@ -123,17 +128,20 @@ async function callModel(model, systemText, contents, timeoutMs) {
   }
 }
 
-async function generate(systemText, messages) {
+// opts.schema asks Gemini for JSON in that shape; opts.slow allows more time (big exercise sets).
+async function generate(systemText, messages, opts = {}) {
   const contents = messages.map((m) => ({
     role: m.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: m.content }],
   }));
+  const config = opts.schema ? { responseMimeType: 'application/json', responseSchema: opts.schema } : undefined;
+  const scale = opts.slow ? 2 : 1;
   try {
-    return await callModel(MODEL, systemText, contents, MODEL_TIMEOUT_MS);
+    return await callModel(MODEL, systemText, contents, MODEL_TIMEOUT_MS * scale, config);
   } catch (err) {
     if (!['overloaded', 'rate_limited'].includes(err.code) || !FALLBACK_MODEL) throw err;
     console.log(`Main model ${err.code}, using ${FALLBACK_MODEL}`);
-    return callModel(FALLBACK_MODEL, systemText, contents, FALLBACK_TIMEOUT_MS);
+    return callModel(FALLBACK_MODEL, systemText, contents, FALLBACK_TIMEOUT_MS * scale, config);
   }
 }
 
@@ -239,6 +247,110 @@ function serveStatic(res, urlPath) {
   return true;
 }
 
+// ---------- learning: generated exercises ----------
+const LEARN_KINDS = {
+  training: (b) => ({
+    prompt: learn.trainingPrompt(b),
+    schema: learn.TASK_SCHEMA,
+    shape: (d) => ({ tasks: learn.cleanTasks(d, 10) }),
+  }),
+  test: (b) => ({
+    prompt: learn.testPrompt(b),
+    schema: learn.TASK_SCHEMA,
+    shape: (d) => ({ tasks: learn.cleanTasks(d, 10) }),
+  }),
+  reading: (b) => ({
+    prompt: learn.readingPrompt(b),
+    schema: learn.READING_SCHEMA,
+    shape: (d) => ({
+      title: learn.str(d.title, 120),
+      text: learn.str(d.text, 4000),
+      tasks: learn.cleanTasks({ tasks: (d.questions || []).map((q) => ({ ...q, type: 'choice', topic: 'reading', rule: '' })) }, 5),
+    }),
+  }),
+  cards: (b) => ({
+    prompt: learn.cardsPrompt(b),
+    schema: learn.CARDS_SCHEMA,
+    shape: (d) => ({
+      title: learn.str(d.title, 80),
+      words: (Array.isArray(d.words) ? d.words : [])
+        .map((w) => ({ front: learn.str(w.front, 60), back: learn.str(w.back, 80), example: learn.str(w.example, 200) }))
+        .filter((w) => w.front && w.back)
+        .slice(0, 20),
+    }),
+  }),
+  topics: (b) => ({
+    prompt: learn.topicsPrompt(b),
+    schema: learn.TOPICS_SCHEMA,
+    shape: (d) => ({ topics: (Array.isArray(d.topics) ? d.topics : []).map((x) => learn.str(x, 60)).filter(Boolean).slice(0, 12) }),
+  }),
+};
+
+function learnParams(body) {
+  const pick = (v, allowed, dflt) => (allowed.includes(v) ? v : dflt);
+  return {
+    subject: cleanText(body.subject, 60) || 'Математика',
+    grade: Math.min(11, Math.max(1, parseInt(body.grade, 10) || 5)),
+    lang: pick(body.lang, ['ru', 'uz'], 'ru'),
+    level: Math.min(5, Math.max(1, parseInt(body.level, 10) || 2)),
+    topic: cleanText(body.topic, 80),
+    learn: pick(body.learn, ['en', 'ru', 'uz'], 'en'),
+    native: pick(body.native, ['ru', 'uz'], 'ru'),
+    topics: Array.isArray(body.topics) ? body.topics.map((x) => cleanText(x, 60)).filter(Boolean).slice(0, 12) : [],
+  };
+}
+
+async function generationsToday(userId, day) {
+  if (auth.enabled()) return auth.generationsToday(userId, day);
+  const u = guestUsage.get(`learn:${userId}`);
+  return u && u.day === day ? u.count : 0;
+}
+
+async function countGeneration(userId, day) {
+  if (auth.enabled()) return auth.countGeneration(userId, day);
+  const count = (await generationsToday(userId, day)) + 1;
+  guestUsage.set(`learn:${userId}`, { day, count });
+  return count;
+}
+
+async function handleLearn(req, res, body, user, kind) {
+  if (!API_KEY) return sendJson(res, 500, { code: 'ai_error' });
+  const params = learnParams(body);
+  if (kind === 'topics') {
+    const cached = await auth.cachedTopics(params.subject, params.grade, params.lang);
+    if (cached) return sendJson(res, 200, { topics: cached });
+  }
+  const day = today();
+  if ((await generationsToday(user.id, day)) >= LEARN_LIMIT) return sendJson(res, 429, { code: 'learn_limit' });
+
+  const spec = LEARN_KINDS[kind](params);
+  let data;
+  try {
+    const text = await generate(spec.prompt, [{ role: 'user', content: 'Составь материал по инструкции.' }], { schema: spec.schema, slow: true });
+    data = spec.shape(JSON.parse(text));
+  } catch (err) {
+    if (err instanceof SyntaxError) return sendJson(res, 502, { code: 'ai_error' });
+    return aiErrorResponse(res, err);
+  }
+  const empty = (data.tasks && !data.tasks.length) || (data.words && !data.words.length) || (data.topics && !data.topics.length);
+  if (empty) return sendJson(res, 502, { code: 'ai_error' });
+  if (kind === 'topics') await auth.cacheTopics(params.subject, params.grade, params.lang, data.topics);
+  else await countGeneration(user.id, day);
+  sendJson(res, 200, data);
+}
+
+// ---------- learning: saved progress, diary and cards ----------
+async function handleData(req, res, body, user) {
+  if (!auth.enabled()) return sendJson(res, 503, { code: 'auth_unavailable' });
+  if (body.key === undefined) return sendJson(res, 200, await auth.getData(user.id));
+  if (!DATA_KEYS.has(body.key) || typeof body.value !== 'object' || body.value === null) {
+    return sendJson(res, 400, { code: 'bad_request' });
+  }
+  if (JSON.stringify(body.value).length > MAX_DATA_BYTES) return sendJson(res, 413, { code: 'too_large' });
+  await auth.setData(user.id, body.key, body.value);
+  sendJson(res, 200, { ok: true });
+}
+
 async function handleMe(req, res) {
   const user = await auth.getUser(req);
   if (!user) return sendJson(res, 200, { user: null });
@@ -276,7 +388,10 @@ async function handleApiPost(req, res, urlPath) {
     const { user, cookie } = await action(req, body);
     return sendJson(res, 200, { user: auth.publicUser(user) }, { 'Set-Cookie': cookie });
   }
-  const handler = { '/api/chat': handleChat, '/api/report': handleReport }[urlPath];
+  const learnKind = urlPath.startsWith('/api/learn/') && urlPath.slice('/api/learn/'.length);
+  const handler = Object.hasOwn(LEARN_KINDS, learnKind || '')
+    ? (q, r, b, u) => handleLearn(q, r, b, u, learnKind)
+    : { '/api/chat': handleChat, '/api/report': handleReport, '/api/data': handleData }[urlPath];
   if (!handler) return sendJson(res, 404, { code: 'not_found' });
   // Without a database the app runs in guest mode, limited per device.
   const deviceId = cleanText(body.deviceId, 64);

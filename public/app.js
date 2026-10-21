@@ -41,6 +41,14 @@
       reportShort: 'Отчёт',
       menuChange: 'Сменить предмет или класс',
       menuNew: 'Новый чат',
+      language: 'Язык',
+      share: 'Поделиться',
+      back: 'Назад',
+      questionsLeft: 'Вопросов осталось:',
+      tabHome: 'Главная',
+      tabChat: 'Чат',
+      tabProgress: 'Прогресс',
+      tabDiary: 'Дневник',
       placeholder: 'Напиши задачу или вопрос…',
       privacy: 'Не пиши своё имя, адрес, школу и телефон.',
       greeting: (s, g) => `Привет! Сегодня ${s}, ${g} класс. Напиши задачу или вопрос — разберём вместе. Готовый ответ я не дам, но помогу дойти до него самому.`,
@@ -98,6 +106,14 @@
       reportShort: 'Hisobot',
       menuChange: "Fan yoki sinfni o'zgartirish",
       menuNew: 'Yangi chat',
+      language: 'Til',
+      share: 'Ulashish',
+      back: 'Orqaga',
+      questionsLeft: 'Qolgan savollar:',
+      tabHome: 'Bosh sahifa',
+      tabChat: 'Chat',
+      tabProgress: 'Natijalar',
+      tabDiary: 'Kundalik',
       placeholder: 'Masala yoki savolingni yoz…',
       privacy: 'Ismingni, manzilingni, maktabingni va telefoningni yozma.',
       greeting: (s, g) => `Salom! Bugun ${s}, ${g}-sinf. Masala yoki savolingni yoz — birga hal qilamiz. Tayyor javob bermayman, lekin o'zing topishingga yordam beraman.`,
@@ -146,7 +162,7 @@
 
   // ---------- storage (best-effort; works without it) ----------
   // Chats, subject and counters are kept per account, so children sharing a device don't mix.
-  const ACCOUNT_KEYS = new Set(['setup', 'sessions', 'usage']);
+  const ACCOUNT_KEYS = new Set(['setup', 'sessions', 'usage', 'learn']);
   let account = '';
   const storageKey = (key) => 'tutor.' + (ACCOUNT_KEYS.has(key) ? `u:${account}.` : '') + key;
   const store = {
@@ -217,7 +233,8 @@
     document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
     document.querySelectorAll('.lang-btn').forEach((b) => {
       const on = b.dataset.lang === lang;
-      b.className = 'lang-btn min-h-12 min-w-12 rounded-xl px-3 text-[15px] font-medium transition ' +
+      const size = b.classList.contains('lang-sm') ? 'lang-sm min-h-9 min-w-10 rounded-lg px-2 text-sm' : 'min-h-12 min-w-12 rounded-xl px-3 text-[15px]';
+      b.className = `lang-btn ${size} font-medium transition ` +
         (on ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/30' : 'text-slate-300 hover:text-white');
       b.setAttribute('aria-pressed', on);
     });
@@ -266,16 +283,8 @@
   }
 
   function renderStatus() {
-    if (setup) {
-      $('subjectIcon').innerHTML = icon(subjectInfo(setup.subject)[1]);
-      $('setupSubject').textContent = subjectName(setup.subject);
-      $('setupGrade').textContent = gradeLabel(setup.grade);
-    }
-    const left = remaining();
-    $('limitText').textContent = `${left}/${DAILY_LIMIT}`;
-    $('limitBar').style.width = `${(left / DAILY_LIMIT) * 100}%`;
-    $('limitBar').classList.toggle('bg-amber-400', left <= 5);
-    $('limitBar').classList.toggle('bg-brand-500', left > 5);
+    if (setup) $('setupChip').textContent = `${subjectName(setup.subject)} · ${setup.grade} ${lang === 'uz' ? 'sinf' : 'кл.'}`;
+    $('limitText').textContent = `${remaining()}/${DAILY_LIMIT}`;
   }
 
   function formatReply(text) {
@@ -340,15 +349,33 @@
     $('send').disabled = blocked;
   }
 
-  function showScreen(name) {
-    $('auth').classList.toggle('hidden', name !== 'auth');
+  // Screen name -> element id. Tabs show the bottom navigation.
+  const SCREENS = { auth: 'auth', setup: 'setup', home: 'home', chat: 'chatScreen', activity: 'activity', progress: 'progress', diary: 'diary' };
+  const TAB_OF = { home: 'home', activity: 'home', chat: 'chat', progress: 'progress', diary: 'diary' };
+  let currentScreen = '';
+  function showScreen(name, arg) {
+    currentScreen = name;
+    for (const [key, id] of Object.entries(SCREENS)) {
+      $(id).classList.toggle('hidden', key !== name);
+      if (['chat', 'home', 'activity', 'progress', 'diary'].includes(key)) $(id).classList.toggle('flex', key === name);
+    }
+    const inApp = !!TAB_OF[name];
     $('menuWrap').classList.toggle('hidden', name === 'auth');
-    $('setup').classList.toggle('hidden', name !== 'setup');
-    $('chatScreen').classList.toggle('hidden', name !== 'chat');
-    $('chatScreen').classList.toggle('flex', name === 'chat');
-    $('statusBar').classList.toggle('hidden', name !== 'chat');
-    $('statusBar').classList.toggle('flex', name === 'chat');
-    $('backBtn').classList.toggle('invisible', name === 'auth' || !setup);
+    $('tabbar').classList.toggle('hidden', !inApp);
+    $('tabbar').classList.toggle('grid', inApp);
+    $('timerPill').classList.toggle('hidden', !inApp);
+    $('timerPill').classList.toggle('flex', inApp);
+    $('changeSetup').classList.toggle('hidden', !inApp);
+    $('changeSetup').classList.toggle('flex', inApp);
+    $('subtitleLine').classList.toggle('hidden', inApp);
+    $('backBtn').classList.toggle('invisible', !setup);
+    document.querySelectorAll('.tab-btn').forEach((b) => {
+      const on = b.dataset.tab === TAB_OF[name];
+      b.className = 'tab-btn flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-[11px] font-medium transition ' +
+        (on ? 'text-brand-400' : 'text-slate-400 hover:text-white');
+      b.setAttribute('aria-current', on ? 'page' : 'false');
+    });
+    if (inApp && name !== 'chat') window.NimiLearn?.render(name, arg);
     if (name === 'chat') {
       renderChat();
       renderStatus();
@@ -356,7 +383,7 @@
       updateInputState();
     }
   }
-  const onChat = () => !$('chatScreen').classList.contains('hidden');
+  const onChat = () => currentScreen === 'chat';
 
   // ---------- setup ----------
   $('startBtn').onclick = () => {
@@ -365,8 +392,8 @@
     store.set('setup', setup);
     const cur = currentSession();
     if (changed || !cur || cur.date !== today()) newSession();
-    showScreen('chat');
-    $('input').focus();
+    renderStatus();
+    showScreen('home');
   };
   function openSetup() {
     pendingSubject = setup && setup.subject;
@@ -375,7 +402,8 @@
     showScreen('setup');
   }
   $('changeSetup').onclick = openSetup;
-  $('backBtn').onclick = () => (onChat() ? openSetup() : setup && showScreen('chat'));
+  $('backBtn').onclick = () => setup && showScreen('home');
+  document.querySelectorAll('.tab-btn').forEach((b) => { b.onclick = () => showScreen(b.dataset.tab); });
   $('newChatBtn').onclick = () => {
     if (busy || !currentSession().messages.length) return;
     newSession();
@@ -388,18 +416,19 @@
       store.set('lang', lang);
       applyLang();
       if (onChat()) renderChat();
+      else if (TAB_OF[currentScreen]) showScreen(currentScreen);
     };
   });
 
   // ---------- header: share + menu ----------
-  $('shareBtn').onclick = async () => {
+  async function share() {
     const data = { title: t('title'), text: t('subtitle'), url: location.origin };
     try {
       if (navigator.share) return await navigator.share(data);
       await navigator.clipboard.writeText(data.url);
       if (onChat()) showNotice(t('linkCopied'), 2500);
     } catch {}
-  };
+  }
   const menu = $('menu');
   const closeMenu = () => menu.classList.add('hidden');
   $('menuBtn').onclick = (e) => {
@@ -413,6 +442,7 @@
       const action = item.dataset.action;
       if (action === 'logout') logout();
       else if (action === 'report') openReport();
+      else if (action === 'share') share();
       else if (action === 'change') openSetup();
       else if (action === 'new' && setup) {
         if (!onChat()) showScreen('chat');
@@ -475,6 +505,7 @@
         saveSessions();
         addBubble('assistant', data.reply, { ts: botMsg.ts });
         setRemaining(data.remaining);
+        window.NimiLearn?.markDay();
         if (data.tooFrequent) showNotice(t('tooFrequent'));
       } else if (data.code === 'unauthorized') {
         s.messages.pop();
@@ -578,7 +609,6 @@
     $('reportModal').classList.add('hidden');
     $('reportModal').classList.remove('flex');
   }
-  $('reportBtn').onclick = openReport;
   $('closeReport').onclick = closeReport;
   $('reportModal').addEventListener('click', (e) => { if (e.target === $('reportModal')) closeReport(); });
   $('printReport').onclick = () => {
@@ -591,7 +621,6 @@
     w.print();
   };
 
-  // ---------- start ----------
   // ---------- accounts ----------
   function renderAuthMode() {
     const reg = authMode === 'register';
@@ -638,7 +667,8 @@
     $('authForm').reset();
     showAuthError(null);
     renderSetupOptions();
-    showScreen(setup && currentSession() ? 'chat' : 'setup');
+    renderStatus();
+    Promise.resolve(window.NimiLearn?.load()).finally(() => showScreen(setup && currentSession() ? 'home' : 'setup'));
   }
 
   function signedOut() {
@@ -731,6 +761,18 @@
       width: Math.min(400, Math.max(200, $('authForm').offsetWidth || 320)),
     });
   }
+
+  // Shared with learn-ui.js.
+  window.Nimi = {
+    t, icon, store, today, postJson, showScreen, openReport, openSetup, subjectName, gradeLabel, formatReply,
+    SUBJECTS,
+    get lang() { return lang; },
+    get setup() { return setup; },
+    get user() { return user; },
+    get account() { return account; },
+    get accounts() { return !!config.accounts; },
+    get sessions() { return sessions; },
+  };
 
   // ---------- start ----------
   document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = icon(el.dataset.icon); });

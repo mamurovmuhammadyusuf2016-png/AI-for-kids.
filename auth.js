@@ -58,6 +58,26 @@ async function init() {
       count INT NOT NULL DEFAULT 0,
       PRIMARY KEY (user_id, day)
     );
+    CREATE TABLE IF NOT EXISTS learn_usage (
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      day DATE NOT NULL,
+      count INT NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, day)
+    );
+    CREATE TABLE IF NOT EXISTS user_data (
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      key TEXT NOT NULL,
+      value JSONB NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (user_id, key)
+    );
+    CREATE TABLE IF NOT EXISTS topic_cache (
+      subject TEXT NOT NULL,
+      grade INT NOT NULL,
+      lang TEXT NOT NULL,
+      topics JSONB NOT NULL,
+      PRIMARY KEY (subject, grade, lang)
+    );
   `);
   console.log('Accounts database ready');
 }
@@ -253,7 +273,57 @@ async function countQuestion(userId, day) {
   return rows[0].count;
 }
 
+// ---------- learning data ----------
+// Daily counter for generated exercises (separate from chat questions).
+async function countGeneration(userId, day) {
+  const { rows } = await requirePool().query(
+    `INSERT INTO learn_usage (user_id, day, count) VALUES ($1, $2, 1)
+     ON CONFLICT (user_id, day) DO UPDATE SET count = learn_usage.count + 1 RETURNING count`,
+    [userId, day],
+  );
+  return rows[0].count;
+}
+
+async function generationsToday(userId, day) {
+  const { rows } = await requirePool().query('SELECT count FROM learn_usage WHERE user_id = $1 AND day = $2', [userId, day]);
+  return rows[0]?.count || 0;
+}
+
+async function getData(userId) {
+  const { rows } = await requirePool().query('SELECT key, value FROM user_data WHERE user_id = $1', [userId]);
+  return Object.fromEntries(rows.map((r) => [r.key, r.value]));
+}
+
+async function setData(userId, key, value) {
+  await requirePool().query(
+    `INSERT INTO user_data (user_id, key, value, updated_at) VALUES ($1, $2, $3, now())
+     ON CONFLICT (user_id, key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+    [userId, key, JSON.stringify(value)],
+  );
+}
+
+async function cachedTopics(subject, grade, lang) {
+  if (!pool) return null;
+  const { rows } = await pool.query('SELECT topics FROM topic_cache WHERE subject = $1 AND grade = $2 AND lang = $3', [subject, grade, lang]);
+  return rows[0]?.topics || null;
+}
+
+async function cacheTopics(subject, grade, lang, topics) {
+  if (!pool) return;
+  await pool.query(
+    `INSERT INTO topic_cache (subject, grade, lang, topics) VALUES ($1, $2, $3, $4)
+     ON CONFLICT (subject, grade, lang) DO UPDATE SET topics = EXCLUDED.topics`,
+    [subject, grade, lang, JSON.stringify(topics)],
+  );
+}
+
 module.exports = {
+  countGeneration,
+  generationsToday,
+  getData,
+  setData,
+  cachedTopics,
+  cacheTopics,
   AuthError,
   init,
   getUser,
