@@ -25,6 +25,8 @@ const PRICE_UZS = Number(process.env.PRICE_UZS) || 45000;
 const CONTACT_TELEGRAM = (process.env.CONTACT_TELEGRAM || '').replace(/^@/, '');
 const CONTACT_PHONE = process.env.CONTACT_PHONE || '';
 const PAYMENT_CARD = process.env.PAYMENT_CARD || '';
+// Lets Claude grant access from the chat ("выдай подписку ..."): header X-Admin-Key.
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 const ADMIN_EMAILS = new Set((process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean));
 // Free without a subscription: word cards (and the topic list), games and diary run in the browser.
 const FREE_PATHS = new Set(['/api/learn/cards', '/api/learn/topics', '/api/data', '/api/subscribe']);
@@ -460,7 +462,13 @@ async function handleData(req, res, body, user) {
   sendJson(res, 200, { ok: true });
 }
 
-const isAdmin = (user) => !!user?.email && ADMIN_EMAILS.has(user.email);
+const isAdmin = (user) => !!user?.apiAdmin || (!!user?.email && ADMIN_EMAILS.has(user.email));
+
+function hasAdminKey(req) {
+  const given = Buffer.from(String(req.headers['x-admin-key'] || ''));
+  const key = Buffer.from(ADMIN_API_KEY);
+  return key.length >= 24 && given.length === key.length && require('crypto').timingSafeEqual(given, key);
+}
 
 async function handleMe(req, res) {
   const user = await auth.getUser(req);
@@ -476,7 +484,8 @@ async function handleMe(req, res) {
 // ---------- subscription requests and admin ----------
 async function handleSubscribe(req, res, body, user) {
   if (!auth.enabled()) return sendJson(res, 503, { code: 'auth_unavailable' });
-  const months = [1, 3, 6, 12].includes(Number(body.months)) ? Number(body.months) : 1;
+  // months = 0 asks for the free week.
+  const months = [0, 1, 3, 6, 12].includes(Number(body.months)) ? Number(body.months) : 1;
   const request = await auth.requestSubscription(user.id, months);
   sendJson(res, 200, { request: { id: request.id, months: request.months }, price: PRICE_UZS * request.months });
 }
@@ -485,9 +494,9 @@ async function handleAdmin(req, res, body, user, action) {
   if (!isAdmin(user)) return sendJson(res, 403, { code: 'forbidden' });
   if (action === 'requests') return sendJson(res, 200, { requests: await auth.listRequests() });
   if (action === 'grant') {
-    const months = Math.min(12, Math.max(1, parseInt(body.months, 10) || 1));
+    const months = Number(body.months) === 0 ? 0 : Math.min(12, Math.max(1, parseInt(body.months, 10) || 1));
     const granted = await auth.grantMonths(cleanText(body.email, 254), months, parseInt(body.requestId, 10) || null);
-    return sendJson(res, 200, { email: granted.email, until: granted.premium_until });
+    return sendJson(res, 200, { email: granted.email, until: granted.premium_until, kind: granted.plan_kind });
   }
   if (action === 'reject') {
     await auth.rejectRequest(parseInt(body.requestId, 10));
@@ -537,7 +546,8 @@ async function handleApiPost(req, res, urlPath) {
   // Without a database the app runs in guest mode, limited per device.
   const deviceId = cleanText(body.deviceId, 64);
   if (!auth.enabled() && !deviceId) return sendJson(res, 400, { code: 'bad_request' });
-  const user = auth.enabled() ? await auth.getUser(req) : { id: `device:${deviceId}` };
+  const viaKey = urlPath.startsWith('/api/admin/') && hasAdminKey(req);
+  const user = viaKey ? { id: 0, apiAdmin: true } : auth.enabled() ? await auth.getUser(req) : { id: `device:${deviceId}` };
   if (!user) return sendJson(res, 401, { code: 'unauthorized' });
   // After the free week only cards, games and the diary stay open (admins always have access).
   const locked = auth.enabled() && !FREE_PATHS.has(urlPath) && !urlPath.startsWith('/api/admin/') && !isAdmin(user) && !auth.plan(user).active;

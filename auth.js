@@ -72,6 +72,7 @@ async function init() {
       PRIMARY KEY (user_id, key)
     );
     ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMPTZ;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_kind TEXT;
     CREATE TABLE IF NOT EXISTS payment_requests (
       id BIGSERIAL PRIMARY KEY,
       user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -162,7 +163,7 @@ async function getUser(req) {
   const token = parseCookies(req)[SESSION_COOKIE];
   if (!token) return null;
   const { rows } = await pool.query(
-    `SELECT u.id, u.email, u.created_at, u.premium_until,
+    `SELECT u.id, u.email, u.created_at, u.premium_until, u.plan_kind,
             u.password_hash IS NOT NULL AS has_password, u.google_sub IS NOT NULL AS has_google
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = $1 AND s.expires_at > now()`,
@@ -171,16 +172,14 @@ async function getUser(req) {
   return rows[0] || null;
 }
 
-// ---------- subscription: free trial after sign-up, then paid months ----------
+// ---------- subscription: the owner grants a free week or paid months by hand ----------
 const TRIAL_DAYS = 7;
-const DAY_MS = 24 * 3600 * 1000;
 
+// never: no free week or subscription was ever given; trial: the current access is the free week.
 function plan(u) {
-  if (!u.created_at) return { active: true, trial: true, until: null };
-  const trialEnd = new Date(u.created_at).getTime() + TRIAL_DAYS * DAY_MS;
-  const paidEnd = u.premium_until ? new Date(u.premium_until).getTime() : 0;
-  const until = Math.max(trialEnd, paidEnd);
-  return { active: until > Date.now(), trial: paidEnd < trialEnd, until: new Date(until).toISOString() };
+  if (!u.created_at) return { active: true, trial: false, never: false, until: null };
+  const until = u.premium_until ? new Date(u.premium_until).getTime() : 0;
+  return { active: until > Date.now(), trial: u.plan_kind === 'trial', never: !until, until: until ? new Date(until).toISOString() : null };
 }
 
 function publicUser(u) {
@@ -208,21 +207,21 @@ async function listRequests() {
   return rows;
 }
 
-// Adds paid months after the current end (or from now if it has passed).
+// Adds access after the current end (or from now if it has passed).
+// months = 0 is the free week; otherwise paid months of 30 days.
 async function grantMonths(email, months, requestId) {
   const db = requirePool();
   const { rows } = await db.query(
-    `UPDATE users SET premium_until = GREATEST(COALESCE(premium_until, now()), now(), created_at + make_interval(days => ${TRIAL_DAYS}))
-                                      + make_interval(days => $2)
-      WHERE email = $1 RETURNING id, email, premium_until`,
-    [normalizeEmail(email), months * 30],
+    `UPDATE users SET premium_until = GREATEST(COALESCE(premium_until, now()), now()) + make_interval(days => $2), plan_kind = $3
+      WHERE email = $1 RETURNING id, email, premium_until, plan_kind`,
+    [normalizeEmail(email), months ? months * 30 : TRIAL_DAYS, months ? 'paid' : 'trial'],
   );
   if (!rows.length) throw new AuthError('user_not_found', 404);
   // Close the request it pays for, or every open request of this student.
   if (requestId) {
-    await db.query(`UPDATE payment_requests SET status = 'paid', resolved_at = now() WHERE id = $1`, [requestId]);
+    await db.query(`UPDATE payment_requests SET status = $2, resolved_at = now() WHERE id = $1`, [requestId, months ? 'paid' : 'granted']);
   } else {
-    await db.query(`UPDATE payment_requests SET status = 'paid', resolved_at = now() WHERE user_id = $1 AND status = 'pending'`, [rows[0].id]);
+    await db.query(`UPDATE payment_requests SET status = $2, resolved_at = now() WHERE user_id = $1 AND status = 'pending'`, [rows[0].id, months ? 'paid' : 'granted']);
   }
   return rows[0];
 }

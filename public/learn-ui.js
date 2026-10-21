@@ -53,8 +53,16 @@
         trial: (n) => `Бесплатная неделя: осталось ${n} ${plural(n, 'день', 'дня', 'дней')}`,
         active: (d) => `Подписка активна до ${d}`,
         ending: (n) => `Подписка закончится через ${n} ${plural(n, 'день', 'дня', 'дней')} — не забудь продлить`,
-        expired: 'Бесплатная неделя закончилась',
-        expiredText: 'Карточки, игры и дневник по-прежнему открыты. Чтобы снова пользоваться чатом и заданиями, оформи подписку.',
+        expired: 'Подписка закончилась',
+        expiredText: 'Карточки, игры и дневник по-прежнему открыты. Чтобы снова пользоваться чатом и заданиями, продли подписку.',
+        none: 'Открой все разделы',
+        noneText: 'Напиши нам — подключим бесплатную неделю. Карточки, игры и дневник уже открыты.',
+        trialAsk: 'Получить бесплатную неделю',
+        trialTitle: 'Бесплатная неделя',
+        trialText: 'Напиши или позвони нам — мы познакомимся и включим тебе 7 дней со всеми разделами бесплатно.',
+        trialMessage: (id, email) => `Здравствуйте! Хочу бесплатную неделю Nimi. Заявка №${id}, аккаунт: ${email}`,
+        trialStep: 'Напиши или позвони — включим бесплатную неделю:',
+        orPaid: 'Или сразу оформи подписку:',
         months: 'На сколько месяцев?',
         monthLabel: (m) => `${m} мес.`,
         order: 'Оформить подписку',
@@ -77,13 +85,14 @@
         title: 'Админка',
         pending: 'Заявки',
         none: 'Новых заявок нет.',
-        grant: (m) => `Включить ${m} мес.`,
+        grant: (m) => (m ? `Включить ${m} мес.` : 'Включить неделю'),
         enable: 'Включить',
+        week: 'Бесплатная неделя',
         reject: 'Отклонить',
         manual: 'Включить подписку вручную',
         emailPh: 'Почта ученика',
         done: (email, d) => `Готово: ${email} — подписка до ${d}`,
-        status: { pending: 'ждёт', paid: 'оплачено', rejected: 'отклонено' },
+        status: { pending: 'ждёт', paid: 'оплачено', granted: 'выдано', rejected: 'отклонено' },
         notFound: 'Аккаунт с такой почтой не найден.',
       },
       loadingTasks: 'Готовлю задания… Это займёт до 30 секунд.',
@@ -231,8 +240,16 @@
         trial: (n) => `Bepul hafta: ${n} kun qoldi`,
         active: (d) => `Obuna ${d} gacha faol`,
         ending: (n) => `Obuna ${n} kundan keyin tugaydi — uzaytirishni unutma`,
-        expired: 'Bepul hafta tugadi',
-        expiredText: "Kartochkalar, o'yinlar va kundalik ochiq. Chat va topshiriqlardan yana foydalanish uchun obuna rasmiylashtir.",
+        expired: 'Obuna tugadi',
+        expiredText: "Kartochkalar, o'yinlar va kundalik ochiq. Chat va topshiriqlardan yana foydalanish uchun obunani uzaytir.",
+        none: "Barcha bo'limlarni och",
+        noneText: "Bizga yoz — bepul haftani yoqib beramiz. Kartochkalar, o'yinlar va kundalik allaqachon ochiq.",
+        trialAsk: 'Bepul hafta olish',
+        trialTitle: 'Bepul hafta',
+        trialText: "Bizga yoz yoki qo'ng'iroq qil — tanishamiz va barcha bo'limlarni 7 kunga bepul yoqib beramiz.",
+        trialMessage: (id, email) => `Assalomu alaykum! Nimi bepul haftasini olmoqchiman. Ariza №${id}, akkaunt: ${email}`,
+        trialStep: "Yoz yoki qo'ng'iroq qil — bepul haftani yoqamiz:",
+        orPaid: 'Yoki darhol obuna rasmiylashtir:',
         months: 'Necha oyga?',
         monthLabel: (m) => `${m} oy`,
         order: 'Obuna rasmiylashtirish',
@@ -255,13 +272,14 @@
         title: 'Admin panel',
         pending: 'Arizalar',
         none: "Yangi arizalar yo'q.",
-        grant: (m) => `${m} oyga yoqish`,
+        grant: (m) => (m ? `${m} oyga yoqish` : 'Haftani yoqish'),
         enable: 'Yoqish',
+        week: 'Bepul hafta',
         reject: 'Rad etish',
         manual: "Obunani qo'lda yoqish",
         emailPh: "O'quvchi pochtasi",
         done: (email, d) => `Tayyor: ${email} — obuna ${d} gacha`,
-        status: { pending: 'kutmoqda', paid: "to'langan", rejected: 'rad etilgan' },
+        status: { pending: 'kutmoqda', paid: "to'langan", granted: 'berildi', rejected: 'rad etilgan' },
         notFound: 'Bunday pochtali akkaunt topilmadi.',
       },
       loadingTasks: 'Topshiriqlar tayyorlanmoqda… 30 soniyagacha.',
@@ -1040,7 +1058,7 @@
     const plan = N.user?.plan;
     if (!N.accounts || !plan || N.user?.admin) return null;
     const S = t('sub');
-    if (!plan.active) return { tone: 'expired', text: S.expired };
+    if (!plan.active) return plan.never ? { tone: 'none', text: S.none } : { tone: 'expired', text: S.expired };
     const n = daysLeft(plan.until);
     if (plan.trial) return { tone: 'trial', text: S.trial(n) };
     if (n <= 3) return { tone: 'ending', text: S.ending(n) };
@@ -1057,7 +1075,20 @@
       h('p', { class: 'text-3xl font-semibold' }, S.price(sum(price))),
       h('ul', { class: 'flex flex-col gap-2' }, S.includes.map((x) => h('li', { class: 'flex items-start gap-2' }, ico('circle-check', 'icon mt-0.5'), x))),
       h('p', { class: 'text-sm text-white/80' }, S.freeLeft)));
-    if (st) {
+    if (st && st.tone === 'none') {
+      const trialSteps = h('div', { class: 'flex flex-col gap-3' });
+      const ask = h('button', { type: 'button', class: BTN }, ico('sparkles'), S.trialAsk);
+      ask.onclick = async () => {
+        ask.disabled = true;
+        const r = await N.postJson('/api/subscribe', { months: 0 }).catch(() => ({}));
+        ask.disabled = false;
+        if (r.request) showSteps(trialSteps, r.request, 0);
+        else trialSteps.replaceChildren(h('p', { class: 'text-rose-200' }, t('errors').default));
+      };
+      root.append(h('div', { class: `${CARD} flex flex-col gap-3 ring-amber-400/30` },
+        h('p', { class: 'text-lg font-semibold text-white' }, S.trialTitle), h('p', { class: 'text-slate-300' }, S.trialText), ask, trialSteps),
+        h('p', { class: 'mt-1 font-semibold text-white' }, S.orPaid));
+    } else if (st) {
       const tone = { expired: 'bg-rose-500/10 text-rose-100 ring-rose-400/30', ending: 'bg-amber-400/10 text-amber-100 ring-amber-400/30', trial: 'bg-sky-500/10 text-sky-100 ring-sky-400/30', active: 'bg-emerald-500/10 text-emerald-100 ring-emerald-400/30' }[st.tone];
       root.append(h('p', { class: `rounded-2xl p-4 ring-1 ${tone}` }, st.text));
     }
@@ -1094,7 +1125,8 @@
     const email = N.user?.email || '';
     box.innerHTML = '';
     box.append(h('p', { class: 'flex items-center gap-2 font-semibold text-emerald-200' }, ico('circle-check'), S.request(request.id)));
-    if (b.card) {
+    const trial = Number(request.months) === 0;
+    if (b.card && !trial) {
       const copyBtn = h('button', { type: 'button', class: 'min-h-11 shrink-0 rounded-xl bg-night-700 px-4 text-sm text-white hover:bg-night-600' }, S.copy);
       copyBtn.onclick = async () => {
         try { await navigator.clipboard.writeText(b.card.replace(/\s/g, '')); copyBtn.textContent = S.copied; } catch {}
@@ -1103,12 +1135,12 @@
         h('p', { class: 'text-slate-300' }, `1. ${S.step1(sum(total))}`),
         h('div', { class: 'flex items-center gap-3' }, h('p', { class: 'min-w-0 flex-1 select-all text-xl font-semibold tracking-wider tabular-nums text-white' }, b.card), copyBtn)));
     }
-    const text = S.message(request.months, request.id, email);
+    const text = trial ? S.trialMessage(request.id, email) : S.message(request.months, request.id, email);
     const links = [];
     if (b.telegram) links.push(h('a', { class: BTN, href: `https://t.me/${encodeURIComponent(b.telegram)}?text=${encodeURIComponent(text)}`, target: '_blank', rel: 'noopener' }, ico('send'), S.telegram));
     if (b.phone) links.push(h('a', { class: BTN2, href: `tel:${b.phone.replace(/[^\d+]/g, '')}` }, ico('message-circle'), `${S.call}: ${b.phone}`));
     box.append(h('div', { class: `${CARD} flex flex-col gap-2` },
-      h('p', { class: 'text-slate-300' }, `${b.card ? '2. ' : ''}${S.step2}`),
+      h('p', { class: 'text-slate-300' }, trial ? S.trialStep : `${b.card ? '2. ' : ''}${S.step2}`),
       ...(links.length ? links : [h('p', { class: 'text-amber-200' }, S.noContacts)]),
       h('p', { class: 'select-all rounded-xl bg-night-800 p-3 text-sm text-slate-300' }, text)));
     const check = h('button', { type: 'button', class: BTN2 }, ico('repeat'), S.check);
@@ -1123,7 +1155,7 @@
     root.append(titleBar(A.title));
     const msg = h('p', { class: 'text-sm' });
     const email = h('input', { type: 'email', class: INPUT, placeholder: A.emailPh, id: 'adminEmail' });
-    const months = h('select', { class: `${INPUT} appearance-none`, id: 'adminMonths' }, [1, 3, 6, 12].map((m) => h('option', { value: m }, t('sub').monthLabel(m))));
+    const months = h('select', { class: `${INPUT} appearance-none`, id: 'adminMonths' }, [0, 1, 3, 6, 12].map((m) => h('option', { value: m }, m ? t('sub').monthLabel(m) : A.week)));
     const grant = async (mail, m, requestId) => {
       const r = await N.postJson('/api/admin/grant', { email: mail, months: m, requestId });
       if (r.until) { await openAdmin(); $('activity').prepend(h('p', { class: 'rounded-2xl bg-emerald-500/10 p-3 text-emerald-100' }, A.done(r.email, dateStr(r.until)))); }
@@ -1145,10 +1177,10 @@
       list.append(h('div', { class: `${CARD} flex flex-col gap-2 ${pending ? '' : 'opacity-60'}` },
         h('div', { class: 'flex items-center justify-between gap-2' },
           h('p', { class: 'min-w-0 truncate font-semibold text-white' }, `№${q.id} · ${q.email}`),
-          h('span', { class: `shrink-0 rounded-full px-2.5 py-1 text-xs ${pending ? 'bg-amber-400/15 text-amber-200' : q.status === 'paid' ? 'bg-emerald-500/15 text-emerald-200' : 'bg-night-700 text-slate-400'}` }, A.status[q.status] || q.status)),
-        h('p', { class: 'text-sm text-slate-400' }, `${t('sub').monthLabel(q.months)} · ${sum((N.billing.price || 45000) * q.months)} · ${dateStr(q.created_at)}${q.premium_until ? ` · ${t('sub').active(dateStr(q.premium_until))}` : ''}`),
+          h('span', { class: `shrink-0 rounded-full px-2.5 py-1 text-xs ${pending ? 'bg-amber-400/15 text-amber-200' : ['paid', 'granted'].includes(q.status) ? 'bg-emerald-500/15 text-emerald-200' : 'bg-night-700 text-slate-400'}` }, A.status[q.status] || q.status)),
+        h('p', { class: 'text-sm text-slate-400' }, `${Number(q.months) ? `${t('sub').monthLabel(q.months)} · ${sum((N.billing.price || 45000) * q.months)}` : A.week} · ${dateStr(q.created_at)}${q.premium_until ? ` · ${t('sub').active(dateStr(q.premium_until))}` : ''}`),
         pending ? h('div', { class: 'grid grid-cols-2 gap-2' },
-          h('button', { type: 'button', class: BTN, onclick: () => grant(q.email, q.months, q.id) }, A.grant(q.months)),
+          h('button', { type: 'button', class: BTN, onclick: () => grant(q.email, Number(q.months), q.id) }, A.grant(Number(q.months))),
           h('button', { type: 'button', class: BTN2, onclick: async () => { await N.postJson('/api/admin/reject', { requestId: q.id }); openAdmin(); } }, A.reject)) : null));
     });
   }
@@ -1167,11 +1199,12 @@
 
     const st = planStatus();
     const S = t('sub');
-    if (st && st.tone === 'expired') {
+    if (st && (st.tone === 'expired' || st.tone === 'none')) {
+      const none = st.tone === 'none';
       root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-amber-400/10 p-5 ring-1 ring-amber-400/30' },
-        h('p', { class: 'text-lg font-semibold text-amber-100' }, S.expired),
-        h('p', { class: 'text-sm text-amber-100/80' }, S.expiredText),
-        h('button', { type: 'button', class: BTN, onclick: openSubscribe }, ico('star'), `${S.order} · ${sum(N.billing.price || 45000)}`)));
+        h('p', { class: 'text-lg font-semibold text-amber-100' }, none ? S.none : S.expired),
+        h('p', { class: 'text-sm text-amber-100/80' }, none ? S.noneText : S.expiredText),
+        h('button', { type: 'button', class: BTN, onclick: openSubscribe }, ico(none ? 'sparkles' : 'star'), none ? S.trialAsk : `${S.order} · ${sum(N.billing.price || 45000)}`)));
     } else if (st) {
       root.append(h('button', { type: 'button', class: `flex items-center gap-2 rounded-2xl px-4 py-3 text-left text-sm ring-1 ${st.tone === 'ending' ? 'bg-amber-400/10 text-amber-100 ring-amber-400/30' : 'bg-night-900/80 text-slate-300 ring-white/5'}`, onclick: openSubscribe },
         ico('star', 'icon text-amber-300'), h('span', { class: 'min-w-0 flex-1' }, st.text), ico('chevron-right', 'icon text-slate-500')));
