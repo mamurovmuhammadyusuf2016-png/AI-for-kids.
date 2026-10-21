@@ -485,7 +485,7 @@
     const root = screen('activity');
     root.append(titleBar(t('training')), loading(t('loadingTasks')));
     try {
-      const topics = topic ? [] : await Promise.race([getTopics().catch(() => []), new Promise((r) => setTimeout(() => r([]), 15000))]);
+      const topics = topic ? [] : await Promise.race([getTopics().catch(() => []), new Promise((r) => setTimeout(() => r([]), 45000))]);
       const { tasks } = await gen('training', { level: level(), topic, topics });
       runTasks(root, tasks, { mode: 'training', title: topic || t('training'), onFinish: (r) => finishTraining(root, r, topic) });
     } catch (e) {
