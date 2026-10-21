@@ -46,15 +46,20 @@
             <button type="button" data-lang="ru" class="lang-btn lang-sm">RU</button>
           </div>
         </div>
-        <button type="button" data-action="change" class="menu-item flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="pencil"></span><span data-i18n="menuChange"></span></button>
-        <button type="button" data-action="subscribe" class="menu-item flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-amber-200 hover:bg-white/5"><span data-icon="star"></span><span data-i18n="subscription"></span></button>
+        <button type="button" data-action="change" class="menu-item student-only flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="pencil"></span><span data-i18n="menuChange"></span></button>
+        <button type="button" data-action="settings" class="menu-item student-only flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="circle-user"></span><span data-i18n="settings"></span></button>
+        <button type="button" data-action="subscribe" class="menu-item student-only flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-amber-200 hover:bg-white/5"><span data-icon="star"></span><span data-i18n="subscription"></span></button>
         <button type="button" data-action="admin" class="menu-item hidden w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="shield-check"></span><span data-i18n="adminPanel"></span></button>
-        <button type="button" data-action="report" class="menu-item flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="file-text"></span><span data-i18n="reportBtn"></span></button>
-        <button type="button" data-action="share" class="menu-item flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="share-2"></span><span data-i18n="share"></span></button>
+        <button type="button" data-action="report" class="menu-item student-only flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="file-text"></span><span data-i18n="reportBtn"></span></button>
+        <button type="button" data-action="share" class="menu-item student-only flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="share-2"></span><span data-i18n="share"></span></button>
+        <a href="/privacy.html" target="_blank" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-300 hover:bg-white/5"><span data-icon="shield-check"></span><span data-i18n="privacyLink"></span></a>
         <button type="button" data-action="logout" class="menu-item flex w-full items-center gap-3 border-t border-white/5 px-4 py-3 text-left text-sm text-rose-300 hover:bg-white/5"><span data-icon="log-out"></span><span data-i18n="logout"></span></button>
       </div>
     </div>
   </header>
+
+  <!-- Landing for parents (visitors who are not signed in) -->
+  <main id="landing" class="mt-4 hidden flex-1 flex-col gap-4 overflow-y-auto pb-4"></main>
 
   <!-- Auth screen: email + password or Google -->
   <main id="auth" class="mt-4 hidden flex-1 overflow-y-auto pb-2">
@@ -79,7 +84,7 @@
       <form id="authForm" class="mt-4 flex flex-col gap-3" novalidate>
         <label class="flex min-h-14 items-center gap-3 rounded-2xl bg-night-800 px-4 ring-1 ring-white/10 focus-within:ring-brand-400/60">
           <span class="text-slate-400" data-icon="mail"></span>
-          <input id="authEmail" type="email" autocomplete="email" inputmode="email" maxlength="254" required class="min-w-0 flex-1 bg-transparent py-3 text-base text-slate-100 outline-none placeholder:text-slate-500">
+          <input id="authEmail" type="text" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="254" required class="min-w-0 flex-1 bg-transparent py-3 text-base text-slate-100 outline-none placeholder:text-slate-500">
         </label>
         <label class="flex min-h-14 items-center gap-3 rounded-2xl bg-night-800 px-4 ring-1 ring-white/10 focus-within:ring-brand-400/60">
           <span class="text-slate-400" data-icon="lock"></span>
@@ -92,13 +97,16 @@
         </label>
         <p id="passwordHint" class="hidden px-1 text-xs text-slate-400" data-i18n="passwordHint"></p>
         <div id="authError" class="hidden items-start gap-2 rounded-2xl bg-rose-500/10 px-4 py-3 text-sm text-rose-200 ring-1 ring-rose-400/20" role="alert"></div>
+        <button id="forgotLink" type="button" class="-mt-1 self-end px-1 text-sm text-brand-400 hover:text-white" data-i18n="forgot"></button>
         <button id="authSubmit" type="submit" class="min-h-14 rounded-2xl bg-brand-500 text-lg font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-400 active:scale-[.98] disabled:bg-night-700 disabled:text-slate-500 disabled:shadow-none"></button>
       </form>
       <div id="googleBlock" class="hidden">
         <div class="my-4 flex items-center gap-3 text-xs uppercase tracking-wide text-slate-500"><span class="h-px flex-1 bg-white/10"></span><span data-i18n="or"></span><span class="h-px flex-1 bg-white/10"></span></div>
         <div id="googleBtn" class="flex min-h-11 justify-center"></div>
       </div>
+      <div id="forgotBox" class="mt-4 hidden flex-col gap-3 rounded-2xl bg-night-800 p-4 ring-1 ring-white/10"></div>
       <p class="mt-4 flex items-start gap-2 text-xs text-slate-400"><span class="text-slate-500" data-icon="shield-check"></span><span data-i18n="authNote"></span></p>
+      <a href="/privacy.html" target="_blank" class="mt-2 block text-xs text-slate-400 underline hover:text-white" data-i18n="privacyLink"></a>
     </section>
   </main>
 
@@ -130,6 +138,8 @@
   <main id="activity" class="mt-4 hidden min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-4"></main>
   <main id="progress" class="mt-4 hidden min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-4"></main>
   <main id="diary" class="mt-4 hidden min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-4"></main>
+  <main id="parentHome" class="mt-4 hidden min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-4"></main>
+  <main id="adminHome" class="mt-4 hidden min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-4"></main>
 
   <!-- Chat screen -->
   <main id="chatScreen" class="hidden min-h-0 flex-1 flex-col">

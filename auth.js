@@ -73,6 +73,9 @@ async function init() {
     );
     ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMPTZ;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_kind TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'student';
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_of BIGINT REFERENCES users(id) ON DELETE CASCADE;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS secret_enc TEXT;
     CREATE TABLE IF NOT EXISTS payment_requests (
       id BIGSERIAL PRIMARY KEY,
       user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -113,6 +116,15 @@ async function checkPassword(password, stored) {
 
 // Used for unknown emails so a wrong email and a wrong password take the same time.
 const DUMMY_HASH = 'scrypt$AAAAAAAAAAAAAAAAAAAAAA==$' + Buffer.alloc(64).toString('base64');
+
+// Parent and admin accounts sign in with a login instead of an email (stored in the email column).
+const LOGIN_RE = /^[a-z0-9][a-z0-9-]{2,31}$/;
+function normalizeLogin(v) {
+  const s = typeof v === 'string' ? v.trim().toLowerCase() : '';
+  if (s.includes('@')) return normalizeEmail(s);
+  if (!LOGIN_RE.test(s)) throw new AuthError('invalid_email');
+  return s;
+}
 
 function normalizeEmail(v) {
   const email = typeof v === 'string' ? v.trim().toLowerCase() : '';
@@ -163,7 +175,7 @@ async function getUser(req) {
   const token = parseCookies(req)[SESSION_COOKIE];
   if (!token) return null;
   const { rows } = await pool.query(
-    `SELECT u.id, u.email, u.created_at, u.premium_until, u.plan_kind,
+    `SELECT u.id, u.email, u.created_at, u.premium_until, u.plan_kind, u.role, u.parent_of,
             u.password_hash IS NOT NULL AS has_password, u.google_sub IS NOT NULL AS has_google
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = $1 AND s.expires_at > now()`,
@@ -183,7 +195,123 @@ function plan(u) {
 }
 
 function publicUser(u) {
-  return { email: u.email, google: !!u.has_google, password: !!u.has_password, plan: plan(u) };
+  return { email: u.email, google: !!u.has_google, password: !!u.has_password, plan: plan(u), role: u.role || 'student' };
+}
+
+// ---------- parent accounts ----------
+// The parent's password is shown to the child in Settings, so besides the hash it is kept
+// encrypted (AES-256-GCM) with a server key.
+const SECRET = crypto.createHash('sha256').update(process.env.SECRET_KEY || process.env.ADMIN_API_KEY || 'nimi-dev-secret').digest();
+
+function encrypt(text) {
+  const iv = crypto.randomBytes(12);
+  const c = crypto.createCipheriv('aes-256-gcm', SECRET, iv);
+  const data = Buffer.concat([c.update(text, 'utf8'), c.final()]);
+  return [iv, c.getAuthTag(), data].map((b) => b.toString('base64')).join('.');
+}
+
+function decrypt(value) {
+  try {
+    const [iv, tag, data] = value.split('.').map((x) => Buffer.from(x, 'base64'));
+    const d = crypto.createDecipheriv('aes-256-gcm', SECRET, iv);
+    d.setAuthTag(tag);
+    return Buffer.concat([d.update(data), d.final()]).toString('utf8');
+  } catch {
+    return null;
+  }
+}
+
+// Easy to type: no 0/O, 1/l; always has letters and a digit.
+function readablePassword() {
+  const letters = 'abcdefghjkmnpqrstuvwxyz';
+  const digits = '23456789';
+  const pick = (set) => set[crypto.randomInt(set.length)];
+  return `${Array.from({ length: 4 }, () => pick(letters)).join('')}-${Array.from({ length: 4 }, () => pick(digits)).join('')}`;
+}
+
+async function setParentPassword(parentId) {
+  const password = readablePassword();
+  await requirePool().query('UPDATE users SET password_hash = $2, secret_enc = $3 WHERE id = $1', [parentId, await hashPassword(password), encrypt(password)]);
+  return password;
+}
+
+// Creates the child's parent account once; returns { login, password }.
+async function ensureParent(childId) {
+  const db = requirePool();
+  const found = await db.query(`SELECT id, email, secret_enc FROM users WHERE parent_of = $1 AND role = 'parent'`, [childId]);
+  if (found.rows.length) {
+    const p = found.rows[0];
+    return { login: p.email, password: decrypt(p.secret_enc || '') || (await setParentPassword(p.id)) };
+  }
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const login = `parent-${crypto.randomInt(100000, 1000000)}`;
+    const password = readablePassword();
+    const { rows } = await db.query(
+      `INSERT INTO users (email, password_hash, secret_enc, role, parent_of) VALUES ($1, $2, $3, 'parent', $4)
+       ON CONFLICT (email) DO NOTHING RETURNING id`,
+      [login, await hashPassword(password), encrypt(password), childId],
+    );
+    if (rows.length) return { login, password };
+  }
+  throw new Error('could not create parent login');
+}
+
+async function resetParentPassword(childId) {
+  const { rows } = await requirePool().query(`SELECT id, email FROM users WHERE parent_of = $1 AND role = 'parent'`, [childId]);
+  if (!rows.length) return ensureParent(childId);
+  return { login: rows[0].email, password: await setParentPassword(rows[0].id) };
+}
+
+async function getChild(childId) {
+  const { rows } = await requirePool().query(
+    `SELECT id, email, created_at, premium_until, plan_kind, role FROM users WHERE id = $1 AND role = 'student'`,
+    [childId],
+  );
+  return rows[0] || null;
+}
+
+async function setPassword(userId, password) {
+  validatePassword(password);
+  await requirePool().query('UPDATE users SET password_hash = $2 WHERE id = $1', [userId, await hashPassword(password)]);
+}
+
+// ---------- admin tools ----------
+async function listStudents(search) {
+  const q = `%${(search || '').toLowerCase().slice(0, 60)}%`;
+  const { rows } = await requirePool().query(
+    `SELECT email, created_at, premium_until, plan_kind, google_sub IS NOT NULL AS google
+       FROM users WHERE role = 'student' AND email LIKE $1 ORDER BY created_at DESC LIMIT 100`,
+    [q],
+  );
+  return rows;
+}
+
+async function resetStudentPassword(email) {
+  const { rows } = await requirePool().query(`SELECT id FROM users WHERE email = $1 AND role = 'student'`, [normalizeEmail(email)]);
+  if (!rows.length) throw new AuthError('user_not_found', 404);
+  const password = readablePassword();
+  await requirePool().query('UPDATE users SET password_hash = $2 WHERE id = $1', [rows[0].id, await hashPassword(password)]);
+  await requirePool().query('DELETE FROM sessions WHERE user_id = $1', [rows[0].id]);
+  return password;
+}
+
+// Deletes a student with everything linked (parent account, sessions, progress, requests).
+async function deleteStudent(email) {
+  const { rowCount } = await requirePool().query(`DELETE FROM users WHERE email = $1 AND role = 'student'`, [normalizeEmail(email)]);
+  if (!rowCount) throw new AuthError('user_not_found', 404);
+}
+
+// Creates (or resets the password of) a staff account that only sees the admin panel.
+async function createAdminAccount(login) {
+  const name = normalizeLogin(login);
+  if (name.includes('@')) throw new AuthError('invalid_email');
+  const password = `${readablePassword()}-${readablePassword()}`;
+  await requirePool().query(
+    `INSERT INTO users (email, password_hash, role) VALUES ($1, $2, 'admin')
+     ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = 'admin'`,
+    [name, await hashPassword(password)],
+  );
+  return { login: name, password };
 }
 
 // One open request per student; returns the existing one if it is still pending.
@@ -253,19 +381,20 @@ async function register(req, body) {
     [email, hash],
   );
   if (!rows.length) throw new AuthError('email_taken', 409);
-  const user = { ...rows[0], has_password: true, has_google: false };
+  const user = { ...rows[0], has_password: true, has_google: false, role: 'student' };
+  await ensureParent(user.id);
   return { user, cookie: await startSession(req, user.id) };
 }
 
 async function login(req, body) {
   const db = requirePool();
-  const email = normalizeEmail(body.email);
+  const email = normalizeLogin(body.email);
   const password = typeof body.password === 'string' ? body.password.slice(0, 128) : '';
   const key = `${clientIp(req)}|${email}`;
   if (recentFailures(key).length >= MAX_FAILED_LOGINS) throw new AuthError('too_many_attempts', 429);
 
   const { rows } = await db.query(
-    'SELECT id, email, password_hash, google_sub IS NOT NULL AS has_google FROM users WHERE email = $1',
+    'SELECT id, email, role, password_hash, google_sub IS NOT NULL AS has_google FROM users WHERE email = $1',
     [email],
   );
   const user = rows[0];
@@ -298,7 +427,7 @@ async function google(req, body) {
   const db = requirePool();
   const { sub, email } = await verifyGoogleToken(body.credential);
   const known = await db.query(
-    'SELECT id, email, google_sub, password_hash IS NOT NULL AS has_password FROM users WHERE google_sub = $1',
+    'SELECT id, email, google_sub, role, password_hash IS NOT NULL AS has_password FROM users WHERE google_sub = $1',
     [sub],
   );
   if (known.rows.length) {
@@ -309,11 +438,12 @@ async function google(req, body) {
   const { rows } = await db.query(
     `INSERT INTO users (email, google_sub) VALUES ($1, $2)
      ON CONFLICT (email) DO UPDATE SET google_sub = COALESCE(users.google_sub, EXCLUDED.google_sub)
-     RETURNING id, email, google_sub, password_hash IS NOT NULL AS has_password`,
+     RETURNING id, email, google_sub, role, password_hash IS NOT NULL AS has_password`,
     [email, sub],
   );
   const user = rows[0];
   if (user.google_sub !== sub) throw new AuthError('google_failed', 401);
+  if (user.role === 'student') await ensureParent(user.id);
   return { user: { ...user, has_google: true }, cookie: await startSession(req, user.id) };
 }
 
@@ -384,6 +514,14 @@ async function cacheTopics(subject, grade, lang, topics) {
 
 module.exports = {
   plan,
+  ensureParent,
+  resetParentPassword,
+  getChild,
+  setPassword,
+  listStudents,
+  resetStudentPassword,
+  deleteStudent,
+  createAdminAccount,
   requestSubscription,
   listRequests,
   grantMonths,

@@ -462,7 +462,7 @@ async function handleData(req, res, body, user) {
   sendJson(res, 200, { ok: true });
 }
 
-const isAdmin = (user) => !!user?.apiAdmin || (!!user?.email && ADMIN_EMAILS.has(user.email));
+const isAdmin = (user) => !!user?.apiAdmin || user?.role === 'admin' || (!!user?.email && ADMIN_EMAILS.has(user.email));
 
 function hasAdminKey(req) {
   const given = Buffer.from(String(req.headers['x-admin-key'] || ''));
@@ -476,6 +476,7 @@ async function handleMe(req, res) {
   const used = await auth.usedToday(user.id, today());
   sendJson(res, 200, {
     user: { ...auth.publicUser(user), admin: isAdmin(user) },
+    child: user.role === 'parent' ? (await auth.getChild(user.parent_of))?.email || null : undefined,
     remaining: Math.max(0, DAILY_LIMIT - used),
     limit: DAILY_LIMIT,
   });
@@ -502,8 +503,73 @@ async function handleAdmin(req, res, body, user, action) {
     await auth.rejectRequest(parseInt(body.requestId, 10));
     return sendJson(res, 200, { ok: true });
   }
+  if (action === 'users') return sendJson(res, 200, { users: await auth.listStudents(cleanText(body.search, 60)) });
+  if (action === 'reset-password') {
+    return sendJson(res, 200, { email: cleanText(body.email, 254), password: await auth.resetStudentPassword(cleanText(body.email, 254)) });
+  }
+  if (action === 'delete-user') {
+    await auth.deleteStudent(cleanText(body.email, 254));
+    return sendJson(res, 200, { ok: true });
+  }
+  // Staff accounts are created only with the admin key (from the chat with Claude).
+  if (action === 'create-admin' && user.apiAdmin) return sendJson(res, 200, await auth.createAdminAccount(cleanText(body.login, 32)));
   sendJson(res, 404, { code: 'not_found' });
 }
+
+// ---------- student settings: the parent's login and password ----------
+async function handleAccount(req, res, body, user, action) {
+  if (action === 'settings') return sendJson(res, 200, { email: user.email, parent: await auth.ensureParent(user.id) });
+  if (action === 'parent-reset') return sendJson(res, 200, { parent: await auth.resetParentPassword(user.id) });
+  sendJson(res, 404, { code: 'not_found' });
+}
+
+// ---------- parent account: the child's progress, diary, subscription ----------
+const PARENT_REPORT_PROMPT = `Ты помогаешь родителям понять, как учится их ребёнок в Nimi AI (ИИ-репетитор для школьников).
+По статистике составь короткий отчёт для родителей на языке: {LANG}. Обычный текст, короткие пункты, без таблиц, без эмодзи.
+1. Как регулярно занимается ребёнок.
+2. Какие темы освоены хорошо, какие стоит повторить, где трудно.
+3. Домашние задания (сделано / не сделано).
+4. 1–2 совета родителям, как помочь дома.`;
+
+async function handleParent(req, res, body, user, action) {
+  const child = await auth.getChild(user.parent_of);
+  if (!child) return sendJson(res, 404, { code: 'user_not_found' });
+  if (action === 'overview') {
+    const data = await auth.getData(child.id);
+    return sendJson(res, 200, {
+      child: { email: child.email, plan: auth.plan(child) },
+      usedToday: await auth.usedToday(child.id, today()),
+      limit: DAILY_LIMIT,
+      progress: data.progress || null,
+      diary: data.diary || [],
+    });
+  }
+  if (action === 'child-password') {
+    await auth.setPassword(child.id, body.password);
+    return sendJson(res, 200, { ok: true });
+  }
+  if (action === 'subscribe') {
+    const months = [0, 1, 3, 6, 12].includes(Number(body.months)) ? Number(body.months) : 1;
+    const request = await auth.requestSubscription(child.id, months);
+    return sendJson(res, 200, { request: { id: request.id, months: request.months }, price: PRICE_UZS * request.months, email: child.email });
+  }
+  if (action === 'report') {
+    if (!auth.plan(child).active) return sendJson(res, 402, { code: 'premium_required' });
+    const data = await auth.getData(child.id);
+    const stats = JSON.stringify({ progress: data.progress || {}, diary: (data.diary || []).slice(-30) }).slice(0, 20000);
+    const lang = body.lang === 'uz' ? 'узбекский (латиница)' : 'русский';
+    try {
+      const report = await generate(PARENT_REPORT_PROMPT.replace('{LANG}', lang), [{ role: 'user', content: `Статистика ребёнка (JSON): ${stats}` }]);
+      return sendJson(res, 200, { report: stripEmoji(report) });
+    } catch (err) {
+      return aiErrorResponse(res, err);
+    }
+  }
+  sendJson(res, 404, { code: 'not_found' });
+}
+
+// API areas with a sub-action in the path: /api/<area>/<action>.
+const AREA_HANDLERS = { admin: handleAdmin, parent: handleParent, account: handleAccount };
 
 // Account actions: each returns { user, cookie }.
 const AUTH_ACTIONS = { '/api/auth/register': auth.register, '/api/auth/login': auth.login, '/api/auth/google': auth.google };
@@ -537,10 +603,12 @@ async function handleApiPost(req, res, urlPath) {
     return sendJson(res, 200, { user: auth.publicUser(user) }, { 'Set-Cookie': cookie });
   }
   const learnKind = urlPath.startsWith('/api/learn/') && urlPath.slice('/api/learn/'.length);
+  const [, , areaName, areaAction] = urlPath.split('/');
+  const areaHandler = Object.hasOwn(AREA_HANDLERS, areaName) && areaAction ? AREA_HANDLERS[areaName] : null;
   const handler = Object.hasOwn(LEARN_KINDS, learnKind || '')
     ? (q, r, b, u) => handleLearn(q, r, b, u, learnKind)
-    : urlPath.startsWith('/api/admin/')
-      ? (q, r, b, u) => handleAdmin(q, r, b, u, urlPath.slice('/api/admin/'.length))
+    : areaHandler
+      ? (q, r, b, u) => areaHandler(q, r, b, u, areaAction)
       : { '/api/chat': handleChat, '/api/report': handleReport, '/api/data': handleData, '/api/subscribe': handleSubscribe }[urlPath];
   if (!handler) return sendJson(res, 404, { code: 'not_found' });
   // Without a database the app runs in guest mode, limited per device.
@@ -549,8 +617,14 @@ async function handleApiPost(req, res, urlPath) {
   const viaKey = urlPath.startsWith('/api/admin/') && hasAdminKey(req);
   const user = viaKey ? { id: 0, apiAdmin: true } : auth.enabled() ? await auth.getUser(req) : { id: `device:${deviceId}` };
   if (!user) return sendJson(res, 401, { code: 'unauthorized' });
-  // After the free week only cards, games and the diary stay open (admins always have access).
-  const locked = auth.enabled() && !FREE_PATHS.has(urlPath) && !urlPath.startsWith('/api/admin/') && !isAdmin(user) && !auth.plan(user).active;
+  // Each kind of account has its own part of the API.
+  const role = user.apiAdmin ? 'admin' : user.role || 'student';
+  const area = areaName === 'admin' ? 'admin' : areaName === 'parent' ? 'parent' : 'student';
+  if (area === 'parent' && role !== 'parent') return sendJson(res, 403, { code: 'forbidden' });
+  if (area === 'student' && role !== 'student') return sendJson(res, 403, { code: 'forbidden' });
+  if (areaName === 'account' && !auth.enabled()) return sendJson(res, 503, { code: 'auth_unavailable' });
+  // Without access (no free week or subscription) only cards, games and the diary stay open.
+  const locked = area === 'student' && auth.enabled() && !FREE_PATHS.has(urlPath) && areaName !== 'account' && !isAdmin(user) && !auth.plan(user).active;
   if (locked) return sendJson(res, 402, { code: 'premium_required' });
   return handler(req, res, body, user);
 }

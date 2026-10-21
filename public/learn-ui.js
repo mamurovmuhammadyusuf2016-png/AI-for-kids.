@@ -9,6 +9,61 @@
   const L = {
     ru: {
       hello: 'Привет!',
+      privacyTitle: 'Правила и конфиденциальность',
+      settingsPage: {
+        title: 'Настройки',
+        account: 'Твой аккаунт',
+        parentTitle: 'Аккаунт родителя',
+        parentText: 'Дай этот логин и пароль маме или папе. Они смогут войти в Nimi и видеть твой прогресс, домашние задания и подписку. Твои сообщения в чате они не видят.',
+        login: 'Логин',
+        password: 'Пароль',
+        show: 'Показать',
+        hide: 'Скрыть',
+        copy: 'Скопировать',
+        copied: 'Скопировано',
+        newPw: 'Новый пароль для родителя',
+      },
+      parentPage: {
+        title: 'Кабинет родителя',
+        child: 'Ваш ребёнок',
+        noAccessYet: 'Все разделы пока закрыты. Напишите нам — подключим бесплатную неделю.',
+        accessUntil: (kind, d) => `${kind} до ${d}`,
+        streak: 'дней подряд',
+        today: 'вопросов сегодня',
+        topics: 'Темы',
+        noTopics: 'Ребёнок ещё не решал задания. Темы появятся после первой тренировки.',
+        homework: 'Домашние задания',
+        noHomework: 'Невыполненных заданий нет.',
+        reportNeedsSub: 'Отчёт ИИ доступен с бесплатной неделей или подпиской.',
+        childPw: 'Пароль ребёнка',
+        childPwText: 'Если ребёнок забыл пароль — задайте новый (минимум 8 символов, буквы и цифра).',
+        newChildPwPh: 'Новый пароль ребёнка',
+        childPwSave: 'Сохранить пароль',
+        childPwDone: 'Готово! Ребёнок может войти с новым паролем.',
+        childPwBad: 'Пароль слишком простой: минимум 8 символов, буквы и хотя бы одна цифра.',
+      },
+      landing: {
+        title: 'Nimi AI — репетитор, который учит думать',
+        lead: 'Помогает школьникам 1–11 класса понять тему, а не списать ответ. На русском и узбекском.',
+        start: 'Начать',
+        login: 'У меня уже есть аккаунт',
+        whyTitle: 'Почему родителям нравится Nimi',
+        why: [
+          ['lightbulb', 'Не даёт списывать', 'Ведёт вопросами и подсказками — ребёнок доходит до ответа сам.'],
+          ['shield-check', 'Безопасно для детей', 'Только учёба. Не спрашивает имя, адрес, школу и телефон.'],
+          ['users', 'Отчёты для родителей', 'Свой кабинет: прогресс, темы, домашние задания.'],
+          ['clock', 'Бережёт глаза', 'После 25 минут занятий — перерыв 5 минут.'],
+        ],
+        insideTitle: 'Что внутри',
+        inside: ['Чат с учителем', 'Фото задачи', 'Голос', 'Тренировки', 'Тесты', 'Экзамены и DTM', 'Олимпиада', 'Чтение', 'Карточки слов', 'Игры на счёт', 'Дневник'],
+        howTitle: 'Как начать',
+        how: ['Зарегистрируйтесь — это бесплатно. Карточки, игры и дневник открыты сразу.', 'Напишите нам в Telegram — познакомимся и подключим бесплатную неделю.', 'Понравится — оформите подписку.'],
+        priceTitle: 'Подписка',
+        priceText: 'Все разделы, 30 вопросов в день, фото задачи, экзамены, отчёты для родителей.',
+        parentTitle: 'Вы родитель?',
+        parentText: 'Логин и пароль родителя ребёнок найдёт у себя в Nimi: меню ⋮ → «Настройки».',
+        parentLogin: 'Войти как родитель',
+      },
       todayIs: (s) => `Сегодня: ${s}`,
       streak: (n) => (n ? `${n} ${plural(n, 'день', 'дня', 'дней')} подряд` : 'Начни серию сегодня'),
       dailyTitle: 'Тренировка дня',
@@ -94,6 +149,18 @@
         done: (email, d) => `Готово: ${email} — подписка до ${d}`,
         status: { pending: 'ждёт', paid: 'оплачено', granted: 'выдано', rejected: 'отклонено' },
         notFound: 'Аккаунт с такой почтой не найден.',
+        students: 'Ученики',
+        searchPh: 'Поиск по почте',
+        noUsers: 'Никого не нашли.',
+        registered: (d) => `с ${d}`,
+        until: (d) => `до ${d}`,
+        noAccess: 'без доступа',
+        resetPw: 'Новый пароль',
+        newPw: (email) => `Новый пароль для ${email}:`,
+        del: 'Удалить',
+        delConfirm: (email) => `Удалить ${email} вместе с прогрессом и аккаунтом родителя? Это нельзя отменить.`,
+        delYes: 'Да, удалить',
+        cancel: 'Отмена',
       },
       loadingTasks: 'Готовлю задания… Это займёт до 30 секунд.',
       loadingText: 'Подбираю текст… Это займёт до 30 секунд.',
@@ -196,6 +263,61 @@
     },
     uz: {
       hello: 'Salom!',
+      privacyTitle: 'Qoidalar va maxfiylik',
+      settingsPage: {
+        title: 'Sozlamalar',
+        account: 'Sening akkaunting',
+        parentTitle: 'Ota-ona akkaunti',
+        parentText: "Bu login va parolni onang yoki otangga ber. Ular Nimi'ga kirib, natijalaring, uy vazifalaring va obunangni ko'ra oladi. Chatdagi xabarlaringni ko'rmaydi.",
+        login: 'Login',
+        password: 'Parol',
+        show: "Ko'rsatish",
+        hide: 'Yashirish',
+        copy: 'Nusxalash',
+        copied: 'Nusxalandi',
+        newPw: 'Ota-ona uchun yangi parol',
+      },
+      parentPage: {
+        title: 'Ota-ona kabineti',
+        child: 'Farzandingiz',
+        noAccessYet: "Hozircha barcha bo'limlar yopiq. Bizga yozing — bepul haftani yoqib beramiz.",
+        accessUntil: (kind, d) => `${kind}: ${d} gacha`,
+        streak: 'kun ketma-ket',
+        today: 'bugungi savollar',
+        topics: 'Mavzular',
+        noTopics: "Farzandingiz hali topshiriq yechmagan. Mavzular birinchi mashqdan keyin paydo bo'ladi.",
+        homework: 'Uy vazifalari',
+        noHomework: "Bajarilmagan vazifalar yo'q.",
+        reportNeedsSub: 'AI hisoboti bepul hafta yoki obuna bilan ochiladi.',
+        childPw: 'Farzand paroli',
+        childPwText: "Agar farzandingiz parolni unutgan bo'lsa — yangisini qo'ying (kamida 8 ta belgi, harflar va raqam).",
+        newChildPwPh: 'Farzandning yangi paroli',
+        childPwSave: 'Parolni saqlash',
+        childPwDone: 'Tayyor! Farzandingiz yangi parol bilan kira oladi.',
+        childPwBad: 'Parol juda oddiy: kamida 8 ta belgi, harflar va kamida bitta raqam.',
+      },
+      landing: {
+        title: "Nimi AI — o'ylashni o'rgatadigan repetitor",
+        lead: "1–11-sinf o'quvchilariga javobni ko'chirishga emas, mavzuni tushunishga yordam beradi. Rus va o'zbek tillarida.",
+        start: 'Boshlash',
+        login: 'Menda akkaunt bor',
+        whyTitle: "Nega ota-onalarga Nimi yoqadi",
+        why: [
+          ['lightbulb', "Ko'chirishga yo'l qo'ymaydi", "Savol va maslahatlar bilan yo'naltiradi — bola javobni o'zi topadi."],
+          ['shield-check', 'Bolalar uchun xavfsiz', "Faqat o'qish. Ism, manzil, maktab va telefonni so'ramaydi."],
+          ['users', 'Ota-onalar uchun hisobot', "Alohida kabinet: natijalar, mavzular, uy vazifalari."],
+          ['clock', "Ko'zni asraydi", "25 daqiqa mashg'ulotdan keyin — 5 daqiqa tanaffus."],
+        ],
+        insideTitle: 'Ichida nimalar bor',
+        inside: ["O'qituvchi bilan chat", 'Masala surati', 'Ovoz', 'Mashqlar', 'Testlar', 'Imtihonlar va DTM', 'Olimpiada', "O'qish", "So'z kartochkalari", "Hisob o'yinlari", 'Kundalik'],
+        howTitle: 'Qanday boshlash kerak',
+        how: ["Ro'yxatdan o'ting — bu bepul. Kartochkalar, o'yinlar va kundalik darhol ochiladi.", 'Bizga Telegramda yozing — tanishamiz va bepul haftani yoqamiz.', "Yoqsa — obuna rasmiylashtiring."],
+        priceTitle: 'Obuna',
+        priceText: "Barcha bo'limlar, kuniga 30 ta savol, masala surati, imtihonlar, ota-onalar uchun hisobot.",
+        parentTitle: 'Siz ota-onamisiz?',
+        parentText: "Ota-ona login va parolini farzandingiz Nimi'da topadi: ⋮ menyu → «Sozlamalar».",
+        parentLogin: 'Ota-ona sifatida kirish',
+      },
       todayIs: (s) => `Bugun: ${s}`,
       streak: (n) => (n ? `${n} kun ketma-ket` : 'Bugun seriyani boshla'),
       dailyTitle: 'Kunlik mashq',
@@ -254,7 +376,7 @@
         monthLabel: (m) => `${m} oy`,
         order: 'Obuna rasmiylashtirish',
         renew: 'Obunani uzaytirish',
-        request: (id) => `${id}-raqamli ariza yaratildi`,
+        request: (id) => `№${id} ariza yaratildi`,
         step1: (sum) => `${sum}ni kartaga o'tkaz:`,
         copy: 'Nusxalash',
         copied: 'Nusxalandi',
@@ -281,6 +403,18 @@
         done: (email, d) => `Tayyor: ${email} — obuna ${d} gacha`,
         status: { pending: 'kutmoqda', paid: "to'langan", granted: 'berildi', rejected: 'rad etilgan' },
         notFound: 'Bunday pochtali akkaunt topilmadi.',
+        students: "O'quvchilar",
+        searchPh: "Pochta bo'yicha qidirish",
+        noUsers: 'Hech kim topilmadi.',
+        registered: (d) => `ro'yxat: ${d}`,
+        until: (d) => `${d} gacha`,
+        noAccess: "ruxsatsiz",
+        resetPw: 'Yangi parol',
+        newPw: (email) => `${email} uchun yangi parol:`,
+        del: "O'chirish",
+        delConfirm: (email) => `${email} natijalari va ota-ona akkaunti bilan birga o'chirilsinmi? Buni qaytarib bo'lmaydi.`,
+        delYes: "Ha, o'chirish",
+        cancel: 'Bekor qilish',
       },
       loadingTasks: 'Topshiriqlar tayyorlanmoqda… 30 soniyagacha.',
       loadingText: 'Matn tanlanmoqda… 30 soniyagacha.',
@@ -335,7 +469,7 @@
       gameMental: ["Og'zaki hisob", 'Vaqtga 10 ta misol'],
       gameMistake: ['Xatoni top', "Noto'g'ri misollarni belgila"],
       best: (n) => `Rekord: ${n}`,
-      seconds: 'son',
+      seconds: 'soniya',
       timeUp: 'Vaqt tugadi!',
       solved: (n) => `To'g'ri yechildi: ${n}`,
       newRecord: 'Yangi rekord!',
@@ -345,7 +479,7 @@
       roundOf: (i, n) => `Raund ${i} / ${n}`,
       roundOk: 'Hamma xatolar topildi!',
       roundBad: "Hammasi to'g'ri emas: yashil — topilgan xatolar, sariq — o'tkazib yuborilganlar, qizil — to'g'ri misollar.",
-      tookTime: (s) => `Vaqt: ${s} son`,
+      tookTime: (s) => `Vaqt: ${s} soniya`,
       streakTitle: "Mashg'ulotlar seriyasi",
       totalDays: (n) => `Jami mashg'ulot kunlari: ${n}`,
       statTasks: 'topshiriq yechildi',
@@ -1119,10 +1253,10 @@
     root.append(h('p', { class: 'font-semibold text-white' }, S.months), monthsRow, priceBtn, steps);
   }
 
-  function showSteps(box, request, total) {
+  function showSteps(box, request, total, forEmail) {
     const S = t('sub');
     const b = N.billing;
-    const email = N.user?.email || '';
+    const email = forEmail || N.user?.email || '';
     box.innerHTML = '';
     box.append(h('p', { class: 'flex items-center gap-2 font-semibold text-emerald-200' }, ico('circle-check'), S.request(request.id)));
     const trial = Number(request.months) === 0;
@@ -1144,27 +1278,31 @@
       ...(links.length ? links : [h('p', { class: 'text-amber-200' }, S.noContacts)]),
       h('p', { class: 'select-all rounded-xl bg-night-800 p-3 text-sm text-slate-300' }, text)));
     const check = h('button', { type: 'button', class: BTN2 }, ico('repeat'), S.check);
-    check.onclick = async () => { await N.refreshUser(); openSubscribe(); };
+    check.onclick = async () => { await N.refreshUser(); if (N.user?.role === 'parent') renderParent(); else openSubscribe(); };
     box.append(h('p', { class: 'text-sm text-slate-400' }, S.step3), check);
   }
 
   // ---------- admin: subscription requests ----------
-  async function openAdmin() {
-    const root = screen('activity');
+  let adminRoot = 'activity';
+  // rootId: 'activity' (from a student admin's menu) or 'adminHome' (the staff account's only screen).
+  async function openAdmin(rootId = adminRoot) {
+    adminRoot = rootId;
+    const root = screen(rootId);
     const A = t('admin');
-    root.append(titleBar(A.title));
+    root.append(rootId === 'activity' ? titleBar(A.title) : h('h2', { class: 'text-2xl font-semibold text-white' }, A.title));
     const msg = h('p', { class: 'text-sm' });
     const email = h('input', { type: 'email', class: INPUT, placeholder: A.emailPh, id: 'adminEmail' });
     const months = h('select', { class: `${INPUT} appearance-none`, id: 'adminMonths' }, [0, 1, 3, 6, 12].map((m) => h('option', { value: m }, m ? t('sub').monthLabel(m) : A.week)));
     const grant = async (mail, m, requestId) => {
       const r = await N.postJson('/api/admin/grant', { email: mail, months: m, requestId });
-      if (r.until) { await openAdmin(); $('activity').prepend(h('p', { class: 'rounded-2xl bg-emerald-500/10 p-3 text-emerald-100' }, A.done(r.email, dateStr(r.until)))); }
+      if (r.until) { await openAdmin(); $(adminRoot).prepend(h('p', { class: 'rounded-2xl bg-emerald-500/10 p-3 text-emerald-100' }, A.done(r.email, dateStr(r.until)))); }
       else msg.textContent = r.code === 'user_not_found' ? A.notFound : t('errors').default;
     };
     root.append(h('div', { class: `${CARD} flex flex-col gap-2` },
       h('p', { class: 'font-semibold text-white' }, A.manual), email,
-      h('div', { class: 'grid grid-cols-2 gap-2' }, months, h('button', { type: 'button', class: BTN, onclick: () => email.value.trim() && grant(email.value.trim(), Number(months.value)) }, A.enable)),
+      h('div', { class: 'grid gap-2 sm:grid-cols-2' }, months, h('button', { type: 'button', class: BTN, onclick: () => email.value.trim() && grant(email.value.trim(), Number(months.value)) }, A.enable)),
       msg));
+    root.append(studentsBlock(A, grant));
     root.append(h('p', { class: 'font-semibold text-white' }, A.pending));
     const list = h('div', { class: 'flex flex-col gap-2' }, loading(t('loadingTopics')));
     root.append(list);
@@ -1183,6 +1321,196 @@
           h('button', { type: 'button', class: BTN, onclick: () => grant(q.email, Number(q.months), q.id) }, A.grant(Number(q.months))),
           h('button', { type: 'button', class: BTN2, onclick: async () => { await N.postJson('/api/admin/reject', { requestId: q.id }); openAdmin(); } }, A.reject)) : null));
     });
+  }
+
+  // Admin: find a student, give access, reset the password or delete the account.
+  function studentsBlock(A, grant) {
+    const box = h('div', { class: `${CARD} flex flex-col gap-2` });
+    const search = h('input', { type: 'text', class: INPUT, placeholder: A.searchPh, id: 'adminSearch' });
+    const list = h('div', { class: 'flex flex-col gap-2' });
+    const load = async () => {
+      list.replaceChildren(loading(t('loadingTopics')));
+      const r = await N.postJson('/api/admin/users', { search: search.value.trim() });
+      list.replaceChildren();
+      const users = r.users || [];
+      if (!users.length) list.append(h('p', { class: 'text-sm text-slate-400' }, A.noUsers));
+      users.forEach((u) => {
+        const active = u.premium_until && new Date(u.premium_until) > new Date();
+        const info = h('p', { class: 'text-xs text-slate-400' },
+          `${A.registered(dateStr(u.created_at))} · ${active ? `${u.plan_kind === 'trial' ? A.week : t('sub').open} ${A.until(dateStr(u.premium_until))}` : A.noAccess}${u.google ? ' · Google' : ''}`);
+        const out = h('div', { class: 'flex flex-col gap-2' });
+        const confirmDelete = h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-rose-500/15 px-3 text-sm text-rose-200 ring-1 ring-rose-400/30' }, A.del);
+        confirmDelete.onclick = () => {
+          out.replaceChildren(h('p', { class: 'text-sm text-rose-200' }, A.delConfirm(u.email)),
+            h('div', { class: 'grid grid-cols-2 gap-2' },
+              h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-rose-500 px-3 text-sm font-semibold text-white', onclick: async () => { await N.postJson('/api/admin/delete-user', { email: u.email }); load(); } }, A.delYes),
+              h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-night-700 px-3 text-sm text-white', onclick: () => out.replaceChildren() }, A.cancel)));
+        };
+        const resetBtn = h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-night-700 px-3 text-sm text-white' }, A.resetPw);
+        resetBtn.onclick = async () => {
+          const res = await N.postJson('/api/admin/reset-password', { email: u.email });
+          out.replaceChildren(res.password
+            ? h('p', { class: 'rounded-xl bg-emerald-500/10 p-3 text-sm text-emerald-100' }, A.newPw(u.email), ' ', h('b', { class: 'select-all text-white' }, res.password))
+            : h('p', { class: 'text-sm text-rose-200' }, t('errors').default));
+        };
+        list.append(h('div', { class: 'flex flex-col gap-2 rounded-2xl bg-night-800 p-3 ring-1 ring-white/5' },
+          h('p', { class: 'truncate font-semibold text-white' }, u.email), info,
+          h('div', { class: 'flex flex-wrap gap-2' },
+            h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500 px-3 text-sm font-semibold text-white', onclick: () => grant(u.email, 0) }, A.grant(0)),
+            h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500/20 px-3 text-sm text-white ring-1 ring-brand-400/40', onclick: () => grant(u.email, 1) }, A.grant(1)),
+            resetBtn, confirmDelete),
+          out));
+      });
+    };
+    search.addEventListener('keydown', (e) => { if (e.key === 'Enter') load(); });
+    box.append(h('p', { class: 'font-semibold text-white' }, A.students), h('div', { class: 'flex gap-2' }, search, h('button', { type: 'button', class: 'min-h-14 shrink-0 rounded-2xl bg-night-700 px-4 text-white', onclick: load }, ico('chevron-right'))), list);
+    load();
+    return box;
+  }
+
+  // ---------- student settings: the parent account ----------
+  async function openSettings() {
+    const root = screen('activity');
+    const P = t('settingsPage');
+    root.append(titleBar(P.title), loading(t('loadingTopics')));
+    const r = await N.postJson('/api/account/settings', {}).catch(() => ({}));
+    root.lastChild.remove();
+    root.append(h('div', { class: `${CARD} flex flex-col gap-1` }, h('p', { class: 'text-sm text-slate-400' }, P.account), h('p', { class: 'break-all font-semibold text-white' }, N.user?.email || '')));
+    if (!r.parent) { root.append(h('p', { class: 'text-rose-200' }, t('errors').default)); return; }
+    const pw = h('span', { class: 'select-all font-mono text-lg text-white' }, '••••••••');
+    let shown = false;
+    const showBtn = h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-night-700 px-3 text-sm text-white' }, P.show);
+    const draw = (parent) => { pw.textContent = shown ? parent.password : '••••••••'; showBtn.textContent = shown ? P.hide : P.show; };
+    let parent = r.parent;
+    showBtn.onclick = () => { shown = !shown; draw(parent); };
+    const copyBtn = h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-night-700 px-3 text-sm text-white' }, P.copy);
+    copyBtn.onclick = async () => {
+      try { await navigator.clipboard.writeText(`${P.login}: ${parent.login}\n${P.password}: ${parent.password}\n${location.origin}`); copyBtn.textContent = P.copied; } catch {}
+    };
+    const resetBtn = h('button', { type: 'button', class: BTN2 }, ico('repeat'), P.newPw);
+    resetBtn.onclick = async () => {
+      const res = await N.postJson('/api/account/parent-reset', {});
+      if (res.parent) { parent = res.parent; shown = true; draw(parent); }
+    };
+    root.append(h('div', { class: `${CARD} flex flex-col gap-3` },
+      h('div', { class: 'flex items-center gap-3' }, h('span', { class: 'flex h-11 w-11 items-center justify-center rounded-2xl bg-night-700 text-brand-400' }, ico('users')), h('p', { class: 'text-lg font-semibold text-white' }, P.parentTitle)),
+      h('p', { class: 'text-sm text-slate-300' }, P.parentText),
+      h('div', { class: 'flex flex-col gap-1 rounded-2xl bg-night-800 p-3' },
+        h('p', { class: 'text-xs text-slate-400' }, P.login), h('p', { class: 'select-all font-mono text-lg text-white' }, parent.login),
+        h('p', { class: 'mt-2 text-xs text-slate-400' }, P.password), pw),
+      h('div', { class: 'flex gap-2' }, showBtn, copyBtn),
+      resetBtn));
+    root.append(h('a', { href: '/privacy.html', target: '_blank', class: 'text-sm text-slate-400 underline' }, t('privacyTitle')));
+  }
+
+  // ---------- parent account: the child's progress, diary and subscription ----------
+  async function renderParent() {
+    const root = screen('parentHome');
+    const P = t('parentPage');
+    root.append(h('h2', { class: 'text-2xl font-semibold text-white' }, P.title), loading(t('loadingTopics')));
+    const r = await N.postJson('/api/parent/overview', {}).catch(() => ({}));
+    root.lastChild.remove();
+    if (!r.child) { root.append(h('p', { class: 'text-rose-200' }, t('errors').default)); return; }
+    const plan = r.child.plan;
+    const p = normalize({ progress: r.progress || {} }).progress;
+    const s = p.stats;
+    const S = t('sub');
+    // Child and access
+    const access = plan.active
+      ? P.accessUntil(plan.trial ? S.trialTitle : S.open, dateStr(plan.until))
+      : plan.never ? P.noAccessYet : S.expired;
+    const subBox = h('div', { class: 'flex flex-col gap-3' });
+    const askBtn = (months, label) => h('button', { type: 'button', class: months ? BTN : BTN2, onclick: async () => {
+      const res = await N.postJson('/api/parent/subscribe', { months });
+      if (res.request) showSteps(subBox, res.request, res.price, res.email);
+    } }, label);
+    root.append(h('div', { class: `${CARD} flex flex-col gap-3` },
+      h('p', { class: 'text-sm text-slate-400' }, P.child), h('p', { class: 'break-all text-lg font-semibold text-white' }, r.child.email),
+      h('p', { class: `rounded-2xl p-3 text-sm ring-1 ${plan.active ? 'bg-emerald-500/10 text-emerald-100 ring-emerald-400/30' : 'bg-amber-400/10 text-amber-100 ring-amber-400/30'}` }, access),
+      plan.never ? askBtn(0, S.trialAsk) : null,
+      askBtn(1, `${plan.active && !plan.trial ? S.renew : S.order} · ${sum(N.billing.price || 45000)}`),
+      subBox));
+    // Activity
+    const daySet = new Set(p.days || []);
+    const n = (() => { let k = 0; let d = new Date(); if (!daySet.has(d.toLocaleDateString('en-CA'))) d = new Date(d.getTime() - DAY); while (daySet.has(d.toLocaleDateString('en-CA'))) { k++; d = new Date(d.getTime() - DAY); } return k; })();
+    const pct = s.tasks ? Math.round((s.correct / s.tasks) * 100) : 0;
+    const stat = (v, label) => h('div', { class: 'rounded-2xl bg-night-900/80 p-3 text-center ring-1 ring-white/5' }, h('p', { class: 'text-2xl font-semibold tabular-nums text-white' }, String(v)), h('p', { class: 'text-xs text-slate-400' }, label));
+    root.append(h('div', { class: 'grid grid-cols-2 gap-2 sm:grid-cols-4' },
+      stat(n, P.streak), stat(`${r.usedToday}/${r.limit}`, P.today), stat(s.tasks, t('statTasks')), stat(`${pct}%`, t('statCorrect'))));
+    // Topics by subject
+    const groups = {};
+    Object.entries(p.topics || {}).forEach(([key, st]) => {
+      const [subjKey, grade, ...rest] = key.split('|');
+      const g = `${N.subjectName(subjKey)} · ${N.gradeLabel(grade)}`;
+      (groups[g] = groups[g] || []).push([rest.join('|'), st]);
+    });
+    const topicsBox = h('div', { class: `${CARD} flex flex-col gap-2` }, h('p', { class: 'font-semibold text-white' }, P.topics));
+    if (!Object.keys(groups).length) topicsBox.append(h('p', { class: 'text-sm text-slate-400' }, P.noTopics));
+    Object.entries(groups).forEach(([g, list]) => {
+      topicsBox.append(h('p', { class: 'mt-1 text-sm text-slate-400' }, g));
+      list.forEach(([topic, st]) => {
+        const [c] = topicColor(st);
+        topicsBox.append(h('div', { class: 'flex items-center gap-3 rounded-xl bg-night-800 px-3 py-2' }, h('span', { class: `h-3 w-3 shrink-0 rounded-full ${c}` }), h('span', { class: 'min-w-0 flex-1 text-sm text-slate-100' }, topic), h('span', { class: 'text-xs tabular-nums text-slate-400' }, `${st.ok}/${st.total}`)));
+      });
+    });
+    root.append(topicsBox);
+    // Homework
+    const diary = (r.diary || []).filter((d) => !d.done);
+    root.append(h('div', { class: `${CARD} flex flex-col gap-2` }, h('p', { class: 'font-semibold text-white' }, P.homework),
+      diary.length ? diary.map((d) => h('p', { class: 'text-sm text-slate-200' }, `• ${d.text} — ${N.subjectName(d.subject)}, ${t('until')(fmtDate(d.due))}`)) : h('p', { class: 'text-sm text-slate-400' }, P.noHomework)));
+    // AI report
+    const reportBox = h('div', { class: 'bubble whitespace-pre-wrap text-sm leading-relaxed text-slate-200' });
+    const reportBtn = h('button', { type: 'button', class: BTN2 }, ico('file-text'), t('parentReport'));
+    reportBtn.onclick = async () => {
+      reportBox.replaceChildren(loading(t('loadingTasks')));
+      const res = await N.postJson('/api/parent/report', { lang: N.lang });
+      reportBox.innerHTML = res.report ? N.formatReply(res.report) : '';
+      if (!res.report) reportBox.textContent = res.code === 'premium_required' ? P.reportNeedsSub : t('errors')[res.code] || t('errors').default;
+    };
+    root.append(h('div', { class: `${CARD} flex flex-col gap-3` }, reportBtn, reportBox));
+    // Child's password
+    const newPw = h('input', { type: 'text', class: INPUT, placeholder: P.newChildPwPh, id: 'childPw', autocomplete: 'off' });
+    const pwMsg = h('p', { class: 'text-sm' });
+    root.append(h('div', { class: `${CARD} flex flex-col gap-2` }, h('p', { class: 'font-semibold text-white' }, P.childPw), h('p', { class: 'text-sm text-slate-400' }, P.childPwText), newPw,
+      h('button', { type: 'button', class: BTN, onclick: async () => {
+        const res = await N.postJson('/api/parent/child-password', { password: newPw.value });
+        pwMsg.className = `text-sm ${res.ok ? 'text-emerald-200' : 'text-rose-200'}`;
+        pwMsg.textContent = res.ok ? P.childPwDone : P.childPwBad;
+        if (res.ok) newPw.value = '';
+      } }, P.childPwSave), pwMsg));
+  }
+
+  // ---------- landing for parents (not signed in) ----------
+  function renderLanding() {
+    const root = screen('landing');
+    const W = t('landing');
+    const langToggle = h('div', { class: 'flex justify-end' }, h('div', { class: 'flex rounded-2xl bg-night-800 p-1 ring-1 ring-white/5' },
+      ['uz', 'ru'].map((l) => h('button', { type: 'button', class: `min-h-11 min-w-12 rounded-xl px-3 text-[15px] font-medium ${N.lang === l ? 'bg-brand-500 text-white' : 'text-slate-300'}`, onclick: () => document.querySelector(`.lang-btn[data-lang="${l}"]`).click() }, l.toUpperCase()))));
+    root.append(langToggle,
+      h('div', { class: 'flex flex-col items-center gap-4 rounded-3xl bg-night-900/80 p-6 text-center ring-1 ring-white/5' },
+        h('img', { src: '/img/welcome.webp', alt: '', class: 'h-32 w-32 rounded-3xl object-cover' }),
+        h('h2', { class: 'text-3xl font-semibold leading-tight text-white' }, W.title),
+        h('p', { class: 'max-w-md text-slate-300' }, W.lead),
+        h('button', { type: 'button', class: BTN, onclick: () => N.showAuth('register') }, ico('sparkles'), W.start),
+        h('button', { type: 'button', class: BTN2, onclick: () => N.showAuth('login') }, W.login)));
+    root.append(h('h3', { class: 'mt-2 text-xl font-semibold text-white' }, W.whyTitle),
+      h('div', { class: 'grid gap-3 sm:grid-cols-2' }, W.why.map(([icon, title, text]) => h('div', { class: `${CARD} flex gap-3` },
+        h('span', { class: 'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-500/15 text-brand-400' }, ico(icon)),
+        h('div', { class: 'min-w-0' }, h('p', { class: 'font-semibold text-white' }, title), h('p', { class: 'text-sm text-slate-400' }, text))))));
+    root.append(h('h3', { class: 'mt-2 text-xl font-semibold text-white' }, W.insideTitle),
+      h('div', { class: 'flex flex-wrap gap-2' }, W.inside.map((x) => h('span', { class: 'rounded-full bg-night-800 px-3 py-2 text-sm text-slate-200 ring-1 ring-white/10' }, x))));
+    root.append(h('h3', { class: 'mt-2 text-xl font-semibold text-white' }, W.howTitle),
+      h('div', { class: 'flex flex-col gap-2' }, W.how.map((x, i) => h('div', { class: 'flex items-start gap-3' },
+        h('span', { class: 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white' }, String(i + 1)),
+        h('p', { class: 'pt-1 text-slate-300' }, x)))));
+    root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-white' },
+      h('p', { class: 'text-sm text-white/80' }, W.priceTitle),
+      h('p', { class: 'text-3xl font-semibold' }, t('sub').price(sum(N.billing.price || 45000))),
+      h('p', { class: 'text-sm text-white/85' }, W.priceText),
+      h('button', { type: 'button', class: 'min-h-12 rounded-2xl bg-white font-semibold text-brand-600', onclick: () => N.showAuth('register') }, W.start)));
+    root.append(h('div', { class: `${CARD} flex flex-col gap-2` }, h('p', { class: 'font-semibold text-white' }, W.parentTitle), h('p', { class: 'text-sm text-slate-400' }, W.parentText),
+      h('button', { type: 'button', class: BTN2, onclick: () => N.showAuth('login') }, ico('users'), W.parentLogin)));
+    root.append(h('a', { href: '/privacy.html', target: '_blank', class: 'self-center text-sm text-slate-400 underline' }, t('privacyTitle')));
   }
 
   // ---------- home ----------
@@ -1365,5 +1693,5 @@
     else if (name === 'activity' && arg) arg();
   }
 
-  window.NimiLearn = { load, render, markDay, openSubscribe, openAdmin };
+  window.NimiLearn = { load, render, markDay, openSubscribe, openAdmin, openSettings, renderParent, renderLanding };
 })();

@@ -43,7 +43,7 @@
       menuNew: 'Новый чат',
       subscription: 'Подписка',
       adminPanel: 'Админка',
-      premiumRequired: 'Бесплатная неделя закончилась. Оформи подписку, чтобы продолжить.',
+      premiumRequired: 'Этот раздел открывается с бесплатной неделей или подпиской.',
       photoTask: 'Фото задачи',
       photoReady: 'Фото задачи прикреплено. Можешь дописать вопрос.',
       photoDefault: 'Помоги разобраться с задачей на фото.',
@@ -82,7 +82,19 @@
       print: 'Распечатать / сохранить',
       tabLogin: 'Вход',
       tabRegister: 'Регистрация',
-      emailPh: 'Электронная почта',
+      emailPh: 'Почта или логин',
+      forgot: 'Забыли пароль?',
+      forgotText: 'Не переживай! Есть два способа вернуть вход:',
+      forgotParent: 'Если у тебя есть аккаунт родителя — мама или папа могут поставить новый пароль в своём кабинете.',
+      forgotWrite: 'Или напиши нам — мы сбросим пароль и пришлём новый:',
+      forgotGoogle: 'Если ты входил через Google — просто нажми «Вход с аккаунтом Google».',
+      forgotMessage: (email) => `Здравствуйте! Я забыл пароль от Nimi. Моя почта: ${email || '…'}`,
+      writeTelegram: 'Написать в Telegram',
+      callUs: 'Позвонить',
+      privacyLink: 'Правила и конфиденциальность',
+      settings: 'Настройки',
+      parentCabinet: 'Кабинет родителя',
+      adminCabinet: 'Админ-панель',
       passwordPh: 'Пароль',
       confirmPh: 'Повтори пароль',
       passwordHint: 'Минимум 8 символов: буквы и хотя бы одна цифра.',
@@ -119,7 +131,7 @@
       menuNew: 'Yangi chat',
       subscription: 'Obuna',
       adminPanel: 'Admin panel',
-      premiumRequired: "Bepul hafta tugadi. Davom etish uchun obuna rasmiylashtir.",
+      premiumRequired: "Bu bo'lim bepul hafta yoki obuna bilan ochiladi.",
       photoTask: 'Masala surati',
       photoReady: "Masala surati biriktirildi. Savolingni ham yozishing mumkin.",
       photoDefault: 'Suratdagi masalani tushunishga yordam ber.',
@@ -141,7 +153,7 @@
       greeting: (s, g) => `Salom! Bugun ${s}, ${g}-sinf. Masala yoki savolingni yoz — birga hal qilamiz. Tayyor javob bermayman, lekin o'zing topishingga yordam beraman.`,
       thinking: "O'ylayapman…",
       rateLimited: "Juda ko'p so'rov, bir daqiqadan keyin urinib ko'r",
-      dailyLimit: "Bugungi savollar tugadi (30 dan 30). Dam ol va masalalarni o'zing yechib ko'r — ertaga davom etamiz!",
+      dailyLimit: "Bugungi 30 ta savol tugadi. Dam ol va masalalarni o'zing yechib ko'r — ertaga davom etamiz!",
       blocked: "Keling, o'qishga qaytaylik. Maktab fani bo'yicha savol ber.",
       aiError: "AI hozir band. Birozdan keyin qayta urinib ko'r.",
       offline: "Server bilan aloqa yo'q. Internetni tekshirib, qayta urinib ko'r.",
@@ -158,7 +170,19 @@
       print: 'Chop etish / saqlash',
       tabLogin: 'Kirish',
       tabRegister: "Ro'yxatdan o'tish",
-      emailPh: 'Elektron pochta',
+      emailPh: 'Pochta yoki login',
+      forgot: 'Parolni unutdingmi?',
+      forgotText: "Xavotir olma! Kirishni qaytarishning ikki yo'li bor:",
+      forgotParent: "Agar ota-ona akkaunting bo'lsa — onang yoki otang o'z kabinetida yangi parol qo'yishi mumkin.",
+      forgotWrite: "Yoki bizga yoz — parolni tiklab, yangisini yuboramiz:",
+      forgotGoogle: "Agar Google orqali kirgan bo'lsang — «Google orqali kirish» tugmasini bos.",
+      forgotMessage: (email) => `Assalomu alaykum! Nimi'dagi parolimni unutdim. Pochtam: ${email || '…'}`,
+      writeTelegram: 'Telegramda yozish',
+      callUs: "Qo'ng'iroq qilish",
+      privacyLink: 'Qoidalar va maxfiylik',
+      settings: 'Sozlamalar',
+      parentCabinet: 'Ota-ona kabineti',
+      adminCabinet: 'Admin panel',
       passwordPh: 'Parol',
       confirmPh: 'Parolni takrorla',
       passwordHint: "Kamida 8 ta belgi: harflar va kamida bitta raqam.",
@@ -214,6 +238,7 @@
     store.set('deviceId', deviceId);
   }
   let user = null;
+  let childEmail = null; // for a parent account: the child's email
   let config = { googleClientId: '', accounts: false };
   let authMode = 'login';
   let setup = null;
@@ -440,17 +465,22 @@
   }
 
   // Screen name -> element id. Tabs show the bottom navigation.
-  const SCREENS = { auth: 'auth', setup: 'setup', home: 'home', chat: 'chatScreen', activity: 'activity', progress: 'progress', diary: 'diary' };
+  const SCREENS = { landing: 'landing', auth: 'auth', setup: 'setup', home: 'home', chat: 'chatScreen', activity: 'activity', progress: 'progress', diary: 'diary', parent: 'parentHome', admin: 'adminHome' };
+  const FLEX_SCREENS = ['landing', 'chat', 'home', 'activity', 'progress', 'diary', 'parent', 'admin'];
   const TAB_OF = { home: 'home', activity: 'home', chat: 'chat', progress: 'progress', diary: 'diary' };
   let currentScreen = '';
   function showScreen(name, arg) {
     currentScreen = name;
     for (const [key, id] of Object.entries(SCREENS)) {
       $(id).classList.toggle('hidden', key !== name);
-      if (['chat', 'home', 'activity', 'progress', 'diary'].includes(key)) $(id).classList.toggle('flex', key === name);
+      if (FLEX_SCREENS.includes(key)) $(id).classList.toggle('flex', key === name);
     }
     const inApp = !!TAB_OF[name];
-    $('menuWrap').classList.toggle('hidden', name === 'auth');
+    $('menuWrap').classList.toggle('hidden', name === 'auth' || name === 'landing');
+    $('subtitleLine').textContent = name === 'parent' ? t('parentCabinet') : name === 'admin' ? t('adminCabinet') : t('subtitle');
+    if (name === 'landing') window.NimiLearn?.renderLanding();
+    if (name === 'parent') window.NimiLearn?.renderParent();
+    if (name === 'admin') window.NimiLearn?.openAdmin('adminHome');
     $('tabbar').classList.toggle('hidden', !inApp);
     $('tabbar').classList.toggle('grid', inApp);
     $('timerPill').classList.toggle('hidden', !inApp);
@@ -536,6 +566,7 @@
       const action = item.dataset.action;
       if (action === 'logout') logout();
       else if (action === 'subscribe') window.NimiLearn?.openSubscribe();
+      else if (action === 'settings') window.NimiLearn?.openSettings();
       else if (action === 'admin') window.NimiLearn?.openAdmin();
       else if (action === 'report') openReport();
       else if (action === 'share') share();
@@ -757,6 +788,12 @@
   };
 
   function tick() {
+    // Screen time is for students; parents and staff are not interrupted.
+    if (user && user.role && user.role !== 'student') {
+      $('breakOverlay').classList.add('hidden');
+      $('breakOverlay').classList.remove('flex');
+      return;
+    }
     const now = Date.now();
     const st = timerState();
     if (st.breakUntil <= now) {
@@ -851,6 +888,8 @@
     $('passwordHint').classList.toggle('hidden', !reg);
     $('authPassword').autocomplete = reg ? 'new-password' : 'current-password';
     $('authSubmit').textContent = t(reg ? 'registerBtn' : 'loginBtn');
+    $('forgotLink').classList.toggle('hidden', reg);
+    if (reg) $('forgotBox').classList.add('hidden');
   }
 
   function showAuthError(code) {
@@ -876,16 +915,24 @@
     const adminItem = document.querySelector('[data-action="admin"]');
     adminItem.classList.toggle('hidden', !u.admin);
     adminItem.classList.toggle('flex', !!u.admin);
-    document.querySelector('[data-action="subscribe"]').classList.toggle('hidden', !config.accounts);
+    const student = (u.role || 'student') === 'student';
+    document.querySelectorAll('.student-only').forEach((el) => {
+      el.classList.toggle('hidden', !student);
+      el.classList.toggle('flex', student);
+    });
+    if (u.role === 'admin') { adminItem.classList.add('hidden'); adminItem.classList.remove('flex'); }
+    document.querySelector('[data-action="subscribe"]').classList.toggle('hidden', !config.accounts || !student);
     document.querySelector('[data-action="logout"]').classList.toggle('hidden', !u.email);
+    $('authForm').reset();
+    showAuthError(null);
+    // Parents and staff have their own single screen.
+    if (u.role === 'parent' || u.role === 'admin') return showScreen(u.role);
     setup = store.get('setup', null);
     sessions = store.get('sessions', []);
     pendingSubject = setup && setup.subject;
     pendingGrade = setup && setup.grade;
     setRemaining(left);
     if (setup && (!currentSession() || currentSession().date !== today())) newSession();
-    $('authForm').reset();
-    showAuthError(null);
     renderSetupOptions();
     renderStatus();
     Promise.resolve(window.NimiLearn?.load()).finally(() => showScreen(setup && currentSession() ? 'home' : 'setup'));
@@ -896,6 +943,15 @@
     account = '';
     setup = null;
     sessions = [];
+    showScreen('landing');
+    renderGoogleButton();
+  }
+
+  // Opens the sign-in form: mode 'login' or 'register'.
+  function showAuth(mode = 'login') {
+    authMode = mode;
+    renderAuthMode();
+    showAuthError(null);
     showScreen('auth');
     renderGoogleButton();
   }
@@ -912,6 +968,7 @@
       const data = await promise;
       if (!data.user) return showAuthError(data.code);
       const me = await fetch('/api/auth/me').then((r) => r.json());
+      childEmail = me.child || null;
       signedIn(me.user || data.user, me.remaining);
     } catch {
       showAuthError('offline');
@@ -919,6 +976,26 @@
       $('authSubmit').disabled = false;
     }
   }
+
+  // "Forgot password": the parent can set a new one, or the owner resets it on request.
+  $('forgotLink').onclick = () => {
+    const box = $('forgotBox');
+    const show = box.classList.contains('hidden');
+    box.classList.toggle('hidden', !show);
+    box.classList.toggle('flex', show);
+    if (!show) return;
+    const b = config.billing || {};
+    const msg = t('forgotMessage')($('authEmail').value.trim());
+    const p = (text, cls = 'text-sm text-slate-300') => Object.assign(document.createElement('p'), { className: cls, textContent: text });
+    const link = (href, label, primary) => Object.assign(document.createElement('a'), {
+      href, target: '_blank', rel: 'noopener', textContent: label,
+      className: `flex min-h-12 items-center justify-center rounded-2xl px-4 font-semibold ${primary ? 'bg-brand-500 text-white' : 'bg-night-700 text-slate-100'}`,
+    });
+    box.replaceChildren(p(t('forgotText'), 'font-semibold text-white'), p(`1. ${t('forgotParent')}`), p(`2. ${t('forgotWrite')}`));
+    if (b.telegram) box.append(link(`https://t.me/${encodeURIComponent(b.telegram)}?text=${encodeURIComponent(msg)}`, t('writeTelegram'), true));
+    if (b.phone) box.append(link(`tel:${b.phone.replace(/[^\d+]/g, '')}`, `${t('callUs')}: ${b.phone}`, false));
+    box.append(p(t('forgotGoogle'), 'text-xs text-slate-400'));
+  };
 
   document.querySelectorAll('.auth-tab').forEach((b) => {
     b.onclick = () => { authMode = b.dataset.mode; showAuthError(null); renderAuthMode(); };
@@ -933,7 +1010,9 @@
     e.preventDefault();
     const email = $('authEmail').value.trim();
     const password = $('authPassword').value;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return showAuthError('invalid_email');
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+    const isLogin = /^[a-z0-9][a-z0-9-]{2,31}$/i.test(email);
+    if (!isEmail && !(authMode === 'login' && isLogin)) return showAuthError('invalid_email');
     if (authMode === 'register') {
       if (password.length < 8 || !/\p{L}/u.test(password) || !/\d/.test(password)) return showAuthError('weak_password');
       if (password !== $('authConfirm').value) return showAuthError('mismatch');
@@ -1003,6 +1082,8 @@
     get billing() { return config.billing || {}; },
     hasAccess,
     refreshUser,
+    showAuth,
+    get child() { return childEmail; },
     get sessions() { return sessions; },
   };
 
@@ -1018,6 +1099,7 @@
       // No accounts database on the server: guest mode, no login screen.
       if (!config.accounts) return signedIn({ email: '' });
       const me = await fetch('/api/auth/me').then((r) => r.json());
+      childEmail = me.child || null;
       if (me.user) return signedIn(me.user, me.remaining);
     } catch {}
     signedOut();
