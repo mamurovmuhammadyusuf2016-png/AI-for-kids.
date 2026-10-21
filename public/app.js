@@ -41,6 +41,9 @@
       reportShort: 'Отчёт',
       menuChange: 'Сменить предмет или класс',
       menuNew: 'Новый чат',
+      subscription: 'Подписка',
+      adminPanel: 'Админка',
+      premiumRequired: 'Бесплатная неделя закончилась. Оформи подписку, чтобы продолжить.',
       photoTask: 'Фото задачи',
       photoReady: 'Фото задачи прикреплено. Можешь дописать вопрос.',
       photoDefault: 'Помоги разобраться с задачей на фото.',
@@ -114,6 +117,9 @@
       reportShort: 'Hisobot',
       menuChange: "Fan yoki sinfni o'zgartirish",
       menuNew: 'Yangi chat',
+      subscription: 'Obuna',
+      adminPanel: 'Admin panel',
+      premiumRequired: "Bepul hafta tugadi. Davom etish uchun obuna rasmiylashtir.",
       photoTask: 'Masala surati',
       photoReady: "Masala surati biriktirildi. Savolingni ham yozishing mumkin.",
       photoDefault: 'Suratdagi masalani tushunishga yordam ber.',
@@ -487,7 +493,11 @@
   }
   $('changeSetup').onclick = openSetup;
   $('backBtn').onclick = () => setup && showScreen('home');
-  document.querySelectorAll('.tab-btn').forEach((b) => { b.onclick = () => showScreen(b.dataset.tab); });
+  // The chat is part of the subscription: after the free week it opens the subscription page.
+  const hasAccess = () => !config.accounts || !!user?.admin || !!user?.plan?.active;
+  document.querySelectorAll('.tab-btn').forEach((b) => {
+    b.onclick = () => (b.dataset.tab === 'chat' && !hasAccess() ? window.NimiLearn?.openSubscribe() : showScreen(b.dataset.tab));
+  });
   function startNewChat() {
     if (busy || !currentSession().messages.length) return;
     newSession();
@@ -525,6 +535,8 @@
       closeMenu();
       const action = item.dataset.action;
       if (action === 'logout') logout();
+      else if (action === 'subscribe') window.NimiLearn?.openSubscribe();
+      else if (action === 'admin') window.NimiLearn?.openAdmin();
       else if (action === 'report') openReport();
       else if (action === 'share') share();
       else if (action === 'change') openSetup();
@@ -704,6 +716,10 @@
         s.messages.pop();
         saveSessions();
         signedOut();
+      } else if (data.code === 'premium_required') {
+        fail(t('premiumRequired'));
+        await refreshUser();
+        window.NimiLearn?.openSubscribe();
       } else if (data.code === 'daily_limit') {
         setRemaining(0);
         fail(t('dailyLimit'));
@@ -773,6 +789,7 @@
   }
 
   async function openReport() {
+    if (!hasAccess()) return window.NimiLearn?.openSubscribe();
     $('reportModal').classList.remove('hidden');
     $('reportModal').classList.add('flex');
     const withMessages = sessions.filter((s) => s.messages.some((m) => m.role === 'user'));
@@ -856,6 +873,10 @@
     account = u.email;
     $('menuEmail').textContent = u.email;
     $('menuEmail').parentElement.classList.toggle('hidden', !u.email);
+    const adminItem = document.querySelector('[data-action="admin"]');
+    adminItem.classList.toggle('hidden', !u.admin);
+    adminItem.classList.toggle('flex', !!u.admin);
+    document.querySelector('[data-action="subscribe"]').classList.toggle('hidden', !config.accounts);
     document.querySelector('[data-action="logout"]').classList.toggle('hidden', !u.email);
     setup = store.get('setup', null);
     sessions = store.get('sessions', []);
@@ -961,6 +982,15 @@
     });
   }
 
+  // Re-reads the account (subscription status) from the server.
+  async function refreshUser() {
+    try {
+      const me = await fetch('/api/auth/me').then((r) => r.json());
+      if (me.user) { user = me.user; setRemaining(me.remaining); }
+    } catch {}
+    return user;
+  }
+
   // Shared with learn-ui.js.
   window.Nimi = {
     t, icon, store, today, postJson, showScreen, openReport, openSetup, subjectName, gradeLabel, formatReply, speak, askWithPhoto,
@@ -970,6 +1000,9 @@
     get user() { return user; },
     get account() { return account; },
     get accounts() { return !!config.accounts; },
+    get billing() { return config.billing || {}; },
+    hasAccess,
+    refreshUser,
     get sessions() { return sessions; },
   };
 

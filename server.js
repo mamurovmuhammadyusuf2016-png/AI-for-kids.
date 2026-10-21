@@ -19,6 +19,15 @@ const DAILY_LIMIT = 30;
 // Generated exercise sets (training, tests, reading, cards) per day.
 const LEARN_LIMIT = 20;
 const DATA_KEYS = new Set(['progress', 'diary', 'cards']);
+
+// Subscription: price and how students reach the owner (set on Render).
+const PRICE_UZS = Number(process.env.PRICE_UZS) || 45000;
+const CONTACT_TELEGRAM = (process.env.CONTACT_TELEGRAM || '').replace(/^@/, '');
+const CONTACT_PHONE = process.env.CONTACT_PHONE || '';
+const PAYMENT_CARD = process.env.PAYMENT_CARD || '';
+const ADMIN_EMAILS = new Set((process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean));
+// Free without a subscription: word cards (and the topic list), games and diary run in the browser.
+const FREE_PATHS = new Set(['/api/learn/cards', '/api/learn/topics', '/api/data', '/api/subscribe']);
 const MAX_DATA_BYTES = 300000;
 const FREQUENT_WINDOW_MS = 3 * 60 * 1000;
 const FREQUENT_COUNT = 5;
@@ -451,11 +460,40 @@ async function handleData(req, res, body, user) {
   sendJson(res, 200, { ok: true });
 }
 
+const isAdmin = (user) => !!user?.email && ADMIN_EMAILS.has(user.email);
+
 async function handleMe(req, res) {
   const user = await auth.getUser(req);
   if (!user) return sendJson(res, 200, { user: null });
   const used = await auth.usedToday(user.id, today());
-  sendJson(res, 200, { user: auth.publicUser(user), remaining: Math.max(0, DAILY_LIMIT - used), limit: DAILY_LIMIT });
+  sendJson(res, 200, {
+    user: { ...auth.publicUser(user), admin: isAdmin(user) },
+    remaining: Math.max(0, DAILY_LIMIT - used),
+    limit: DAILY_LIMIT,
+  });
+}
+
+// ---------- subscription requests and admin ----------
+async function handleSubscribe(req, res, body, user) {
+  if (!auth.enabled()) return sendJson(res, 503, { code: 'auth_unavailable' });
+  const months = [1, 3, 6, 12].includes(Number(body.months)) ? Number(body.months) : 1;
+  const request = await auth.requestSubscription(user.id, months);
+  sendJson(res, 200, { request: { id: request.id, months: request.months }, price: PRICE_UZS * request.months });
+}
+
+async function handleAdmin(req, res, body, user, action) {
+  if (!isAdmin(user)) return sendJson(res, 403, { code: 'forbidden' });
+  if (action === 'requests') return sendJson(res, 200, { requests: await auth.listRequests() });
+  if (action === 'grant') {
+    const months = Math.min(12, Math.max(1, parseInt(body.months, 10) || 1));
+    const granted = await auth.grantMonths(cleanText(body.email, 254), months, parseInt(body.requestId, 10) || null);
+    return sendJson(res, 200, { email: granted.email, until: granted.premium_until });
+  }
+  if (action === 'reject') {
+    await auth.rejectRequest(parseInt(body.requestId, 10));
+    return sendJson(res, 200, { ok: true });
+  }
+  sendJson(res, 404, { code: 'not_found' });
 }
 
 // Account actions: each returns { user, cookie }.
@@ -492,13 +530,18 @@ async function handleApiPost(req, res, urlPath) {
   const learnKind = urlPath.startsWith('/api/learn/') && urlPath.slice('/api/learn/'.length);
   const handler = Object.hasOwn(LEARN_KINDS, learnKind || '')
     ? (q, r, b, u) => handleLearn(q, r, b, u, learnKind)
-    : { '/api/chat': handleChat, '/api/report': handleReport, '/api/data': handleData }[urlPath];
+    : urlPath.startsWith('/api/admin/')
+      ? (q, r, b, u) => handleAdmin(q, r, b, u, urlPath.slice('/api/admin/'.length))
+      : { '/api/chat': handleChat, '/api/report': handleReport, '/api/data': handleData, '/api/subscribe': handleSubscribe }[urlPath];
   if (!handler) return sendJson(res, 404, { code: 'not_found' });
   // Without a database the app runs in guest mode, limited per device.
   const deviceId = cleanText(body.deviceId, 64);
   if (!auth.enabled() && !deviceId) return sendJson(res, 400, { code: 'bad_request' });
   const user = auth.enabled() ? await auth.getUser(req) : { id: `device:${deviceId}` };
   if (!user) return sendJson(res, 401, { code: 'unauthorized' });
+  // After the free week only cards, games and the diary stay open (admins always have access).
+  const locked = auth.enabled() && !FREE_PATHS.has(urlPath) && !urlPath.startsWith('/api/admin/') && !isAdmin(user) && !auth.plan(user).active;
+  if (locked) return sendJson(res, 402, { code: 'premium_required' });
   return handler(req, res, body, user);
 }
 
@@ -508,7 +551,11 @@ async function route(req, res) {
     if (req.method === 'POST' && urlPath.startsWith('/api/')) return await handleApiPost(req, res, urlPath);
     if (req.method === 'GET' && urlPath === '/api/auth/me') return await handleMe(req, res);
     if (req.method === 'GET' && urlPath === '/api/config') {
-      return sendJson(res, 200, { googleClientId: auth.GOOGLE_CLIENT_ID, accounts: auth.enabled() });
+      return sendJson(res, 200, {
+        googleClientId: auth.GOOGLE_CLIENT_ID,
+        accounts: auth.enabled(),
+        billing: { price: PRICE_UZS, trialDays: 7, telegram: CONTACT_TELEGRAM, phone: CONTACT_PHONE, card: PAYMENT_CARD },
+      });
     }
     if (req.method === 'GET' && urlPath === '/health') return sendJson(res, 200, { ok: true });
     if (req.method === 'GET' && serveStatic(res, urlPath)) return;

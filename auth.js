@@ -71,6 +71,15 @@ async function init() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       PRIMARY KEY (user_id, key)
     );
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMPTZ;
+    CREATE TABLE IF NOT EXISTS payment_requests (
+      id BIGSERIAL PRIMARY KEY,
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      months INT NOT NULL DEFAULT 1,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      resolved_at TIMESTAMPTZ
+    );
     CREATE TABLE IF NOT EXISTS topic_cache (
       subject TEXT NOT NULL,
       grade INT NOT NULL,
@@ -153,7 +162,8 @@ async function getUser(req) {
   const token = parseCookies(req)[SESSION_COOKIE];
   if (!token) return null;
   const { rows } = await pool.query(
-    `SELECT u.id, u.email, u.password_hash IS NOT NULL AS has_password, u.google_sub IS NOT NULL AS has_google
+    `SELECT u.id, u.email, u.created_at, u.premium_until,
+            u.password_hash IS NOT NULL AS has_password, u.google_sub IS NOT NULL AS has_google
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = $1 AND s.expires_at > now()`,
     [sha256(token)],
@@ -161,8 +171,64 @@ async function getUser(req) {
   return rows[0] || null;
 }
 
+// ---------- subscription: free trial after sign-up, then paid months ----------
+const TRIAL_DAYS = 7;
+const DAY_MS = 24 * 3600 * 1000;
+
+function plan(u) {
+  if (!u.created_at) return { active: true, trial: true, until: null };
+  const trialEnd = new Date(u.created_at).getTime() + TRIAL_DAYS * DAY_MS;
+  const paidEnd = u.premium_until ? new Date(u.premium_until).getTime() : 0;
+  const until = Math.max(trialEnd, paidEnd);
+  return { active: until > Date.now(), trial: paidEnd < trialEnd, until: new Date(until).toISOString() };
+}
+
 function publicUser(u) {
-  return { email: u.email, google: !!u.has_google, password: !!u.has_password };
+  return { email: u.email, google: !!u.has_google, password: !!u.has_password, plan: plan(u) };
+}
+
+// One open request per student; returns the existing one if it is still pending.
+async function requestSubscription(userId, months) {
+  const db = requirePool();
+  const open = await db.query(`SELECT id, months, created_at FROM payment_requests WHERE user_id = $1 AND status = 'pending'`, [userId]);
+  if (open.rows.length) {
+    if (open.rows[0].months !== months) await db.query('UPDATE payment_requests SET months = $2 WHERE id = $1', [open.rows[0].id, months]);
+    return { ...open.rows[0], months };
+  }
+  const { rows } = await db.query('INSERT INTO payment_requests (user_id, months) VALUES ($1, $2) RETURNING id, months, created_at', [userId, months]);
+  return rows[0];
+}
+
+async function listRequests() {
+  const { rows } = await requirePool().query(
+    `SELECT r.id, r.months, r.status, r.created_at, r.resolved_at, u.email, u.premium_until
+       FROM payment_requests r JOIN users u ON u.id = r.user_id
+      ORDER BY (r.status = 'pending') DESC, r.created_at DESC LIMIT 50`,
+  );
+  return rows;
+}
+
+// Adds paid months after the current end (or from now if it has passed).
+async function grantMonths(email, months, requestId) {
+  const db = requirePool();
+  const { rows } = await db.query(
+    `UPDATE users SET premium_until = GREATEST(COALESCE(premium_until, now()), now(), created_at + make_interval(days => ${TRIAL_DAYS}))
+                                      + make_interval(days => $2)
+      WHERE email = $1 RETURNING id, email, premium_until`,
+    [normalizeEmail(email), months * 30],
+  );
+  if (!rows.length) throw new AuthError('user_not_found', 404);
+  // Close the request it pays for, or every open request of this student.
+  if (requestId) {
+    await db.query(`UPDATE payment_requests SET status = 'paid', resolved_at = now() WHERE id = $1`, [requestId]);
+  } else {
+    await db.query(`UPDATE payment_requests SET status = 'paid', resolved_at = now() WHERE user_id = $1 AND status = 'pending'`, [rows[0].id]);
+  }
+  return rows[0];
+}
+
+async function rejectRequest(id) {
+  await requirePool().query(`UPDATE payment_requests SET status = 'rejected', resolved_at = now() WHERE id = $1 AND status = 'pending'`, [id]);
 }
 
 // ---------- brute-force protection ----------
@@ -318,6 +384,11 @@ async function cacheTopics(subject, grade, lang, topics) {
 }
 
 module.exports = {
+  plan,
+  requestSubscription,
+  listRequests,
+  grantMonths,
+  rejectRequest,
   countGeneration,
   generationsToday,
   getData,

@@ -45,6 +45,47 @@
       olympiadIntro: '5 нестандартных задач. Не торопись: здесь важна догадка.',
       noAnswer: '(нет ответа)',
       listen: 'Послушать',
+      sub: {
+        title: 'Подписка Nimi',
+        price: (p) => `${p} в месяц`,
+        includes: ['Чат с учителем — 30 вопросов в день', 'Фото задачи и голос', 'Тренировки, тесты, чтение', 'Экзамены и олимпиада', 'Отчёт для родителей'],
+        freeLeft: 'Без подписки остаются карточки слов, игры на счёт и дневник.',
+        trial: (n) => `Бесплатная неделя: осталось ${n} ${plural(n, 'день', 'дня', 'дней')}`,
+        active: (d) => `Подписка активна до ${d}`,
+        ending: (n) => `Подписка закончится через ${n} ${plural(n, 'день', 'дня', 'дней')} — не забудь продлить`,
+        expired: 'Бесплатная неделя закончилась',
+        expiredText: 'Карточки, игры и дневник по-прежнему открыты. Чтобы снова пользоваться чатом и заданиями, оформи подписку.',
+        months: 'На сколько месяцев?',
+        monthLabel: (m) => `${m} мес.`,
+        order: 'Оформить подписку',
+        renew: 'Продлить подписку',
+        request: (id) => `Заявка №${id} создана`,
+        step1: (sum) => `Переведи ${sum} на карту:`,
+        copy: 'Скопировать',
+        copied: 'Скопировано',
+        step2: 'Напиши или позвони — подписку включат после проверки оплаты:',
+        telegram: 'Написать в Telegram',
+        call: 'Позвонить',
+        noContacts: 'Контакты для оплаты скоро появятся. Загляни позже.',
+        step3: 'Подписка включится после проверки. Потом нажми «Проверить статус».',
+        check: 'Проверить статус',
+        message: (m, id, email) => `Здравствуйте! Хочу подписку Nimi на ${m} мес. Заявка №${id}, аккаунт: ${email}`,
+        locked: 'По подписке',
+        open: 'Подписка',
+      },
+      admin: {
+        title: 'Админка',
+        pending: 'Заявки',
+        none: 'Новых заявок нет.',
+        grant: (m) => `Включить ${m} мес.`,
+        enable: 'Включить',
+        reject: 'Отклонить',
+        manual: 'Включить подписку вручную',
+        emailPh: 'Почта ученика',
+        done: (email, d) => `Готово: ${email} — подписка до ${d}`,
+        status: { pending: 'ждёт', paid: 'оплачено', rejected: 'отклонено' },
+        notFound: 'Аккаунт с такой почтой не найден.',
+      },
       loadingTasks: 'Готовлю задания… Это займёт до 30 секунд.',
       loadingText: 'Подбираю текст… Это займёт до 30 секунд.',
       loadingWords: 'Составляю набор слов…',
@@ -182,6 +223,47 @@
       olympiadIntro: "5 ta nostandart masala. Shoshilma: bu yerda topqirlik muhim.",
       noAnswer: "(javob yo'q)",
       listen: 'Tinglash',
+      sub: {
+        title: 'Nimi obunasi',
+        price: (p) => `oyiga ${p}`,
+        includes: ["O'qituvchi bilan chat — kuniga 30 ta savol", 'Masala surati va ovoz', 'Mashqlar, testlar, o\'qish', 'Imtihonlar va olimpiada', 'Ota-onalar uchun hisobot'],
+        freeLeft: "Obunasiz so'z kartochkalari, hisob o'yinlari va kundalik ochiq qoladi.",
+        trial: (n) => `Bepul hafta: ${n} kun qoldi`,
+        active: (d) => `Obuna ${d} gacha faol`,
+        ending: (n) => `Obuna ${n} kundan keyin tugaydi — uzaytirishni unutma`,
+        expired: 'Bepul hafta tugadi',
+        expiredText: "Kartochkalar, o'yinlar va kundalik ochiq. Chat va topshiriqlardan yana foydalanish uchun obuna rasmiylashtir.",
+        months: 'Necha oyga?',
+        monthLabel: (m) => `${m} oy`,
+        order: 'Obuna rasmiylashtirish',
+        renew: 'Obunani uzaytirish',
+        request: (id) => `${id}-raqamli ariza yaratildi`,
+        step1: (sum) => `${sum}ni kartaga o'tkaz:`,
+        copy: 'Nusxalash',
+        copied: 'Nusxalandi',
+        step2: "Yoz yoki qo'ng'iroq qil — to'lov tekshirilgach obuna yoqiladi:",
+        telegram: 'Telegramda yozish',
+        call: "Qo'ng'iroq qilish",
+        noContacts: "To'lov uchun kontaktlar tez orada paydo bo'ladi. Keyinroq kirib ko'r.",
+        step3: "Tekshiruvdan keyin obuna yoqiladi. So'ng «Holatni tekshirish»ni bos.",
+        check: 'Holatni tekshirish',
+        message: (m, id, email) => `Assalomu alaykum! Nimi obunasini ${m} oyga olmoqchiman. Ariza №${id}, akkaunt: ${email}`,
+        locked: 'Obuna bilan',
+        open: 'Obuna',
+      },
+      admin: {
+        title: 'Admin panel',
+        pending: 'Arizalar',
+        none: "Yangi arizalar yo'q.",
+        grant: (m) => `${m} oyga yoqish`,
+        enable: 'Yoqish',
+        reject: 'Rad etish',
+        manual: "Obunani qo'lda yoqish",
+        emailPh: "O'quvchi pochtasi",
+        done: (email, d) => `Tayyor: ${email} — obuna ${d} gacha`,
+        status: { pending: 'kutmoqda', paid: "to'langan", rejected: 'rad etilgan' },
+        notFound: 'Bunday pochtali akkaunt topilmadi.',
+      },
       loadingTasks: 'Topshiriqlar tayyorlanmoqda… 30 soniyagacha.',
       loadingText: 'Matn tanlanmoqda… 30 soniyagacha.',
       loadingWords: "So'zlar to'plami tuzilmoqda…",
@@ -381,6 +463,7 @@
     } catch {
       throw new Error('default');
     }
+    if (res.code === 'premium_required') { await N.refreshUser(); openSubscribe(); throw new Error('premium_required'); }
     if (res.code) throw new Error(res.code);
     return res;
   }
@@ -947,6 +1030,129 @@
     show();
   }
 
+  // ---------- subscription ----------
+  const sum = (n) => `${n.toLocaleString('ru-RU').replace(/,/g, ' ')} ${N.lang === 'uz' ? "so'm" : 'сум'}`;
+  const dateStr = (iso) => new Date(iso).toLocaleDateString(N.lang === 'uz' ? 'uz-UZ' : 'ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const daysLeft = (iso) => Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / DAY));
+
+  // Status line for the home screen and the subscription page; null in guest mode.
+  function planStatus() {
+    const plan = N.user?.plan;
+    if (!N.accounts || !plan || N.user?.admin) return null;
+    const S = t('sub');
+    if (!plan.active) return { tone: 'expired', text: S.expired };
+    const n = daysLeft(plan.until);
+    if (plan.trial) return { tone: 'trial', text: S.trial(n) };
+    if (n <= 3) return { tone: 'ending', text: S.ending(n) };
+    return { tone: 'active', text: S.active(dateStr(plan.until)) };
+  }
+
+  function openSubscribe() {
+    const root = screen('activity');
+    const S = t('sub');
+    const price = N.billing.price || 45000;
+    const st = planStatus();
+    root.append(titleBar(S.title));
+    root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-white shadow-lg shadow-brand-500/30' },
+      h('p', { class: 'text-3xl font-semibold' }, S.price(sum(price))),
+      h('ul', { class: 'flex flex-col gap-2' }, S.includes.map((x) => h('li', { class: 'flex items-start gap-2' }, ico('circle-check', 'icon mt-0.5'), x))),
+      h('p', { class: 'text-sm text-white/80' }, S.freeLeft)));
+    if (st) {
+      const tone = { expired: 'bg-rose-500/10 text-rose-100 ring-rose-400/30', ending: 'bg-amber-400/10 text-amber-100 ring-amber-400/30', trial: 'bg-sky-500/10 text-sky-100 ring-sky-400/30', active: 'bg-emerald-500/10 text-emerald-100 ring-emerald-400/30' }[st.tone];
+      root.append(h('p', { class: `rounded-2xl p-4 ring-1 ${tone}` }, st.text));
+    }
+    let months = 1;
+    const priceBtn = h('button', { type: 'button', class: BTN });
+    const monthsRow = h('div', { class: 'grid grid-cols-4 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5' });
+    const drawMonths = () => {
+      monthsRow.innerHTML = '';
+      [1, 3, 6, 12].forEach((m) => monthsRow.append(h('button', { type: 'button', class: `min-h-12 rounded-xl text-[15px] font-medium ${m === months ? 'bg-brand-500 text-white' : 'text-slate-300'}`, onclick: () => { months = m; drawMonths(); } }, S.monthLabel(m))));
+      priceBtn.textContent = `${N.user?.plan?.active && !N.user?.plan?.trial ? S.renew : S.order} · ${sum(price * months)}`;
+    };
+    drawMonths();
+    const steps = h('div', { class: 'flex flex-col gap-3' });
+    priceBtn.onclick = async () => {
+      priceBtn.disabled = true;
+      try {
+        const r = await N.postJson('/api/subscribe', { months });
+        if (!r.request) throw new Error(r.code || 'default');
+        showSteps(steps, r.request, r.price);
+        steps.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (e) {
+        steps.innerHTML = '';
+        steps.append(h('p', { class: 'text-rose-200' }, t('errors')[e.message] || t('errors').default));
+      } finally {
+        priceBtn.disabled = false;
+      }
+    };
+    root.append(h('p', { class: 'font-semibold text-white' }, S.months), monthsRow, priceBtn, steps);
+  }
+
+  function showSteps(box, request, total) {
+    const S = t('sub');
+    const b = N.billing;
+    const email = N.user?.email || '';
+    box.innerHTML = '';
+    box.append(h('p', { class: 'flex items-center gap-2 font-semibold text-emerald-200' }, ico('circle-check'), S.request(request.id)));
+    if (b.card) {
+      const copyBtn = h('button', { type: 'button', class: 'min-h-11 shrink-0 rounded-xl bg-night-700 px-4 text-sm text-white hover:bg-night-600' }, S.copy);
+      copyBtn.onclick = async () => {
+        try { await navigator.clipboard.writeText(b.card.replace(/\s/g, '')); copyBtn.textContent = S.copied; } catch {}
+      };
+      box.append(h('div', { class: `${CARD} flex flex-col gap-2` },
+        h('p', { class: 'text-slate-300' }, `1. ${S.step1(sum(total))}`),
+        h('div', { class: 'flex items-center gap-3' }, h('p', { class: 'min-w-0 flex-1 select-all text-xl font-semibold tracking-wider tabular-nums text-white' }, b.card), copyBtn)));
+    }
+    const text = S.message(request.months, request.id, email);
+    const links = [];
+    if (b.telegram) links.push(h('a', { class: BTN, href: `https://t.me/${encodeURIComponent(b.telegram)}?text=${encodeURIComponent(text)}`, target: '_blank', rel: 'noopener' }, ico('send'), S.telegram));
+    if (b.phone) links.push(h('a', { class: BTN2, href: `tel:${b.phone.replace(/[^\d+]/g, '')}` }, ico('message-circle'), `${S.call}: ${b.phone}`));
+    box.append(h('div', { class: `${CARD} flex flex-col gap-2` },
+      h('p', { class: 'text-slate-300' }, `${b.card ? '2. ' : ''}${S.step2}`),
+      ...(links.length ? links : [h('p', { class: 'text-amber-200' }, S.noContacts)]),
+      h('p', { class: 'select-all rounded-xl bg-night-800 p-3 text-sm text-slate-300' }, text)));
+    const check = h('button', { type: 'button', class: BTN2 }, ico('repeat'), S.check);
+    check.onclick = async () => { await N.refreshUser(); openSubscribe(); };
+    box.append(h('p', { class: 'text-sm text-slate-400' }, S.step3), check);
+  }
+
+  // ---------- admin: subscription requests ----------
+  async function openAdmin() {
+    const root = screen('activity');
+    const A = t('admin');
+    root.append(titleBar(A.title));
+    const msg = h('p', { class: 'text-sm' });
+    const email = h('input', { type: 'email', class: INPUT, placeholder: A.emailPh, id: 'adminEmail' });
+    const months = h('select', { class: `${INPUT} appearance-none`, id: 'adminMonths' }, [1, 3, 6, 12].map((m) => h('option', { value: m }, t('sub').monthLabel(m))));
+    const grant = async (mail, m, requestId) => {
+      const r = await N.postJson('/api/admin/grant', { email: mail, months: m, requestId });
+      if (r.until) { await openAdmin(); $('activity').prepend(h('p', { class: 'rounded-2xl bg-emerald-500/10 p-3 text-emerald-100' }, A.done(r.email, dateStr(r.until)))); }
+      else msg.textContent = r.code === 'user_not_found' ? A.notFound : t('errors').default;
+    };
+    root.append(h('div', { class: `${CARD} flex flex-col gap-2` },
+      h('p', { class: 'font-semibold text-white' }, A.manual), email,
+      h('div', { class: 'grid grid-cols-2 gap-2' }, months, h('button', { type: 'button', class: BTN, onclick: () => email.value.trim() && grant(email.value.trim(), Number(months.value)) }, A.enable)),
+      msg));
+    root.append(h('p', { class: 'font-semibold text-white' }, A.pending));
+    const list = h('div', { class: 'flex flex-col gap-2' }, loading(t('loadingTopics')));
+    root.append(list);
+    const r = await N.postJson('/api/admin/requests', {});
+    list.innerHTML = '';
+    const requests = r.requests || [];
+    if (!requests.length) list.append(h('p', { class: 'text-slate-400' }, A.none));
+    requests.forEach((q) => {
+      const pending = q.status === 'pending';
+      list.append(h('div', { class: `${CARD} flex flex-col gap-2 ${pending ? '' : 'opacity-60'}` },
+        h('div', { class: 'flex items-center justify-between gap-2' },
+          h('p', { class: 'min-w-0 truncate font-semibold text-white' }, `№${q.id} · ${q.email}`),
+          h('span', { class: `shrink-0 rounded-full px-2.5 py-1 text-xs ${pending ? 'bg-amber-400/15 text-amber-200' : q.status === 'paid' ? 'bg-emerald-500/15 text-emerald-200' : 'bg-night-700 text-slate-400'}` }, A.status[q.status] || q.status)),
+        h('p', { class: 'text-sm text-slate-400' }, `${t('sub').monthLabel(q.months)} · ${sum((N.billing.price || 45000) * q.months)} · ${dateStr(q.created_at)}${q.premium_until ? ` · ${t('sub').active(dateStr(q.premium_until))}` : ''}`),
+        pending ? h('div', { class: 'grid grid-cols-2 gap-2' },
+          h('button', { type: 'button', class: BTN, onclick: () => grant(q.email, q.months, q.id) }, A.grant(q.months)),
+          h('button', { type: 'button', class: BTN2, onclick: async () => { await N.postJson('/api/admin/reject', { requestId: q.id }); openAdmin(); } }, A.reject)) : null));
+    });
+  }
+
   // ---------- home ----------
   function renderHome() {
     const root = screen('home');
@@ -959,15 +1165,31 @@
       h('h2', { class: 'text-2xl font-semibold text-white' }, t('hello')),
       h('span', { class: `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm ${n ? 'bg-amber-400/15 text-amber-200' : 'bg-night-800 text-slate-400'}` }, ico('flame', 'h-4 w-4'), t('streak')(n))));
 
+    const st = planStatus();
+    const S = t('sub');
+    if (st && st.tone === 'expired') {
+      root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-amber-400/10 p-5 ring-1 ring-amber-400/30' },
+        h('p', { class: 'text-lg font-semibold text-amber-100' }, S.expired),
+        h('p', { class: 'text-sm text-amber-100/80' }, S.expiredText),
+        h('button', { type: 'button', class: BTN, onclick: openSubscribe }, ico('star'), `${S.order} · ${sum(N.billing.price || 45000)}`)));
+    } else if (st) {
+      root.append(h('button', { type: 'button', class: `flex items-center gap-2 rounded-2xl px-4 py-3 text-left text-sm ring-1 ${st.tone === 'ending' ? 'bg-amber-400/10 text-amber-100 ring-amber-400/30' : 'bg-night-900/80 text-slate-300 ring-white/5'}`, onclick: openSubscribe },
+        ico('star', 'icon text-amber-300'), h('span', { class: 'min-w-0 flex-1' }, st.text), ico('chevron-right', 'icon text-slate-500')));
+    }
+    const locked = !N.hasAccess();
+    const guard = (fn) => (locked ? openSubscribe : fn);
+
     root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-white shadow-lg shadow-brand-500/30' },
       h('div', { class: 'flex items-center gap-3' },
-        h('span', { class: 'flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15' }, ico('dumbbell')),
+        h('span', { class: 'flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15' }, ico(locked ? 'lock' : 'dumbbell')),
         h('div', { class: 'min-w-0' }, h('p', { class: 'text-lg font-semibold' }, t('dailyTitle')), h('p', { class: 'text-sm text-white/80' }, daily ? t('dailyDone')(daily.score) : t('dailyDesc')(level())))),
-      h('button', { type: 'button', class: 'flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white text-base font-semibold text-brand-600 transition hover:bg-white/90 active:scale-[.98]', onclick: () => startTraining() }, daily ? ico('repeat') : ico('chevron-right'), daily ? t('again') : t('start'))));
+      h('button', { type: 'button', class: 'flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white text-base font-semibold text-brand-600 transition hover:bg-white/90 active:scale-[.98]', onclick: guard(() => startTraining()) }, daily ? ico('repeat') : ico('chevron-right'), locked ? S.open : daily ? t('again') : t('start'))));
 
     const tiles = t('tiles');
-    const tile = (key, icon, onclick, extra) => h('button', { type: 'button', class: `${CARD} flex min-h-32 flex-col items-start gap-3 text-left transition hover:bg-night-800 active:scale-[.98]`, onclick },
+    // paid: part of the subscription (shows a lock after the free week).
+    const tile = (key, icon, onclick, extra, paid = true) => h('button', { type: 'button', class: `${CARD} relative flex min-h-32 flex-col items-start gap-3 text-left transition hover:bg-night-800 active:scale-[.98]`, onclick: paid ? guard(onclick) : onclick },
       h('span', { class: 'flex h-11 w-11 items-center justify-center rounded-2xl bg-night-700 text-brand-400' }, ico(icon)),
+      paid && locked ? h('span', { class: 'absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-amber-400/15 text-amber-200', title: S.locked, 'aria-label': S.locked }, ico('lock', 'h-4 w-4')) : null,
       h('span', { class: 'min-w-0' }, h('span', { class: 'block font-semibold text-white' }, tiles[key][0]), h('span', { class: 'block text-xs text-slate-400' }, extra || tiles[key][1])));
     // Older students get exams; younger ones keep the chat tile. Always 8 tiles.
     root.append(h('div', { class: 'grid grid-cols-2 gap-3' },
@@ -975,10 +1197,10 @@
       tile('test', 'clipboard-check', openTestPicker),
       grade() >= 8 ? tile('exam', 'graduation-cap', openExams) : tile('chat', 'message-circle', () => N.showScreen('chat')),
       tile('olympiad', 'puzzle', startOlympiad),
-      tile('cards', 'layers', openCards),
+      tile('cards', 'layers', openCards, null, false),
       tile('reading', 'book-open', startReading),
-      tile('games', 'gamepad-2', openGames),
-      tile('diary', 'notebook-pen', () => N.showScreen('diary'), t('undone')(undone))));
+      tile('games', 'gamepad-2', openGames, null, false),
+      tile('diary', 'notebook-pen', () => N.showScreen('diary'), t('undone')(undone), false)));
   }
 
   // ---------- progress ----------
@@ -1058,7 +1280,7 @@
           h('p', { class: 'text-sm font-semibold text-white' }, title), h('p', { class: 'text-[11px] text-slate-400' }, desc));
       })));
 
-    root.append(h('button', { type: 'button', class: BTN2, onclick: N.openReport }, ico('file-text'), t('parentReport')));
+    root.append(h('button', { type: 'button', class: BTN2, onclick: () => N.openReport() }, ico('file-text'), t('parentReport')));
   }
 
   // ---------- diary ----------
@@ -1110,5 +1332,5 @@
     else if (name === 'activity' && arg) arg();
   }
 
-  window.NimiLearn = { load, render, markDay };
+  window.NimiLearn = { load, render, markDay, openSubscribe, openAdmin };
 })();
