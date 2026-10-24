@@ -29,7 +29,7 @@ const PAYMENT_CARD = process.env.PAYMENT_CARD || '';
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 const ADMIN_EMAILS = new Set((process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean));
 // Free without a subscription: word cards (and the topic list), games and diary run in the browser.
-const FREE_PATHS = new Set(['/api/learn/cards', '/api/learn/topics', '/api/data', '/api/subscribe']);
+const FREE_PATHS = new Set(['/api/learn/cards', '/api/learn/topics', '/api/data', '/api/subscribe', '/api/games/online/create', '/api/games/online/join', '/api/games/online/answer', '/api/games/online/state']);
 const MAX_DATA_BYTES = 300000;
 const FREQUENT_WINDOW_MS = 3 * 60 * 1000;
 const FREQUENT_COUNT = 5;
@@ -572,6 +572,94 @@ async function handleParent(req, res, body, user, action) {
 const AREA_HANDLERS = { admin: handleAdmin, parent: handleParent, account: handleAccount };
 
 // Account actions: each returns { user, cookie }.
+
+// =========================================================================
+// REAL-TIME MULTIPLAYER ONLINE GAMES STORE & LOGIC (GAMES #12 & #13)
+// =========================================================================
+const ONLINE_ROOMS = new Map();
+
+function cleanRooms() {
+  const now = Date.now();
+  for (const [code, room] of ONLINE_ROOMS.entries()) {
+    if (now - room.created > 2 * 3600 * 1000) {
+      ONLINE_ROOMS.delete(code);
+    }
+  }
+}
+setInterval(cleanRooms, 30 * 60 * 1000);
+
+async function handleOnlineGames(req, res, body, user) {
+  const urlPath = req.url.split('?')[0];
+
+  if (urlPath === '/api/games/online/create') {
+    const type = body.type || 'tug';
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const room = {
+      code,
+      type,
+      created: Date.now(),
+      status: 'waiting',
+      hostId: user.id,
+      ropePos: 0,
+      players: [],
+      scores: {},
+      questions: body.questions || [
+        { q: 'Сколько будет 8 × 8?', a: '64', options: ['56', '64', '72'] },
+        { q: 'Столица Узбекистана:', a: 'Ташкент', options: ['Самарканд', 'Ташкент'] }
+      ]
+    };
+    ONLINE_ROOMS.set(code, room);
+    return sendJson(res, 200, { ok: true, code, room });
+  }
+
+  if (urlPath === '/api/games/online/join') {
+    const { code, playerName, team } = body;
+    const room = ONLINE_ROOMS.get(code);
+    if (!room) return sendJson(res, 404, { code: 'room_not_found', message: 'Комната не найдена' });
+
+    const player = {
+      id: user.id || 'p_' + Date.now(),
+      name: playerName || 'Игрок',
+      team: team || (room.players.length % 2 === 0 ? 'red' : 'blue'),
+      score: 0
+    };
+    room.players.push(player);
+    return sendJson(res, 200, { ok: true, code, player, room });
+  }
+
+  if (urlPath === '/api/games/online/answer') {
+    const { code, playerId, answer, questionIndex } = body;
+    const room = ONLINE_ROOMS.get(code);
+    if (!room) return sendJson(res, 404, { code: 'room_not_found' });
+
+    const q = room.questions[questionIndex || 0];
+    const isCorrect = q && String(answer).trim().toLowerCase() === String(q.a).trim().toLowerCase();
+
+    if (isCorrect) {
+      const player = room.players.find(p => p.id === playerId);
+      if (player) {
+        player.score += 100;
+        if (room.type === 'tug') {
+          room.ropePos += (player.team === 'red' ? -1 : 1);
+          room.ropePos = Math.max(-5, Math.min(5, room.ropePos));
+        }
+      }
+    }
+
+    return sendJson(res, 200, { ok: true, isCorrect, ropePos: room.ropePos, room });
+  }
+
+  if (urlPath === '/api/games/online/state') {
+    const urlParams = new URLSearchParams(req.url.split('?')[1] || '');
+    const code = urlParams.get('code') || body.code;
+    const room = ONLINE_ROOMS.get(code);
+    if (!room) return sendJson(res, 404, { code: 'room_not_found' });
+    return sendJson(res, 200, { ok: true, room });
+  }
+
+  return sendJson(res, 400, { code: 'bad_request' });
+}
+
 const AUTH_ACTIONS = { '/api/auth/register': auth.register, '/api/auth/login': auth.login, '/api/auth/google': auth.google };
 
 // Blocks cross-site form posts: a browser always sends Origin on POST from another site.
@@ -609,7 +697,7 @@ async function handleApiPost(req, res, urlPath) {
     ? (q, r, b, u) => handleLearn(q, r, b, u, learnKind)
     : areaHandler
       ? (q, r, b, u) => areaHandler(q, r, b, u, areaAction)
-      : { '/api/chat': handleChat, '/api/report': handleReport, '/api/data': handleData, '/api/subscribe': handleSubscribe }[urlPath];
+      : urlPath.startsWith('/api/games/online/') ? handleOnlineGames : { '/api/chat': handleChat, '/api/report': handleReport, '/api/data': handleData, '/api/subscribe': handleSubscribe }[urlPath];
   if (!handler) return sendJson(res, 404, { code: 'not_found' });
   // Without a database the app runs in guest mode, limited per device.
   const deviceId = cleanText(body.deviceId, 64);
