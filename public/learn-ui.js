@@ -214,6 +214,24 @@
       gameMult: ['Таблица умножения', 'Сколько примеров решишь за 60 секунд?'],
       gameMental: ['Устный счёт', '10 примеров на время'],
       gameMistake: ['Найди ошибку', 'Отметь неверные примеры'],
+      gamesTitle: '13 Обучающих игр',
+      gamesDesc: 'Играй, тренируйся и соревнуйся с друзьями',
+      qBuilderTitle: 'Конструктор вопросов',
+      qBuilderDesc: 'Создавай свои наборы вопросов для игр',
+      gTug: ['Перетягивание каната', 'Командное соревнование по вопросам'],
+      gDrum: ['Барабан знаний', 'Случайный выбор ученика и вопроса'],
+      gPair: ['Найди пару', 'Карточки на память и совпадения'],
+      gGroup: ['Группировка', 'Распределение слов и картинок по категориям'],
+      gJeopardy: ['Своя игра', 'Викторина с вопросами разной стоимости'],
+      gTickets: ['Билеты', 'Наборы экзаменационных билетов'],
+      gTF: ['Правда или Ложь', 'Проверь верность утверждения'],
+      gColor: ['Найди цвет', 'Найди отличающийся оттенок'],
+      gMemory: ['Тренировка памяти', 'Запомни и повтори последовательность'],
+      gMental: ['Ментальная арифметика', 'Быстрый устный счёт'],
+      gFlags: ['Найди флаг', 'Угадай страну по её флагу'],
+      gOnlineTug: ['Онлайн Канат', 'Живое многопользовательское перетягивание'],
+      gOnlineQuiz: ['Онлайн Викторина', 'Живая викторина с кодом комнаты'],
+
       best: (n) => `Рекорд: ${n}`,
       seconds: 'сек',
       timeUp: 'Время вышло!',
@@ -468,6 +486,24 @@
       gameMult: ["Ko'paytirish jadvali", '60 soniyada nechta misol yechasan?'],
       gameMental: ["Og'zaki hisob", 'Vaqtga 10 ta misol'],
       gameMistake: ['Xatoni top', "Noto'g'ri misollarni belgila"],
+      gamesTitle: "13 ta ta'limiy o'yin",
+      gamesDesc: "O'yna, mashq qil va do'stlaring bilan bellash",
+      qBuilderTitle: 'Savollar konstruktori',
+      qBuilderDesc: "O'yinlar uchun o'z savol toplamlaringni yarat",
+      gTug: ["Arqon tortish", "Savollar bo'yicha jamoaviy musobaqa"],
+      gDrum: ["Bilim barabani", "O'quvchi va savolni tasodifiy tanlash"],
+      gPair: ["Juftini top", "Xotira va moslik kartochkalari"],
+      gGroup: ["Guruhlash", "So'z va rasmlarni guruhlarga ajratish"],
+      gJeopardy: ["O'z o'yining (Jeopardy)", "Har xil qiymatli savollar viktorinasi"],
+      gTickets: ["Biletlar", "Savolli imtihon biletlari to'plami"],
+      gTF: ["Rost yoki Yolg'on", "Tasdiqning to'g'riligini aniqla"],
+      gColor: ["Rangni top", "Boshqa rang tusini topish"],
+      gMemory: ["Xotira mashqi", "Ketma-ketlikni eslab qol va takrorla"],
+      gMental: ["Mental arifmetika", "Tezkor og'zaki hisob"],
+      gFlags: ["Bayroqni top", "Mamlakatni bayrog'iga qarab top"],
+      gOnlineTug: ["Onlayn Arqon", "Real vaqtdagi ko'p foydalanuvchili arqon tortish"],
+      gOnlineQuiz: ["Onlayn Viktorina", "Xona kodi bilan ko'p foydalanuvchili viktorina"],
+
       best: (n) => `Rekord: ${n}`,
       seconds: 'soniya',
       timeUp: 'Vaqt tugadi!',
@@ -562,6 +598,7 @@
       progress: { ...b.progress, ...(d?.progress || {}), stats: { ...b.progress.stats, ...(d?.progress?.stats || {}) } },
       diary: Array.isArray(d?.diary) ? d.diary : [],
       cards: { decks: Array.isArray(d?.cards?.decks) ? d.cards.decks : [] },
+      questionSets: Array.isArray(d?.questionSets) ? d.questionSets : [],
     };
   }
 
@@ -1052,645 +1089,1346 @@
     return isNew;
   }
 
+
+  // =========================================================================
+  // 13 EDUCATIONAL GAMES & QUESTION SETS BUILDER FOR NIMI AI
+  // =========================================================================
+
+  // Default question sets in RU & UZ
+  const DEFAULT_QUESTION_SETS = [
+    {
+      id: 'default_math',
+      title: 'Математика: Базовый счет / Matematika',
+      subject: 'math',
+      items: [
+        { q: 'Сколько будет 7 × 8?', a: '56', options: ['48', '54', '56', '64'], category: 'Умножение' },
+        { q: 'Чему равен корень из 144?', a: '12', options: ['10', '12', '14', '16'], category: 'Алгебра' },
+        { q: 'Сколько градусов в сумме углов треугольника?', a: '180°', options: ['90°', '180°', '270°', '360°'], category: 'Геометрия' },
+        { q: 'Сколько будет 15% от 200?', a: '30', options: ['20', '25', '30', '35'], category: 'Проценты' },
+        { q: 'Какое число является простым?', a: '17', options: ['15', '17', '21', '27'], category: 'Числа' },
+        { q: 'Чему равно 2 в 5-й степени?', a: '32', options: ['16', '25', '32', '64'], category: 'Степени' },
+        { q: 'Сколько минут в 2.5 часах?', a: '150', options: ['120', '130', '150', '160'], category: 'Время' },
+        { q: 'Периметр квадрата со стороной 6 см равен:', a: '24 см', options: ['12 см', '18 см', '24 см', '36 см'], category: 'Геометрия' },
+        { q: 'Чему равно 100 : 4 × 2?', a: '50', options: ['12.5', '25', '50', '100'], category: 'Порядок действий' },
+        { q: 'Найдите неизвестное x: 3x + 5 = 20', a: '5', options: ['3', '4', '5', '6'], category: 'Уравнения' }
+      ]
+    },
+    {
+      id: 'default_geo',
+      title: 'География мира / Dunyo geografiyasi',
+      subject: 'geography',
+      items: [
+        { q: 'Какая самая длинная река в мире?', a: 'Амазонка', options: ['Нил', 'Амазонка', 'Янцзы', 'Миссисипи'], category: 'Реки' },
+        { q: 'Столица Франции:', a: 'Париж', options: ['Лондон', 'Берлин', 'Париж', 'Мадрид'], category: 'Столицы' },
+        { q: 'Какое самое глубокое озеро на Земле?', a: 'Байкал', options: ['Виктория', 'Танганьика', 'Байкал', 'Верхнее'], category: 'Озера' },
+        { q: 'Столица Узбекистана:', a: 'Ташкент', options: ['Самарканд', 'Ташкент', 'Бухара', 'Наманган'], category: 'Столицы' },
+        { q: 'Какой самый большой материк на Земле?', a: 'Евразия', options: ['Африка', 'Евразия', 'Северная Америка', 'Антарктида'], category: 'Материки' },
+        { q: 'Самый большой океан на Земле:', a: 'Тихий', options: ['Атлантический', 'Индийский', 'Тихий', 'Северный Ледовитый'], category: 'Океаны' },
+        { q: 'В какой стране находятся Великие пирамиды?', a: 'Египет', options: ['Мексика', 'Египет', 'Греция', 'Италия'], category: 'Страны' },
+        { q: 'Какой горный хребет самый высокий в мире?', a: 'Гималаи', options: ['Анды', 'Альпы', 'Гималаи', 'Кордильеры'], category: 'Горы' }
+      ]
+    },
+    {
+      id: 'default_science',
+      title: 'Естествознание и Природа / Tabiatshunoslik',
+      subject: 'science',
+      items: [
+        { q: 'Какой газ необходим людям для дыхания?', a: 'Кислород', options: ['Азот', 'Кислород', 'Углекислый газ', 'Водород'], category: 'Газы' },
+        { q: 'Какая планета находится ближе всего к Солнцу?', a: 'Меркурий', options: ['Венера', 'Земля', 'Марс', 'Меркурий'], category: 'Космос' },
+        { q: 'Процесс образования питательных веществ растениями под действием света:', a: 'Фотосинтез', options: ['Дыхание', 'Фотосинтез', 'Испарение', 'Брожение'], category: 'Растения' },
+        { q: 'Сколько планет в Солнечной системе?', a: '8', options: ['7', '8', '9', '10'], category: 'Космос' },
+        { q: 'Самое твёрдое природное вещество на Земле:', a: 'Алмаз', options: ['Гранит', 'Железо', 'Алмаз', 'Кварц'], category: 'Минералы' },
+        { q: 'Температура кипения воды при нормальном давлении:', a: '100°C', options: ['80°C', '90°C', '100°C', '120°C'], category: 'Физика' }
+      ]
+    },
+    {
+      id: 'default_tf',
+      title: 'Интересные факты (Правда/Ложь) / Faktlar',
+      subject: 'general',
+      items: [
+        { q: 'Солнце — это звезда.', a: 'Правда', isTrue: true, explanation: 'Солнце — это желтый карлик, единственная звезда Солнечной системы.' },
+        { q: 'Страусы прячут голову в песок при опасности.', a: 'Ложь', isTrue: false, explanation: 'Это миф! При опасности страусы убегают или ложатся на землю.' },
+        { q: 'Великая Китайская стена видна из космоса невооруженным глазом.', a: 'Ложь', isTrue: false, explanation: 'Без специальной оптики или на низкой орбите её увидеть практически невозможно.' },
+        { q: 'Вода расширяется при замерзании.', a: 'Правда', isTrue: true, explanation: 'Плотность льда меньше плотности жидкой воды, поэтому лед плавает.' },
+        { q: 'У китов есть зубы.', a: 'Ложь', isTrue: false, explanation: 'У усатых китов вместо зубов китовый ус.' },
+        { q: 'Земля вращается вокруг Солнца.', a: 'Правда', isTrue: true, explanation: 'Один оборот вокруг Солнца происходит за 365.25 дней.' }
+      ]
+    }
+  ];
+
+  // Country Flags Dataset with RU & UZ names and SVG/Emoji flags
+  const COUNTRY_FLAGS_DATA = [
+    { code: 'UZ', flag: '🇺🇿', ru: 'Узбекистан', uz: "O'zbekiston" },
+    { code: 'RU', flag: '🇷🇺', ru: 'Россия', uz: 'Rossiya' },
+    { code: 'US', flag: '🇺🇸', ru: 'США', uz: 'AQSh' },
+    { code: 'GB', flag: '🇬🇧', ru: 'Великобритания', uz: 'Buyuk Britaniya' },
+    { code: 'DE', flag: '🇩🇪', ru: 'Германия', uz: 'Germaniya' },
+    { code: 'FR', flag: '🇫🇷', ru: 'Франция', uz: 'Fransiya' },
+    { code: 'IT', flag: '🇮🇹', ru: 'Италия', uz: 'Italiya' },
+    { code: 'ES', flag: '🇪🇸', ru: 'Испания', uz: 'Ispaniya' },
+    { code: 'CN', flag: '🇨🇳', ru: 'Китай', uz: 'Xitoy' },
+    { code: 'JP', flag: '🇯🇵', ru: 'Япония', uz: 'Yaponiya' },
+    { code: 'TR', flag: '🇹🇷', ru: 'Турция', uz: 'Turkiya' },
+    { code: 'KZ', flag: '🇰🇿', ru: 'Казахстан', uz: "Qozog'iston" },
+    { code: 'KG', flag: '🇰🇬', ru: 'Кыргызстан', uz: "Qirg'iziston" },
+    { code: 'TJ', flag: '🇹🇯', ru: 'Таджикистан', uz: 'Tojikiston' },
+    { code: 'TM', flag: '🇹🇲', ru: 'Туркменистан', uz: 'Turkmaniston' },
+    { code: 'EG', flag: '🇪🇬', ru: 'Египет', uz: 'Misr' },
+    { code: 'KR', flag: '🇰🇷', ru: 'Южная Корея', uz: 'Janubiy Koreya' },
+    { code: 'IN', flag: '🇮🇳', ru: 'Индия', uz: 'Hindiston' },
+    { code: 'CA', flag: '🇨🇦', ru: 'Канада', uz: 'Kanada' },
+    { code: 'BR', flag: '🇧🇷', ru: 'Бразилия', uz: 'Braziliya' },
+    { code: 'AR', flag: '🇦🇷', ru: 'Аргентина', uz: 'Argentina' },
+    { code: 'AU', flag: '🇦🇺', ru: 'Австралия', uz: 'Avstraliya' },
+    { code: 'AE', flag: '🇦🇪', ru: 'ОАЭ', uz: 'Birlashgan Arab Amirliklari' },
+    { code: 'SA', flag: '🇸🇦', ru: 'Саудовская Аравия', uz: 'Saudiya Arabistoni' },
+    { code: 'CH', flag: '🇨🇭', ru: 'Швейцария', uz: 'Shveytsariya' },
+    { code: 'SE', flag: '🇸🇪', ru: 'Швеция', uz: 'Shvetsiya' },
+    { code: 'NL', flag: '🇳🇱', ru: 'Нидерланды', uz: 'Niderlandiya' },
+    { code: 'AZ', flag: '🇦🇿', ru: 'Азербайджан', uz: 'Ozarbayjon' },
+    { code: 'GE', flag: '🇬🇪', ru: 'Грузия', uz: 'Gruziya' },
+    { code: 'AM', flag: '🇦🇲', ru: 'Армения', uz: 'Armaniston' }
+  ];
+
+  function getQuestionSets() {
+    const custom = data.questionSets || [];
+    return [...DEFAULT_QUESTION_SETS, ...custom];
+  }
+
+  function selectQuestionSetModal(title, onSelect) {
+    const sets = getQuestionSets();
+    const modal = h('div', { class: 'fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm' });
+    const content = h('div', { class: CARD + ' w-full max-w-lg max-h-[85vh] overflow-y-auto flex flex-col gap-4 p-6 bg-night-900 border border-white/10 shadow-2xl rounded-3xl' },
+      h('div', { class: 'flex items-center justify-between' },
+        h('h3', { class: 'text-xl font-bold text-white' }, title || 'Выберите набор вопросов'),
+        h('button', { type: 'button', class: 'text-slate-400 hover:text-white', onclick: () => modal.remove() }, ico('x'))
+      ),
+      h('div', { class: 'flex flex-col gap-2' },
+        sets.map(s => h('button', {
+          type: 'button',
+          class: 'flex items-center justify-between p-4 rounded-2xl bg-night-800 hover:bg-night-700 text-left border border-white/5 transition',
+          onclick: () => { modal.remove(); onSelect(s); }
+        },
+        h('div', { class: 'min-w-0 flex-1' },
+          h('p', { class: 'font-semibold text-white' }, s.title),
+          h('p', { class: 'text-xs text-slate-400' }, 'Вопросов: ' + s.items.length)
+        ),
+        ico('chevron-right', 'text-slate-500')
+        ))
+      ),
+      h('button', {
+        type: 'button',
+        class: BTN2,
+        onclick: () => { modal.remove(); openQBuilder(); }
+      }, ico('plus'), 'Создать свой набор вопросов')
+    );
+    modal.append(content);
+    document.body.append(modal);
+  }
+
+  // -------------------------------------------------------------------------
+  // MAIN GAMES HUB (Renders all 13 Games + Question Set Builder)
+  // -------------------------------------------------------------------------
   function openGames() {
     const root = screen('activity');
-    const g = data.progress.stats.games;
-    root.append(titleBar(t('games')));
-    [['mult', 'timer', t('gameMult'), playMult], ['mental', 'brain', t('gameMental'), playMental], ['mistake', 'sparkles', t('gameMistake'), playMistake]].forEach(([key, ic, [name, desc], fn]) => {
-      root.append(h('button', { type: 'button', class: `${CARD} flex items-center gap-4 text-left transition hover:bg-night-800`, onclick: fn },
-        h('span', { class: 'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-500/15 text-brand-400' }, ico(ic)),
-        h('div', { class: 'min-w-0 flex-1' }, h('p', { class: 'font-semibold text-white' }, name), h('p', { class: 'text-sm text-slate-400' }, desc)),
-        g[key] ? h('span', { class: 'shrink-0 rounded-full bg-night-700 px-3 py-1 text-xs text-slate-200' }, t('best')(g[key])) : null));
-    });
-  }
+    const g = data.progress.stats.games || {};
 
-  function gameResult(root, title, lines, isNew, again) {
-    root.innerHTML = '';
-    root.append(titleBar(title, openGames),
-      h('div', { class: `${CARD} flex flex-col items-center gap-2 py-8 text-center` },
-        h('span', { class: 'flex h-16 w-16 items-center justify-center rounded-full bg-amber-400/15 text-amber-200' }, ico('trophy', 'h-8 w-8')),
-        lines.map((l) => h('p', { class: 'text-lg font-semibold text-white' }, l)),
-        isNew ? h('p', { class: 'text-emerald-300' }, t('newRecord')) : null),
-      h('button', { type: 'button', class: BTN, onclick: again }, ico('repeat'), t('playAgain')),
-      h('button', { type: 'button', class: BTN2, onclick: openGames }, t('games')));
-  }
+    root.append(titleBar(t('gamesTitle') || '13 Обучающих игр'));
 
-  function numberPad(onSubmit) {
-    const input = h('input', { type: 'text', inputmode: 'numeric', class: `${INPUT} text-center text-2xl`, autocomplete: 'off', maxlength: '6' });
-    const go = h('button', { type: 'button', class: BTN }, t('check'));
-    const send = () => { const v = input.value.trim(); if (v) { onSubmit(v); input.value = ''; input.focus(); } };
-    go.onclick = send;
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } });
-    setTimeout(() => input.focus(), 50);
-    return [input, go];
-  }
-  const flash = (el, ok) => { el.classList.remove('ring-emerald-400', 'ring-rose-400'); el.classList.add(ok ? 'ring-emerald-400' : 'ring-rose-400'); setTimeout(() => el.classList.remove('ring-emerald-400', 'ring-rose-400'), 400); };
+    // Question Builder Banner
+    root.append(
+      h('button', {
+        type: 'button',
+        class: 'mb-4 flex w-full items-center gap-4 rounded-3xl bg-gradient-to-r from-brand-600/30 to-purple-600/30 p-4 border border-brand-500/30 text-left transition hover:border-brand-500/60',
+        onclick: openQBuilder
+      },
+      h('span', { class: 'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-500 text-white shadow-md' }, ico('notebook-pen')),
+      h('div', { class: 'min-w-0 flex-1' },
+        h('p', { class: 'font-bold text-white' }, t('qBuilderTitle') || 'Конструктор вопросов'),
+        h('p', { class: 'text-xs text-slate-300' }, t('qBuilderDesc') || 'Создавай свои наборы вопросов для всех игр')
+      ),
+      ico('chevron-right', 'text-brand-300')
+      )
+    );
 
-  function playMult() {
-    const root = screen('activity');
-    const [name] = t('gameMult');
-    let score = 0, a, b;
-    const endAt = Date.now() + 60000;
-    const timer = h('span', { class: 'tabular-nums' }, '60');
-    const scoreEl = h('span', { class: 'tabular-nums' }, '0');
-    const q = h('div', { class: 'flex min-h-40 items-center justify-center rounded-3xl bg-night-800 text-5xl font-bold text-white ring-2 ring-transparent transition' });
-    const nextQ = () => { a = rnd(2, 9); b = rnd(2, 9); q.textContent = `${a} × ${b}`; };
-    const [input, go] = numberPad((v) => { const ok = Number(v) === a * b; if (ok) score += 1; scoreEl.textContent = score; flash(q, ok); nextQ(); });
-    root.append(titleBar(name, openGames),
-      h('div', { class: 'flex justify-between text-slate-300' }, h('span', { class: 'flex items-center gap-1.5' }, ico('timer'), timer, ` ${t('seconds')}`), h('span', { class: 'flex items-center gap-1.5' }, ico('check'), scoreEl)),
-      q, input, go);
-    nextQ();
-    const id = setInterval(() => {
-      const left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
-      timer.textContent = left;
-      if (left <= 0) { clearActive(); gameResult(root, name, [t('timeUp'), t('solved')(score)], bestGame('mult', score), playMult); }
-    }, 250);
-    stopActive = () => clearInterval(id);
-  }
+    const ALL_GAMES = [
+      ['tug', 'repeat', t('gTug') || ['Перетягивание каната', 'Командное соревнование по вопросам'], playTugOfWar],
+      ['drum', 'sparkles', t('gDrum') || ['Барабан знаний', 'Случайный выбор ученика и вопроса'], playDrum],
+      ['pair', 'layers', t('gPair') || ['Найди пару', 'Карточки на память и совпадения'], playPair],
+      ['group', 'puzzle', t('gGroup') || ['Группировка', 'Распределение по категориям'], playGrouping],
+      ['jeopardy', 'award', t('gJeopardy') || ['Своя игра', 'Викторина с вопросами разной стоимости'], playJeopardy],
+      ['tickets', 'file-text', t('gTickets') || ['Билеты', 'Наборы экзаменационных билетов'], playTickets],
+      ['tf', 'check-check', t('gTF') || ['Правда или Ложь', 'Проверь верность утверждения'], playTrueFalse],
+      ['color', 'eye', t('gColor') || ['Найди цвет', 'Найди отличающийся оттенок'], playColor],
+      ['memory', 'brain', t('gMemory') || ['Тренировка памяти', 'Запомни и повтори последовательность'], playMemory],
+      ['mental', 'calculator', t('gMental') || ['Ментальная арифметика', 'Быстрый устный счёт'], playMentalMath],
+      ['flags', 'globe', t('gFlags') || ['Найди флаг', 'Угадай страну по её флагу'], playFlags],
+      ['onlineTug', 'zap', t('gOnlineTug') || ['Онлайн Канат', 'Живое многопользовательское перетягивание'], playOnlineTug],
+      ['onlineQuiz', 'users', t('gOnlineQuiz') || ['Онлайн Викторина', 'Живая викторина с кодом комнаты'], playOnlineQuiz]
+    ];
 
-  function playMental() {
-    const root = screen('activity');
-    const [name] = t('gameMental');
-    const list = Array.from({ length: 10 }, () => mentalExample(N.setup.grade));
-    let i = 0, ok = 0;
-    const started = Date.now();
-    const counter = h('span', { class: 'tabular-nums' });
-    const q = h('div', { class: 'flex min-h-40 items-center justify-center rounded-3xl bg-night-800 text-4xl font-bold text-white ring-2 ring-transparent transition' });
-    const show = () => { counter.textContent = `${i + 1} / 10`; q.textContent = list[i][0]; };
-    const [input, go] = numberPad((v) => {
-      const right = Number(v) === list[i][1];
-      if (right) ok += 1;
-      flash(q, right);
-      i += 1;
-      if (i < list.length) return show();
-      const secs = Math.round((Date.now() - started) / 1000);
-      gameResult(root, name, [t('solved')(`${ok} / 10`), t('tookTime')(secs)], bestGame('mental', ok), playMental);
-    });
-    root.append(titleBar(name, openGames), h('div', { class: 'text-slate-300' }, counter), q, input, go);
-    show();
-  }
+    const listGrid = h('div', { class: 'grid grid-cols-1 md:grid-cols-2 gap-3' });
 
-  function playMistake() {
-    const root = screen('activity');
-    const [name] = t('gameMistake');
-    const ROUNDS = 5;
-    let round = 0, score = 0;
-    const makeRound = () => {
-      const rows = Array.from({ length: 6 }, () => { const [expr, val] = mentalExample(N.setup.grade); return { expr, val, shown: val, wrong: false }; });
-      const wrongCount = rnd(1, 2);
-      for (let k = 0; k < wrongCount; k++) {
-        const r = rows[k];
-        r.wrong = true;
-        r.shown = r.val + (Math.random() < 0.5 ? -1 : 1) * rnd(1, r.val > 20 ? 10 : 2);
-        if (r.shown < 0) r.shown = r.val + rnd(1, 3);
-      }
-      return rows.sort(() => Math.random() - 0.5);
-    };
-    const show = () => {
-      const rows = makeRound();
-      root.innerHTML = '';
-      root.append(titleBar(name, openGames), h('div', { class: 'flex justify-between text-sm text-slate-300' }, h('span', {}, t('roundOf')(round + 1, ROUNDS)), h('span', {}, t('markWrong'))));
-      const grid = h('div', { class: 'grid grid-cols-2 gap-2' });
-      rows.forEach((r) => {
-        const b = h('button', { type: 'button', class: 'min-h-16 rounded-2xl bg-night-800 text-xl font-semibold tabular-nums text-white ring-2 ring-white/10 transition', 'aria-pressed': 'false' }, `${r.expr} = ${r.shown}`);
-        b.onclick = () => { r.marked = !r.marked; b.setAttribute('aria-pressed', r.marked); b.classList.toggle('ring-brand-400', r.marked); b.classList.toggle('bg-brand-500/20', r.marked); };
-        r.btn = b;
-        grid.append(b);
-      });
-      const fb = h('div', {});
-      const checkBtn = h('button', { type: 'button', class: BTN }, t('check'));
-      checkBtn.onclick = () => {
-        let perfect = true;
-        rows.forEach((r) => {
-          r.btn.disabled = true;
-          r.btn.classList.remove('ring-brand-400', 'bg-brand-500/20', 'ring-white/10');
-          if (r.wrong && r.marked) r.btn.classList.add('ring-emerald-400', 'bg-emerald-500/15');
-          else if (r.wrong) { r.btn.classList.add('ring-amber-400', 'bg-amber-400/15'); perfect = false; }
-          else if (r.marked) { r.btn.classList.add('ring-rose-400', 'bg-rose-500/15'); perfect = false; }
-          else r.btn.classList.add('ring-white/5');
-        });
-        if (perfect) score += 1;
-        fb.append(h('p', { class: `rounded-2xl p-4 ${perfect ? 'bg-emerald-500/10 text-emerald-100' : 'bg-amber-400/10 text-amber-100'}` }, perfect ? t('roundOk') : t('roundBad')));
-        checkBtn.replaceWith(h('button', { type: 'button', class: BTN, onclick: () => {
-          round += 1;
-          if (round < ROUNDS) show();
-          else gameResult(root, name, [t('solved')(`${score} / ${ROUNDS}`)], bestGame('mistake', score), playMistake);
-        } }, round + 1 < ROUNDS ? t('next') : t('finish'), ico('chevron-right')));
-      };
-      root.append(grid, fb, checkBtn);
-    };
-    show();
-  }
-
-  // ---------- subscription ----------
-  const sum = (n) => `${n.toLocaleString('ru-RU').replace(/,/g, ' ')} ${N.lang === 'uz' ? "so'm" : 'сум'}`;
-  const dateStr = (iso) => new Date(iso).toLocaleDateString(N.lang === 'uz' ? 'uz-UZ' : 'ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const daysLeft = (iso) => Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / DAY));
-
-  // Status line for the home screen and the subscription page; null in guest mode.
-  function planStatus() {
-    const plan = N.user?.plan;
-    if (!N.accounts || !plan || N.user?.admin) return null;
-    const S = t('sub');
-    if (!plan.active) return plan.never ? { tone: 'none', text: S.none } : { tone: 'expired', text: S.expired };
-    const n = daysLeft(plan.until);
-    if (plan.trial) return { tone: 'trial', text: S.trial(n) };
-    if (n <= 3) return { tone: 'ending', text: S.ending(n) };
-    return { tone: 'active', text: S.active(dateStr(plan.until)) };
-  }
-
-  function openSubscribe() {
-    const root = screen('activity');
-    const S = t('sub');
-    const price = N.billing.price || 45000;
-    const st = planStatus();
-    root.append(titleBar(S.title));
-    root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-white shadow-lg shadow-brand-500/30' },
-      h('p', { class: 'text-3xl font-semibold' }, S.price(sum(price))),
-      h('ul', { class: 'flex flex-col gap-2' }, S.includes.map((x) => h('li', { class: 'flex items-start gap-2' }, ico('circle-check', 'icon mt-0.5'), x))),
-      h('p', { class: 'text-sm text-white/80' }, S.freeLeft)));
-    if (st && st.tone === 'none') {
-      const trialSteps = h('div', { class: 'flex flex-col gap-3' });
-      const ask = h('button', { type: 'button', class: BTN }, ico('sparkles'), S.trialAsk);
-      ask.onclick = async () => {
-        ask.disabled = true;
-        const r = await N.postJson('/api/subscribe', { months: 0 }).catch(() => ({}));
-        ask.disabled = false;
-        if (r.request) showSteps(trialSteps, r.request, 0);
-        else trialSteps.replaceChildren(h('p', { class: 'text-rose-200' }, t('errors').default));
-      };
-      root.append(h('div', { class: `${CARD} flex flex-col gap-3 ring-amber-400/30` },
-        h('p', { class: 'text-lg font-semibold text-white' }, S.trialTitle), h('p', { class: 'text-slate-300' }, S.trialText), ask, trialSteps),
-        h('p', { class: 'mt-1 font-semibold text-white' }, S.orPaid));
-    } else if (st) {
-      const tone = { expired: 'bg-rose-500/10 text-rose-100 ring-rose-400/30', ending: 'bg-amber-400/10 text-amber-100 ring-amber-400/30', trial: 'bg-sky-500/10 text-sky-100 ring-sky-400/30', active: 'bg-emerald-500/10 text-emerald-100 ring-emerald-400/30' }[st.tone];
-      root.append(h('p', { class: `rounded-2xl p-4 ring-1 ${tone}` }, st.text));
-    }
-    let months = 1;
-    const priceBtn = h('button', { type: 'button', class: BTN });
-    const monthsRow = h('div', { class: 'grid grid-cols-4 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5' });
-    const drawMonths = () => {
-      monthsRow.innerHTML = '';
-      [1, 3, 6, 12].forEach((m) => monthsRow.append(h('button', { type: 'button', class: `min-h-12 rounded-xl text-[15px] font-medium ${m === months ? 'bg-brand-500 text-white' : 'text-slate-300'}`, onclick: () => { months = m; drawMonths(); } }, S.monthLabel(m))));
-      priceBtn.textContent = `${N.user?.plan?.active && !N.user?.plan?.trial ? S.renew : S.order} · ${sum(price * months)}`;
-    };
-    drawMonths();
-    const steps = h('div', { class: 'flex flex-col gap-3' });
-    priceBtn.onclick = async () => {
-      priceBtn.disabled = true;
-      try {
-        const r = await N.postJson('/api/subscribe', { months });
-        if (!r.request) throw new Error(r.code || 'default');
-        showSteps(steps, r.request, r.price);
-        steps.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } catch (e) {
-        steps.innerHTML = '';
-        steps.append(h('p', { class: 'text-rose-200' }, t('errors')[e.message] || t('errors').default));
-      } finally {
-        priceBtn.disabled = false;
-      }
-    };
-    root.append(h('p', { class: 'font-semibold text-white' }, S.months), monthsRow, priceBtn, steps);
-  }
-
-  function showSteps(box, request, total, forEmail) {
-    const S = t('sub');
-    const b = N.billing;
-    const email = forEmail || N.user?.email || '';
-    box.innerHTML = '';
-    box.append(h('p', { class: 'flex items-center gap-2 font-semibold text-emerald-200' }, ico('circle-check'), S.request(request.id)));
-    const trial = Number(request.months) === 0;
-    if (b.card && !trial) {
-      const copyBtn = h('button', { type: 'button', class: 'min-h-11 shrink-0 rounded-xl bg-night-700 px-4 text-sm text-white hover:bg-night-600' }, S.copy);
-      copyBtn.onclick = async () => {
-        try { await navigator.clipboard.writeText(b.card.replace(/\s/g, '')); copyBtn.textContent = S.copied; } catch {}
-      };
-      box.append(h('div', { class: `${CARD} flex flex-col gap-2` },
-        h('p', { class: 'text-slate-300' }, `1. ${S.step1(sum(total))}`),
-        h('div', { class: 'flex items-center gap-3' }, h('p', { class: 'min-w-0 flex-1 select-all text-xl font-semibold tracking-wider tabular-nums text-white' }, b.card), copyBtn)));
-    }
-    const text = trial ? S.trialMessage(request.id, email) : S.message(request.months, request.id, email);
-    const links = [];
-    if (b.telegram) links.push(h('a', { class: BTN, href: `https://t.me/${encodeURIComponent(b.telegram)}?text=${encodeURIComponent(text)}`, target: '_blank', rel: 'noopener' }, ico('send'), S.telegram));
-    if (b.phone) links.push(h('a', { class: BTN2, href: `tel:${b.phone.replace(/[^\d+]/g, '')}` }, ico('message-circle'), `${S.call}: ${b.phone}`));
-    box.append(h('div', { class: `${CARD} flex flex-col gap-2` },
-      h('p', { class: 'text-slate-300' }, trial ? S.trialStep : `${b.card ? '2. ' : ''}${S.step2}`),
-      ...(links.length ? links : [h('p', { class: 'text-amber-200' }, S.noContacts)]),
-      h('p', { class: 'select-all rounded-xl bg-night-800 p-3 text-sm text-slate-300' }, text)));
-    const check = h('button', { type: 'button', class: BTN2 }, ico('repeat'), S.check);
-    check.onclick = async () => { await N.refreshUser(); if (N.user?.role === 'parent') renderParent(); else openSubscribe(); };
-    box.append(h('p', { class: 'text-sm text-slate-400' }, S.step3), check);
-  }
-
-  // ---------- admin: subscription requests ----------
-  let adminRoot = 'activity';
-  // rootId: 'activity' (from a student admin's menu) or 'adminHome' (the staff account's only screen).
-  async function openAdmin(rootId = adminRoot) {
-    adminRoot = rootId;
-    const root = screen(rootId);
-    const A = t('admin');
-    root.append(rootId === 'activity' ? titleBar(A.title) : h('h2', { class: 'text-2xl font-semibold text-white' }, A.title));
-    const msg = h('p', { class: 'text-sm' });
-    const email = h('input', { type: 'email', class: INPUT, placeholder: A.emailPh, id: 'adminEmail' });
-    const months = h('select', { class: `${INPUT} appearance-none`, id: 'adminMonths' }, [0, 1, 3, 6, 12].map((m) => h('option', { value: m }, m ? t('sub').monthLabel(m) : A.week)));
-    const grant = async (mail, m, requestId) => {
-      const r = await N.postJson('/api/admin/grant', { email: mail, months: m, requestId });
-      if (r.until) { await openAdmin(); $(adminRoot).prepend(h('p', { class: 'rounded-2xl bg-emerald-500/10 p-3 text-emerald-100' }, A.done(r.email, dateStr(r.until)))); }
-      else msg.textContent = r.code === 'user_not_found' ? A.notFound : t('errors').default;
-    };
-    root.append(h('div', { class: `${CARD} flex flex-col gap-2` },
-      h('p', { class: 'font-semibold text-white' }, A.manual), email,
-      h('div', { class: 'grid gap-2 sm:grid-cols-2' }, months, h('button', { type: 'button', class: BTN, onclick: () => email.value.trim() && grant(email.value.trim(), Number(months.value)) }, A.enable)),
-      msg));
-    root.append(studentsBlock(A, grant));
-    root.append(h('p', { class: 'font-semibold text-white' }, A.pending));
-    const list = h('div', { class: 'flex flex-col gap-2' }, loading(t('loadingTopics')));
-    root.append(list);
-    const r = await N.postJson('/api/admin/requests', {});
-    list.innerHTML = '';
-    const requests = r.requests || [];
-    if (!requests.length) list.append(h('p', { class: 'text-slate-400' }, A.none));
-    requests.forEach((q) => {
-      const pending = q.status === 'pending';
-      list.append(h('div', { class: `${CARD} flex flex-col gap-2 ${pending ? '' : 'opacity-60'}` },
-        h('div', { class: 'flex items-center justify-between gap-2' },
-          h('p', { class: 'min-w-0 truncate font-semibold text-white' }, `№${q.id} · ${q.email}`),
-          h('span', { class: `shrink-0 rounded-full px-2.5 py-1 text-xs ${pending ? 'bg-amber-400/15 text-amber-200' : ['paid', 'granted'].includes(q.status) ? 'bg-emerald-500/15 text-emerald-200' : 'bg-night-700 text-slate-400'}` }, A.status[q.status] || q.status)),
-        h('p', { class: 'text-sm text-slate-400' }, `${Number(q.months) ? `${t('sub').monthLabel(q.months)} · ${sum((N.billing.price || 45000) * q.months)}` : A.week} · ${dateStr(q.created_at)}${q.premium_until ? ` · ${t('sub').active(dateStr(q.premium_until))}` : ''}`),
-        pending ? h('div', { class: 'grid grid-cols-2 gap-2' },
-          h('button', { type: 'button', class: BTN, onclick: () => grant(q.email, Number(q.months), q.id) }, A.grant(Number(q.months))),
-          h('button', { type: 'button', class: BTN2, onclick: async () => { await N.postJson('/api/admin/reject', { requestId: q.id }); openAdmin(); } }, A.reject)) : null));
-    });
-  }
-
-  // Admin: find a student, give access, reset the password or delete the account.
-  function studentsBlock(A, grant) {
-    const box = h('div', { class: `${CARD} flex flex-col gap-2` });
-    const search = h('input', { type: 'text', class: INPUT, placeholder: A.searchPh, id: 'adminSearch' });
-    const list = h('div', { class: 'flex flex-col gap-2' });
-    const load = async () => {
-      list.replaceChildren(loading(t('loadingTopics')));
-      const r = await N.postJson('/api/admin/users', { search: search.value.trim() });
-      list.replaceChildren();
-      const users = r.users || [];
-      if (!users.length) list.append(h('p', { class: 'text-sm text-slate-400' }, A.noUsers));
-      users.forEach((u) => {
-        const active = u.premium_until && new Date(u.premium_until) > new Date();
-        const info = h('p', { class: 'text-xs text-slate-400' },
-          `${A.registered(dateStr(u.created_at))} · ${active ? `${u.plan_kind === 'trial' ? A.week : t('sub').open} ${A.until(dateStr(u.premium_until))}` : A.noAccess}${u.google ? ' · Google' : ''}`);
-        const out = h('div', { class: 'flex flex-col gap-2' });
-        const confirmDelete = h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-rose-500/15 px-3 text-sm text-rose-200 ring-1 ring-rose-400/30' }, A.del);
-        confirmDelete.onclick = () => {
-          out.replaceChildren(h('p', { class: 'text-sm text-rose-200' }, A.delConfirm(u.email)),
-            h('div', { class: 'grid grid-cols-2 gap-2' },
-              h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-rose-500 px-3 text-sm font-semibold text-white', onclick: async () => { await N.postJson('/api/admin/delete-user', { email: u.email }); load(); } }, A.delYes),
-              h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-night-700 px-3 text-sm text-white', onclick: () => out.replaceChildren() }, A.cancel)));
-        };
-        const resetBtn = h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-night-700 px-3 text-sm text-white' }, A.resetPw);
-        resetBtn.onclick = async () => {
-          const res = await N.postJson('/api/admin/reset-password', { email: u.email });
-          out.replaceChildren(res.password
-            ? h('p', { class: 'rounded-xl bg-emerald-500/10 p-3 text-sm text-emerald-100' }, A.newPw(u.email), ' ', h('b', { class: 'select-all text-white' }, res.password))
-            : h('p', { class: 'text-sm text-rose-200' }, t('errors').default));
-        };
-        list.append(h('div', { class: 'flex flex-col gap-2 rounded-2xl bg-night-800 p-3 ring-1 ring-white/5' },
-          h('p', { class: 'truncate font-semibold text-white' }, u.email), info,
-          h('div', { class: 'flex flex-wrap gap-2' },
-            h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500 px-3 text-sm font-semibold text-white', onclick: () => grant(u.email, 0) }, A.grant(0)),
-            h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500/20 px-3 text-sm text-white ring-1 ring-brand-400/40', onclick: () => grant(u.email, 1) }, A.grant(1)),
-            resetBtn, confirmDelete),
-          out));
-      });
-    };
-    search.addEventListener('keydown', (e) => { if (e.key === 'Enter') load(); });
-    box.append(h('p', { class: 'font-semibold text-white' }, A.students), h('div', { class: 'flex gap-2' }, search, h('button', { type: 'button', class: 'min-h-14 shrink-0 rounded-2xl bg-night-700 px-4 text-white', onclick: load }, ico('chevron-right'))), list);
-    load();
-    return box;
-  }
-
-  // ---------- student settings: the parent account ----------
-  async function openSettings() {
-    const root = screen('activity');
-    const P = t('settingsPage');
-    root.append(titleBar(P.title), loading(t('loadingTopics')));
-    const r = await N.postJson('/api/account/settings', {}).catch(() => ({}));
-    root.lastChild.remove();
-    root.append(h('div', { class: `${CARD} flex flex-col gap-1` }, h('p', { class: 'text-sm text-slate-400' }, P.account), h('p', { class: 'break-all font-semibold text-white' }, N.user?.email || '')));
-    if (!r.parent) { root.append(h('p', { class: 'text-rose-200' }, t('errors').default)); return; }
-    const pw = h('span', { class: 'select-all font-mono text-lg text-white' }, '••••••••');
-    let shown = false;
-    const showBtn = h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-night-700 px-3 text-sm text-white' }, P.show);
-    const draw = (parent) => { pw.textContent = shown ? parent.password : '••••••••'; showBtn.textContent = shown ? P.hide : P.show; };
-    let parent = r.parent;
-    showBtn.onclick = () => { shown = !shown; draw(parent); };
-    const copyBtn = h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-night-700 px-3 text-sm text-white' }, P.copy);
-    copyBtn.onclick = async () => {
-      try { await navigator.clipboard.writeText(`${P.login}: ${parent.login}\n${P.password}: ${parent.password}\n${location.origin}`); copyBtn.textContent = P.copied; } catch {}
-    };
-    const resetBtn = h('button', { type: 'button', class: BTN2 }, ico('repeat'), P.newPw);
-    resetBtn.onclick = async () => {
-      const res = await N.postJson('/api/account/parent-reset', {});
-      if (res.parent) { parent = res.parent; shown = true; draw(parent); }
-    };
-    root.append(h('div', { class: `${CARD} flex flex-col gap-3` },
-      h('div', { class: 'flex items-center gap-3' }, h('span', { class: 'flex h-11 w-11 items-center justify-center rounded-2xl bg-night-700 text-brand-400' }, ico('users')), h('p', { class: 'text-lg font-semibold text-white' }, P.parentTitle)),
-      h('p', { class: 'text-sm text-slate-300' }, P.parentText),
-      h('div', { class: 'flex flex-col gap-1 rounded-2xl bg-night-800 p-3' },
-        h('p', { class: 'text-xs text-slate-400' }, P.login), h('p', { class: 'select-all font-mono text-lg text-white' }, parent.login),
-        h('p', { class: 'mt-2 text-xs text-slate-400' }, P.password), pw),
-      h('div', { class: 'flex gap-2' }, showBtn, copyBtn),
-      resetBtn));
-    root.append(h('a', { href: '/privacy.html', target: '_blank', class: 'text-sm text-slate-400 underline' }, t('privacyTitle')));
-  }
-
-  // ---------- parent account: the child's progress, diary and subscription ----------
-  async function renderParent() {
-    const root = screen('parentHome');
-    const P = t('parentPage');
-    root.append(h('h2', { class: 'text-2xl font-semibold text-white' }, P.title), loading(t('loadingTopics')));
-    const r = await N.postJson('/api/parent/overview', {}).catch(() => ({}));
-    root.lastChild.remove();
-    if (!r.child) { root.append(h('p', { class: 'text-rose-200' }, t('errors').default)); return; }
-    const plan = r.child.plan;
-    const p = normalize({ progress: r.progress || {} }).progress;
-    const s = p.stats;
-    const S = t('sub');
-    // Child and access
-    const access = plan.active
-      ? P.accessUntil(plan.trial ? S.trialTitle : S.open, dateStr(plan.until))
-      : plan.never ? P.noAccessYet : S.expired;
-    const subBox = h('div', { class: 'flex flex-col gap-3' });
-    const askBtn = (months, label) => h('button', { type: 'button', class: months ? BTN : BTN2, onclick: async () => {
-      const res = await N.postJson('/api/parent/subscribe', { months });
-      if (res.request) showSteps(subBox, res.request, res.price, res.email);
-    } }, label);
-    root.append(h('div', { class: `${CARD} flex flex-col gap-3` },
-      h('p', { class: 'text-sm text-slate-400' }, P.child), h('p', { class: 'break-all text-lg font-semibold text-white' }, r.child.email),
-      h('p', { class: `rounded-2xl p-3 text-sm ring-1 ${plan.active ? 'bg-emerald-500/10 text-emerald-100 ring-emerald-400/30' : 'bg-amber-400/10 text-amber-100 ring-amber-400/30'}` }, access),
-      plan.never ? askBtn(0, S.trialAsk) : null,
-      askBtn(1, `${plan.active && !plan.trial ? S.renew : S.order} · ${sum(N.billing.price || 45000)}`),
-      subBox));
-    // Activity
-    const daySet = new Set(p.days || []);
-    const n = (() => { let k = 0; let d = new Date(); if (!daySet.has(d.toLocaleDateString('en-CA'))) d = new Date(d.getTime() - DAY); while (daySet.has(d.toLocaleDateString('en-CA'))) { k++; d = new Date(d.getTime() - DAY); } return k; })();
-    const pct = s.tasks ? Math.round((s.correct / s.tasks) * 100) : 0;
-    const stat = (v, label) => h('div', { class: 'rounded-2xl bg-night-900/80 p-3 text-center ring-1 ring-white/5' }, h('p', { class: 'text-2xl font-semibold tabular-nums text-white' }, String(v)), h('p', { class: 'text-xs text-slate-400' }, label));
-    root.append(h('div', { class: 'grid grid-cols-2 gap-2 sm:grid-cols-4' },
-      stat(n, P.streak), stat(`${r.usedToday}/${r.limit}`, P.today), stat(s.tasks, t('statTasks')), stat(`${pct}%`, t('statCorrect'))));
-    // Topics by subject
-    const groups = {};
-    Object.entries(p.topics || {}).forEach(([key, st]) => {
-      const [subjKey, grade, ...rest] = key.split('|');
-      const g = `${N.subjectName(subjKey)} · ${N.gradeLabel(grade)}`;
-      (groups[g] = groups[g] || []).push([rest.join('|'), st]);
-    });
-    const topicsBox = h('div', { class: `${CARD} flex flex-col gap-2` }, h('p', { class: 'font-semibold text-white' }, P.topics));
-    if (!Object.keys(groups).length) topicsBox.append(h('p', { class: 'text-sm text-slate-400' }, P.noTopics));
-    Object.entries(groups).forEach(([g, list]) => {
-      topicsBox.append(h('p', { class: 'mt-1 text-sm text-slate-400' }, g));
-      list.forEach(([topic, st]) => {
-        const [c] = topicColor(st);
-        topicsBox.append(h('div', { class: 'flex items-center gap-3 rounded-xl bg-night-800 px-3 py-2' }, h('span', { class: `h-3 w-3 shrink-0 rounded-full ${c}` }), h('span', { class: 'min-w-0 flex-1 text-sm text-slate-100' }, topic), h('span', { class: 'text-xs tabular-nums text-slate-400' }, `${st.ok}/${st.total}`)));
-      });
-    });
-    root.append(topicsBox);
-    // Homework
-    const diary = (r.diary || []).filter((d) => !d.done);
-    root.append(h('div', { class: `${CARD} flex flex-col gap-2` }, h('p', { class: 'font-semibold text-white' }, P.homework),
-      diary.length ? diary.map((d) => h('p', { class: 'text-sm text-slate-200' }, `• ${d.text} — ${N.subjectName(d.subject)}, ${t('until')(fmtDate(d.due))}`)) : h('p', { class: 'text-sm text-slate-400' }, P.noHomework)));
-    // AI report
-    const reportBox = h('div', { class: 'bubble whitespace-pre-wrap text-sm leading-relaxed text-slate-200' });
-    const reportBtn = h('button', { type: 'button', class: BTN2 }, ico('file-text'), t('parentReport'));
-    reportBtn.onclick = async () => {
-      reportBox.replaceChildren(loading(t('loadingTasks')));
-      const res = await N.postJson('/api/parent/report', { lang: N.lang });
-      reportBox.innerHTML = res.report ? N.formatReply(res.report) : '';
-      if (!res.report) reportBox.textContent = res.code === 'premium_required' ? P.reportNeedsSub : t('errors')[res.code] || t('errors').default;
-    };
-    root.append(h('div', { class: `${CARD} flex flex-col gap-3` }, reportBtn, reportBox));
-    // Child's password
-    const newPw = h('input', { type: 'text', class: INPUT, placeholder: P.newChildPwPh, id: 'childPw', autocomplete: 'off' });
-    const pwMsg = h('p', { class: 'text-sm' });
-    root.append(h('div', { class: `${CARD} flex flex-col gap-2` }, h('p', { class: 'font-semibold text-white' }, P.childPw), h('p', { class: 'text-sm text-slate-400' }, P.childPwText), newPw,
-      h('button', { type: 'button', class: BTN, onclick: async () => {
-        const res = await N.postJson('/api/parent/child-password', { password: newPw.value });
-        pwMsg.className = `text-sm ${res.ok ? 'text-emerald-200' : 'text-rose-200'}`;
-        pwMsg.textContent = res.ok ? P.childPwDone : P.childPwBad;
-        if (res.ok) newPw.value = '';
-      } }, P.childPwSave), pwMsg));
-  }
-
-  // ---------- landing for parents (not signed in) ----------
-  function renderLanding() {
-    const root = screen('landing');
-    const W = t('landing');
-    const langToggle = h('div', { class: 'flex justify-end' }, h('div', { class: 'flex rounded-2xl bg-night-800 p-1 ring-1 ring-white/5' },
-      ['uz', 'ru'].map((l) => h('button', { type: 'button', class: `min-h-11 min-w-12 rounded-xl px-3 text-[15px] font-medium ${N.lang === l ? 'bg-brand-500 text-white' : 'text-slate-300'}`, onclick: () => document.querySelector(`.lang-btn[data-lang="${l}"]`).click() }, l.toUpperCase()))));
-    root.append(langToggle,
-      h('div', { class: 'flex flex-col items-center gap-4 rounded-3xl bg-night-900/80 p-6 text-center ring-1 ring-white/5' },
-        h('img', { src: '/img/welcome.webp', alt: '', class: 'h-32 w-32 rounded-3xl object-cover' }),
-        h('h2', { class: 'text-3xl font-semibold leading-tight text-white' }, W.title),
-        h('p', { class: 'max-w-md text-slate-300' }, W.lead),
-        h('button', { type: 'button', class: BTN, onclick: () => N.showAuth('register') }, ico('sparkles'), W.start),
-        h('button', { type: 'button', class: BTN2, onclick: () => N.showAuth('login') }, W.login)));
-    root.append(h('h3', { class: 'mt-2 text-xl font-semibold text-white' }, W.whyTitle),
-      h('div', { class: 'grid gap-3 sm:grid-cols-2' }, W.why.map(([icon, title, text]) => h('div', { class: `${CARD} flex gap-3` },
-        h('span', { class: 'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-500/15 text-brand-400' }, ico(icon)),
-        h('div', { class: 'min-w-0' }, h('p', { class: 'font-semibold text-white' }, title), h('p', { class: 'text-sm text-slate-400' }, text))))));
-    root.append(h('h3', { class: 'mt-2 text-xl font-semibold text-white' }, W.insideTitle),
-      h('div', { class: 'flex flex-wrap gap-2' }, W.inside.map((x) => h('span', { class: 'rounded-full bg-night-800 px-3 py-2 text-sm text-slate-200 ring-1 ring-white/10' }, x))));
-    root.append(h('h3', { class: 'mt-2 text-xl font-semibold text-white' }, W.howTitle),
-      h('div', { class: 'flex flex-col gap-2' }, W.how.map((x, i) => h('div', { class: 'flex items-start gap-3' },
-        h('span', { class: 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white' }, String(i + 1)),
-        h('p', { class: 'pt-1 text-slate-300' }, x)))));
-    root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-white' },
-      h('p', { class: 'text-sm text-white/80' }, W.priceTitle),
-      h('p', { class: 'text-3xl font-semibold' }, t('sub').price(sum(N.billing.price || 45000))),
-      h('p', { class: 'text-sm text-white/85' }, W.priceText),
-      h('button', { type: 'button', class: 'min-h-12 rounded-2xl bg-white font-semibold text-brand-600', onclick: () => N.showAuth('register') }, W.start)));
-    root.append(h('div', { class: `${CARD} flex flex-col gap-2` }, h('p', { class: 'font-semibold text-white' }, W.parentTitle), h('p', { class: 'text-sm text-slate-400' }, W.parentText),
-      h('button', { type: 'button', class: BTN2, onclick: () => N.showAuth('login') }, ico('users'), W.parentLogin)));
-    root.append(h('a', { href: '/privacy.html', target: '_blank', class: 'self-center text-sm text-slate-400 underline' }, t('privacyTitle')));
-  }
-
-  // ---------- home ----------
-  function renderHome() {
-    const root = screen('home');
-    const p = data.progress;
-    const n = streak();
-    const daily = p.daily?.date === todayStr() ? p.daily : null;
-    const undone = data.diary.filter((d) => !d.done).length;
-
-    root.append(h('div', { class: 'flex flex-col items-start gap-2' },
-      h('h2', { class: 'text-2xl font-semibold text-white' }, t('hello')),
-      h('span', { class: `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm ${n ? 'bg-amber-400/15 text-amber-200' : 'bg-night-800 text-slate-400'}` }, ico('flame', 'h-4 w-4'), t('streak')(n))));
-
-    const st = planStatus();
-    const S = t('sub');
-    if (st && (st.tone === 'expired' || st.tone === 'none')) {
-      const none = st.tone === 'none';
-      root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-amber-400/10 p-5 ring-1 ring-amber-400/30' },
-        h('p', { class: 'text-lg font-semibold text-amber-100' }, none ? S.none : S.expired),
-        h('p', { class: 'text-sm text-amber-100/80' }, none ? S.noneText : S.expiredText),
-        h('button', { type: 'button', class: BTN, onclick: openSubscribe }, ico(none ? 'sparkles' : 'star'), none ? S.trialAsk : `${S.order} · ${sum(N.billing.price || 45000)}`)));
-    } else if (st) {
-      root.append(h('button', { type: 'button', class: `flex items-center gap-2 rounded-2xl px-4 py-3 text-left text-sm ring-1 ${st.tone === 'ending' ? 'bg-amber-400/10 text-amber-100 ring-amber-400/30' : 'bg-night-900/80 text-slate-300 ring-white/5'}`, onclick: openSubscribe },
-        ico('star', 'icon text-amber-300'), h('span', { class: 'min-w-0 flex-1' }, st.text), ico('chevron-right', 'icon text-slate-500')));
-    }
-    const locked = !N.hasAccess();
-    const guard = (fn) => (locked ? openSubscribe : fn);
-
-    root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-white shadow-lg shadow-brand-500/30' },
-      h('div', { class: 'flex items-center gap-3' },
-        h('span', { class: 'flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15' }, ico(locked ? 'lock' : 'dumbbell')),
-        h('div', { class: 'min-w-0' }, h('p', { class: 'text-lg font-semibold' }, t('dailyTitle')), h('p', { class: 'text-sm text-white/80' }, daily ? t('dailyDone')(daily.score) : t('dailyDesc')(level())))),
-      h('button', { type: 'button', class: 'flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white text-base font-semibold text-brand-600 transition hover:bg-white/90 active:scale-[.98]', onclick: guard(() => startTraining()) }, daily ? ico('repeat') : ico('chevron-right'), locked ? S.open : daily ? t('again') : t('start'))));
-
-    const tiles = t('tiles');
-    // paid: part of the subscription (shows a lock after the free week).
-    const tile = (key, icon, onclick, extra, paid = true) => h('button', { type: 'button', class: `${CARD} relative flex min-h-32 flex-col items-start gap-3 text-left transition hover:bg-night-800 active:scale-[.98]`, onclick: paid ? guard(onclick) : onclick },
-      h('span', { class: 'flex h-11 w-11 items-center justify-center rounded-2xl bg-night-700 text-brand-400' }, ico(icon)),
-      paid && locked ? h('span', { class: 'absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-amber-400/15 text-amber-200', title: S.locked, 'aria-label': S.locked }, ico('lock', 'h-4 w-4')) : null,
-      h('span', { class: 'min-w-0' }, h('span', { class: 'block font-semibold text-white' }, tiles[key][0]), h('span', { class: 'block text-xs text-slate-400' }, extra || tiles[key][1])));
-    // Older students get exams; younger ones keep the chat tile. Always 8 tiles.
-    root.append(h('div', { class: 'grid grid-cols-2 gap-3' },
-      tile('photo', 'camera', N.askWithPhoto),
-      tile('test', 'clipboard-check', openTestPicker),
-      grade() >= 8 ? tile('exam', 'graduation-cap', openExams) : tile('chat', 'message-circle', () => N.showScreen('chat')),
-      tile('olympiad', 'puzzle', startOlympiad),
-      tile('cards', 'layers', openCards, null, false),
-      tile('reading', 'book-open', startReading),
-      tile('games', 'gamepad-2', openGames, null, false),
-      tile('diary', 'notebook-pen', () => N.showScreen('diary'), t('undone')(undone), false)));
-  }
-
-  // ---------- progress ----------
-  const BADGES = [
-    ['first', 'award', (s) => s.tasks >= 1],
-    ['tasks50', 'trophy', (s) => s.tasks >= 50],
-    ['streak3', 'flame', (s, n) => n >= 3],
-    ['streak7', 'flame', (s, n) => n >= 7],
-    ['test5', 'star', (s) => s.best5 >= 1],
-    ['reader', 'book-open', (s) => s.reading >= 3],
-    ['words30', 'layers', () => learnedCount() >= 30],
-    ['mult20', 'timer', (s) => (s.games.mult || 0) >= 20],
-  ];
-  function topicColor(st) {
-    if (!st || !st.total) return ['bg-slate-500', 'none'];
-    const r = st.ok / st.total;
-    if (r >= 0.8 && st.total >= 3) return ['bg-emerald-400', 'good'];
-    if (r >= 0.5) return ['bg-amber-400', 'mid'];
-    return ['bg-rose-400', 'bad'];
-  }
-
-  function renderProgress() {
-    const root = screen('progress');
-    const p = data.progress, s = p.stats;
-    const n = streak();
-    const daySet = new Set(p.days);
-    const week = Array.from({ length: 7 }, (_, k) => {
-      const d = new Date(Date.now() - (6 - k) * DAY);
-      const key = d.toLocaleDateString('en-CA');
-      return h('div', { class: 'flex flex-1 flex-col items-center gap-1' },
-        h('span', { class: `h-8 w-full max-w-10 rounded-xl ${daySet.has(key) ? 'bg-amber-400' : 'bg-night-700'}` }),
-        h('span', { class: 'text-[11px] text-slate-500' }, d.toLocaleDateString(N.lang === 'uz' ? 'uz-UZ' : 'ru-RU', { weekday: 'short' }).slice(0, 2)));
-    });
-    root.append(h('div', { class: `${CARD} flex flex-col gap-3` },
-      h('div', { class: 'flex items-center gap-3' },
-        h('span', { class: 'flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-200' }, ico('flame')),
-        h('div', {}, h('p', { class: 'font-semibold text-white' }, t('streak')(n)), h('p', { class: 'text-sm text-slate-400' }, t('totalDays')(p.days.length)))),
-      h('div', { class: 'flex gap-1.5' }, week)));
-
-    const pct = s.tasks ? Math.round((s.correct / s.tasks) * 100) : 0;
-    const stat = (v, label) => h('div', { class: 'rounded-2xl bg-night-900/80 p-3 text-center ring-1 ring-white/5' }, h('p', { class: 'text-2xl font-semibold tabular-nums text-white' }, String(v)), h('p', { class: 'text-xs text-slate-400' }, label));
-    root.append(h('div', { class: 'grid grid-cols-3 gap-2' }, stat(s.tasks, t('statTasks')), stat(`${pct}%`, t('statCorrect')), stat(s.tests, t('statTests'))));
-
-    root.append(h('div', { class: `${CARD} flex items-center justify-between gap-3` },
-      h('div', { class: 'min-w-0' }, h('p', { class: 'font-semibold text-white' }, t('levelTitle')), h('p', { class: 'truncate text-sm text-slate-400' }, `${N.subjectName(subj())} · ${N.gradeLabel(grade())}`)),
-      h('div', { class: 'flex shrink-0 gap-1' }, [1, 2, 3, 4, 5].map((k) => h('span', { class: `h-3 w-6 rounded-full ${k <= level() ? 'bg-brand-400' : 'bg-night-700'}` })))));
-
-    const legend = t('legend');
-    const mapBox = h('div', { class: 'flex flex-col gap-2' }, loading(t('loadingTopics')));
-    root.append(h('div', { class: `${CARD} flex flex-col gap-3` },
-      h('p', { class: 'font-semibold text-white' }, t('topicMap')(N.subjectName(subj()))),
-      h('div', { class: 'flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400' },
-        [['bg-emerald-400', 'good'], ['bg-amber-400', 'mid'], ['bg-rose-400', 'bad'], ['bg-slate-500', 'none']].map(([c, k]) => h('span', { class: 'flex items-center gap-1.5' }, h('span', { class: `h-2.5 w-2.5 rounded-full ${c}` }), legend[k]))),
-      h('p', { class: 'text-xs text-slate-500' }, t('tapTopic')),
-      mapBox));
-    const prefix = `${subj()}|${grade()}|`;
-    const practiced = Object.keys(p.topics).filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length));
-    const drawMap = (topics) => {
-      mapBox.innerHTML = '';
-      const all = [...topics, ...practiced.filter((x) => !topics.includes(x))];
-      all.forEach((tp) => {
-        const st = p.topics[prefix + tp];
-        const [c] = topicColor(st);
-        mapBox.append(h('button', { type: 'button', class: 'flex min-h-12 items-center gap-3 rounded-2xl bg-night-800 px-4 text-left text-[15px] text-slate-100 ring-1 ring-white/5 hover:bg-night-700', onclick: () => startTraining(tp) },
-          h('span', { class: `h-3 w-3 shrink-0 rounded-full ${c}` }), h('span', { class: 'min-w-0 flex-1' }, tp),
-          st ? h('span', { class: 'shrink-0 text-xs tabular-nums text-slate-400' }, `${st.ok}/${st.total}`) : null));
-      });
-    };
-    getTopics().then(drawMap).catch(() => drawMap([]));
-
-    root.append(h('p', { class: 'mt-1 font-semibold text-white' }, t('badges')),
-      h('div', { class: 'grid grid-cols-2 gap-2 sm:grid-cols-4' }, BADGES.map(([key, icon, test]) => {
-        const got = test(s, n);
-        const [title, desc] = t('badgeList')[key];
-        return h('div', { class: `flex flex-col items-center gap-1.5 rounded-2xl p-3 text-center ring-1 ${got ? 'bg-amber-400/10 ring-amber-400/30' : 'bg-night-900/60 ring-white/5 opacity-50'}` },
-          h('span', { class: `flex h-11 w-11 items-center justify-center rounded-full ${got ? 'bg-amber-400/20 text-amber-200' : 'bg-night-700 text-slate-500'}` }, ico(icon)),
-          h('p', { class: 'text-sm font-semibold text-white' }, title), h('p', { class: 'text-[11px] text-slate-400' }, desc));
-      })));
-
-    root.append(h('button', { type: 'button', class: BTN2, onclick: () => N.openReport() }, ico('file-text'), t('parentReport')));
-  }
-
-  // ---------- diary ----------
-  function fmtDate(iso) { const [, m, d] = iso.split('-'); return `${d}.${m}`; }
-  function renderDiary() {
-    const root = screen('diary');
-    root.append(h('h2', { class: 'text-2xl font-semibold text-white' }, t('diaryTitle')));
-    const text = h('input', { id: 'diaryText', type: 'text', class: INPUT, placeholder: t('whatAssignedPh'), maxlength: '200' });
-    const subject = h('select', { id: 'diarySubject', class: `${INPUT} appearance-none` }, N.SUBJECTS.map(([k]) => h('option', { value: k, selected: k === subj() }, N.subjectName(k))));
-    const tomorrow = new Date(Date.now() + DAY).toLocaleDateString('en-CA');
-    const due = h('input', { id: 'diaryDue', type: 'date', class: INPUT, value: tomorrow });
-    const add = () => {
-      if (!text.value.trim()) return text.focus();
-      data.diary = [...data.diary, { id: String(Date.now()), subject: subject.value, text: text.value.trim().slice(0, 200), due: due.value || tomorrow, done: false }].slice(-200);
-      save('diary');
-      renderDiary();
-    };
-    text.addEventListener('keydown', (e) => { if (e.key === 'Enter') add(); });
-    root.append(h('div', { class: `${CARD} flex flex-col gap-2` },
-      h('label', { class: 'text-sm text-slate-400', for: 'diaryText' }, t('whatAssigned')), text,
-      h('div', { class: 'grid grid-cols-2 gap-2' }, subject, h('div', {}, due)),
-      h('button', { type: 'button', class: BTN, onclick: add }, ico('plus'), t('add'))));
-
-    const today = todayStr();
-    const tomorrowIso = tomorrow;
-    const row = (item) => {
-      const overdue = !item.done && item.due < today;
-      const when = item.due === today ? t('todayWord') : item.due === tomorrowIso ? t('tomorrowWord') : t('until')(fmtDate(item.due));
-      return h('div', { class: `flex items-center gap-3 rounded-2xl bg-night-900/80 p-3 ring-1 ${overdue ? 'ring-rose-400/40' : 'ring-white/5'}` },
-        h('button', { type: 'button', class: `flex h-10 w-10 shrink-0 items-center justify-center rounded-full ring-2 ${item.done ? 'bg-emerald-500 text-white ring-emerald-500' : 'text-transparent ring-slate-500 hover:ring-brand-400'}`, 'aria-label': item.done ? 'done' : 'todo', onclick: () => { item.done = !item.done; if (item.done) markDay(); save('diary'); renderDiary(); } }, ico('check')),
+    ALL_GAMES.forEach(([key, ic, [name, desc], fn]) => {
+      listGrid.append(
+        h('button', {
+          type: 'button',
+          class: CARD + ' flex items-center gap-4 text-left transition hover:bg-night-800 cursor-pointer border border-white/5 hover:border-white/20',
+          onclick: fn
+        },
+        h('span', { class: 'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-500/15 text-brand-400' }, ico(ic || 'gamepad-2')),
         h('div', { class: 'min-w-0 flex-1' },
-          h('p', { class: `break-words ${item.done ? 'text-slate-500 line-through' : 'text-white'}` }, item.text),
-          h('p', { class: `text-xs ${overdue ? 'text-rose-300' : 'text-slate-400'}` }, `${N.subjectName(item.subject)} · ${overdue ? `${t('overdue')} (${fmtDate(item.due)})` : when}`)),
-        h('button', { type: 'button', class: 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-white/5 hover:text-rose-300', 'aria-label': t('del'), onclick: () => { data.diary = data.diary.filter((d) => d !== item); save('diary'); renderDiary(); } }, ico('trash-2')));
-    };
-    const todo = data.diary.filter((d) => !d.done).sort((a, b) => a.due.localeCompare(b.due));
-    const done = data.diary.filter((d) => d.done).sort((a, b) => b.due.localeCompare(a.due)).slice(0, 20);
-    if (!data.diary.length) root.append(h('p', { class: 'text-center text-slate-400' }, t('diaryEmpty')));
-    if (todo.length) root.append(h('p', { class: 'font-semibold text-white' }, t('todo')(todo.length)), ...todo.map(row));
-    if (done.length) root.append(h('p', { class: 'font-semibold text-slate-400' }, t('doneList')(done.length)), ...done.map(row));
+          h('p', { class: 'font-semibold text-white text-base' }, name),
+          h('p', { class: 'text-xs text-slate-400 line-clamp-1' }, desc)
+        ),
+        g[key] ? h('span', { class: 'shrink-0 rounded-full bg-night-700 px-3 py-1 text-xs text-slate-200' }, 'Рекорд: ' + g[key]) : null,
+        ico('chevron-right', 'text-slate-500')
+        )
+      );
+    });
+
+    root.append(listGrid);
   }
 
-  // ---------- entry points used by app.js ----------
-  function render(name, arg) {
-    if (!N.setup) return;
-    if (name === 'home') renderHome();
-    else if (name === 'progress') renderProgress();
-    else if (name === 'diary') renderDiary();
-    else if (name === 'activity' && arg) arg();
+  // -------------------------------------------------------------------------
+  // QUESTION SETS EDITOR (CONSTRUCTOR)
+  // -------------------------------------------------------------------------
+  function openQBuilder() {
+    const root = screen('activity');
+    root.append(titleBar('Конструктор вопросов', openGames));
+
+    const sets = data.questionSets || [];
+
+    const header = h('div', { class: 'flex items-center justify-between mb-4' },
+      h('h2', { class: 'text-lg font-bold text-white' }, 'Мои наборы вопросов'),
+      h('button', { type: 'button', class: 'flex items-center gap-1.5 rounded-2xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white', onclick: createNewSet }, ico('plus'), 'Новый набор')
+    );
+
+    root.append(header);
+
+    if (!sets.length) {
+      root.append(
+        h('div', { class: CARD + ' text-center py-12 text-slate-400' },
+          ico('notebook-pen', 'h-12 w-12 mx-auto mb-3 text-slate-600'),
+          h('p', { class: 'text-white font-semibold' }, 'У вас пока нет созданных наборов'),
+          h('p', { class: 'text-sm mt-1' }, 'Создайте свой набор вопросов для викторин и игр!')
+        )
+      );
+      return;
+    }
+
+    const setList = h('div', { class: 'flex flex-col gap-3' });
+    sets.forEach((s, idx) => {
+      setList.append(
+        h('div', { class: CARD + ' flex items-center justify-between p-4 bg-night-800' },
+          h('div', { class: 'min-w-0 flex-1' },
+            h('p', { class: 'font-bold text-white' }, s.title),
+            h('p', { class: 'text-xs text-slate-400' }, 'Вопросов: ' + s.items.length)
+          ),
+          h('div', { class: 'flex items-center gap-2' },
+            h('button', { type: 'button', class: 'p-2 text-slate-300 hover:text-white', onclick: () => editSet(idx) }, ico('pencil')),
+            h('button', { type: 'button', class: 'p-2 text-rose-400 hover:text-rose-300', onclick: () => deleteSet(idx) }, ico('trash-2'))
+          )
+        )
+      );
+    });
+    root.append(setList);
+
+    function createNewSet() {
+      data.questionSets = data.questionSets || [];
+      const newS = {
+        id: 'custom_' + Date.now(),
+        title: 'Новый набор вопросов',
+        items: []
+      };
+      data.questionSets.push(newS);
+      save('questionSets');
+      editSet(data.questionSets.length - 1);
+    }
+
+    function deleteSet(idx) {
+      if (confirm('Удалить этот набор вопросов?')) {
+        data.questionSets.splice(idx, 1);
+        save('questionSets');
+        openQBuilder();
+      }
+    }
+
+    function editSet(idx) {
+      const s = data.questionSets[idx];
+      root.innerHTML = '';
+      root.append(titleBar('Редактирование набора', openQBuilder));
+
+      const titleInput = h('input', { type: 'text', class: INPUT + ' mb-4 text-lg font-bold', value: s.title, placeholder: 'Название набора' });
+
+      const qContainer = h('div', { class: 'flex flex-col gap-3 mb-6' });
+
+      const renderQuestions = () => {
+        qContainer.innerHTML = '';
+        s.items.forEach((qItem, qIdx) => {
+          qContainer.append(
+            h('div', { class: CARD + ' bg-night-800 p-4 flex flex-col gap-2 relative' },
+              h('div', { class: 'flex justify-between items-center' },
+                h('span', { class: 'text-xs font-bold text-brand-400' }, 'Вопрос ' + (qIdx + 1)),
+                h('button', { type: 'button', class: 'text-rose-400 p-1', onclick: () => { s.items.splice(qIdx, 1); save('questionSets'); renderQuestions(); } }, ico('trash-2'))
+              ),
+              h('input', {
+                type: 'text',
+                class: INPUT + ' text-sm',
+                value: qItem.q || '',
+                placeholder: 'Текст вопроса',
+                onchange: (e) => { qItem.q = e.target.value; save('questionSets'); }
+              }),
+              h('input', {
+                type: 'text',
+                class: INPUT + ' text-sm border-emerald-500/50',
+                value: qItem.a || '',
+                placeholder: 'Правильный ответ',
+                onchange: (e) => { qItem.a = e.target.value; save('questionSets'); }
+              }),
+              h('input', {
+                type: 'text',
+                class: INPUT + ' text-xs',
+                value: (qItem.options || []).join(', '),
+                placeholder: 'Варианты ответа через запятую (необязательно)',
+                onchange: (e) => { qItem.options = e.target.value.split(',').map(x => x.trim()).filter(Boolean); save('questionSets'); }
+              })
+            )
+          );
+        });
+      };
+
+      renderQuestions();
+
+      const addQBtn = h('button', {
+        type: 'button',
+        class: BTN2,
+        onclick: () => {
+          s.items.push({ q: '', a: '', options: [] });
+          save('questionSets');
+          renderQuestions();
+        }
+      }, ico('plus'), 'Добавить вопрос');
+
+      const saveBtn = h('button', {
+        type: 'button',
+        class: BTN + ' mt-4',
+        onclick: () => {
+          s.title = titleInput.value.trim() || 'Набор вопросов';
+          save('questionSets');
+          openQBuilder();
+        }
+      }, ico('check'), 'Сохранить набор');
+
+      root.append(titleInput, qContainer, addQBtn, saveBtn);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // GAME 1: TUG OF WAR (ПЕРЕТЯГИВАНИЕ КАНАТА)
+  // -------------------------------------------------------------------------
+  function playTugOfWar() {
+    selectQuestionSetModal('Перетягивание каната: Выберите набор', (qSet) => {
+      const root = screen('activity');
+      let team1 = 'Команда А';
+      let team2 = 'Команда Б';
+      let pos = 0; // -5 to +5
+      let turn = 1; // 1 or 2
+      let qIndex = 0;
+      const questions = [...qSet.items];
+
+      root.append(titleBar('Перетягивание каната', openGames));
+
+      const ropeBar = h('div', { class: 'relative w-full h-12 bg-night-800 rounded-full my-6 flex items-center justify-between px-4 overflow-hidden border border-white/10' });
+      const ribbon = h('div', { class: 'absolute w-8 h-8 rounded-full bg-brand-500 shadow-lg border-2 border-white flex items-center justify-center text-xs font-bold transition-all duration-500' }, '🚩');
+
+      const updateRope = () => {
+        const pct = 50 + (pos * 9);
+        ribbon.style.left = 'calc(' + pct + '% - 16px)';
+      };
+
+      ropeBar.append(ribbon);
+
+      const statusBox = h('div', { class: 'text-center my-4 font-bold text-lg text-white' });
+      const qBox = h('div', { class: CARD + ' p-6 text-center text-xl font-bold text-white mb-4 bg-night-800' });
+      const optionsBox = h('div', { class: 'grid grid-cols-1 md:grid-cols-2 gap-3' });
+
+      const renderTurn = () => {
+        updateRope();
+        if (pos <= -5) {
+          gameResult(root, 'Перетягивание каната', ['🎉 Победила ' + team1 + '!'], bestGame('tug', 10), playTugOfWar);
+          return;
+        }
+        if (pos >= 5) {
+          gameResult(root, 'Перетягивание каната', ['🎉 Победила ' + team2 + '!'], bestGame('tug', 10), playTugOfWar);
+          return;
+        }
+        if (qIndex >= questions.length) {
+          const winner = pos < 0 ? team1 : pos > 0 ? team2 : 'Ничья!';
+          gameResult(root, 'Перетягивание каната', ['Игра окончена!', 'Результат: ' + winner], bestGame('tug', 5), playTugOfWar);
+          return;
+        }
+
+        const currQ = questions[qIndex];
+        statusBox.textContent = 'Ход: ' + (turn === 1 ? team1 : team2);
+        statusBox.className = 'text-center my-4 font-bold text-lg ' + (turn === 1 ? 'text-rose-400' : 'text-sky-400');
+        qBox.textContent = currQ.q;
+
+        optionsBox.innerHTML = '';
+        const opts = currQ.options && currQ.options.length ? currQ.options : [currQ.a, 'Другой ответ'];
+
+        opts.forEach(opt => {
+          optionsBox.append(
+            h('button', {
+              type: 'button',
+              class: BTN2 + ' py-4 text-base font-semibold',
+              onclick: () => {
+                const ok = (opt.trim().toLowerCase() === String(currQ.a).trim().toLowerCase());
+                if (ok) {
+                  pos += (turn === 1 ? -1 : 1);
+                }
+                turn = turn === 1 ? 2 : 1;
+                qIndex++;
+                renderTurn();
+              }
+            }, opt)
+          );
+        });
+      };
+
+      root.append(
+        h('div', { class: 'flex justify-between font-bold text-sm px-2 text-slate-300' },
+          h('span', { class: 'text-rose-400' }, '🔴 ' + team1),
+          h('span', { class: 'text-sky-400' }, '🔵 ' + team2)
+        ),
+        ropeBar,
+        statusBox,
+        qBox,
+        optionsBox
+      );
+
+      renderTurn();
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // GAME 2: DRUM / WHEEL OF FORTUNE (БАРАБАН)
+  // -------------------------------------------------------------------------
+  function playDrum() {
+    selectQuestionSetModal('Барабан знаний: Выберите вопросы', (qSet) => {
+      const root = screen('activity');
+      root.append(titleBar('Барабан знаний', openGames));
+
+      let names = ['Алишер', 'Мадина', 'Тимур', 'Сардор', 'Елена', 'Шахзод'];
+      let activePool = [...names];
+      let isSpinning = false;
+      const questions = [...qSet.items];
+
+      const canvas = h('canvas', { width: '300', height: '300', class: 'mx-auto my-4 rounded-full shadow-2xl border-4 border-amber-400' });
+      const ctx = canvas.getContext('2d');
+
+      const drawWheel = (angle = 0) => {
+        const len = activePool.length || 1;
+        const slice = (2 * Math.PI) / len;
+        ctx.clearRect(0, 0, 300, 300);
+
+        const colors = ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+
+        for (let i = 0; i < len; i++) {
+          ctx.beginPath();
+          ctx.fillStyle = colors[i % colors.length];
+          ctx.moveTo(150, 150);
+          ctx.arc(150, 150, 140, angle + i * slice, angle + (i + 1) * slice);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.save();
+          ctx.translate(150, 150);
+          ctx.rotate(angle + (i + 0.5) * slice);
+          ctx.textAlign = 'right';
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 14px sans-serif';
+          ctx.fillText(activePool[i] || 'Никого', 130, 5);
+          ctx.restore();
+        }
+      };
+
+      drawWheel();
+
+      const spinBtn = h('button', {
+        type: 'button',
+        class: BTN + ' max-w-xs mx-auto my-4',
+        onclick: () => {
+          if (isSpinning || !activePool.length) return;
+          isSpinning = true;
+          let curAngle = 0;
+          const totalRotation = Math.PI * 8 + Math.random() * Math.PI * 2;
+          const start = Date.now();
+          const duration = 3000;
+
+          const anim = setInterval(() => {
+            const now = Date.now();
+            const progress = Math.min(1, (now - start) / duration);
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            curAngle = totalRotation * easeOut;
+            drawWheel(curAngle);
+
+            if (progress >= 1) {
+              clearInterval(anim);
+              isSpinning = false;
+              const len = activePool.length;
+              const slice = (2 * Math.PI) / len;
+              const normalized = (2 * Math.PI - (curAngle % (2 * Math.PI))) % (2 * Math.PI);
+              const idx = Math.floor(normalized / slice) % len;
+              const chosen = activePool[idx];
+
+              activePool.splice(idx, 1);
+              showQuestionModal(chosen);
+            }
+          }, 30);
+        }
+      }, ico('sparkles'), 'Крутить барабан');
+
+      const resetPoolBtn = h('button', {
+        type: 'button',
+        class: BTN2 + ' max-w-xs mx-auto',
+        onclick: () => {
+          activePool = [...names];
+          drawWheel();
+        }
+      }, ico('repeat'), 'Сбросить круг учеников');
+
+      function showQuestionModal(studentName) {
+        const randQ = questions[Math.floor(Math.random() * questions.length)];
+        const modal = h('div', { class: 'fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm' });
+        const box = h('div', { class: CARD + ' w-full max-w-md p-6 bg-night-900 border border-white/10 text-center flex flex-col gap-4 rounded-3xl shadow-2xl' },
+          h('span', { class: 'text-3xl' }, '🎯'),
+          h('h3', { class: 'text-2xl font-extrabold text-amber-300' }, studentName),
+          h('p', { class: 'text-lg font-bold text-white' }, randQ.q),
+          h('div', { class: 'flex gap-3 mt-4' },
+            h('button', { type: 'button', class: BTN + ' bg-emerald-600 hover:bg-emerald-500', onclick: () => { modal.remove(); drawWheel(); } }, ico('check'), 'Верно (+1)'),
+            h('button', { type: 'button', class: BTN2 + ' border-rose-500/50 text-rose-300', onclick: () => { modal.remove(); drawWheel(); } }, ico('x'), 'Неверно')
+          )
+        );
+        modal.append(box);
+        document.body.append(modal);
+      }
+
+      root.append(canvas, spinBtn, resetPoolBtn);
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // GAME 3: FIND A PAIR (НАЙДИ ПАРУ)
+  // -------------------------------------------------------------------------
+  function playPair() {
+    const root = screen('activity');
+    root.append(titleBar('Найди пару', openGames));
+
+    const PAIRS_DATA = [
+      ['🍎', 'Яблоко'], ['🐶', 'Собака'], ['🚗', 'Машина'], ['🚀', 'Ракета'],
+      ['⚽', 'Мяч'], ['📚', 'Книга'], ['🎨', 'Краски'], ['🎸', 'Гитара']
+    ];
+
+    let cards = [];
+    PAIRS_DATA.slice(0, 6).forEach(([icon, text], pairId) => {
+      cards.push({ id: pairId * 2, pairId, val: icon, type: 'icon', flipped: false, matched: false });
+      cards.push({ id: pairId * 2 + 1, pairId, val: text, type: 'text', flipped: false, matched: false });
+    });
+
+    cards.sort(() => Math.random() - 0.5);
+
+    let flippedCards = [];
+    let moves = 0;
+    let matchedCount = 0;
+
+    const movesEl = h('div', { class: 'text-center font-bold text-slate-300 mb-4' }, 'Ходов: 0');
+    const grid = h('div', { class: 'grid grid-cols-3 md:grid-cols-4 gap-3 max-w-lg mx-auto' });
+
+    const renderGrid = () => {
+      grid.innerHTML = '';
+      cards.forEach((c) => {
+        const cardBtn = h('button', {
+          type: 'button',
+          class: 'h-24 rounded-2xl font-bold text-lg flex items-center justify-center p-2 transition-all duration-300 ' + (
+            c.matched ? 'bg-emerald-600/30 border-2 border-emerald-500 text-emerald-200 cursor-default' :
+            c.flipped ? 'bg-brand-600 text-white border-2 border-brand-400' :
+            'bg-night-800 text-transparent border border-white/10 hover:bg-night-700'
+          ),
+          onclick: () => {
+            if (c.flipped || c.matched || flippedCards.length >= 2) return;
+            c.flipped = true;
+            flippedCards.push(c);
+            renderGrid();
+
+            if (flippedCards.length === 2) {
+              moves++;
+              movesEl.textContent = 'Ходов: ' + moves;
+              const [c1, c2] = flippedCards;
+
+              if (c1.pairId === c2.pairId) {
+                c1.matched = true;
+                c2.matched = true;
+                matchedCount++;
+                flippedCards = [];
+                renderGrid();
+                if (matchedCount === PAIRS_DATA.slice(0, 6).length) {
+                  setTimeout(() => gameResult(root, 'Найди пару', ['Победа! Ходов: ' + moves], bestGame('pair', 100 - moves), playPair), 500);
+                }
+              } else {
+                setTimeout(() => {
+                  c1.flipped = false;
+                  c2.flipped = false;
+                  flippedCards = [];
+                  renderGrid();
+                }, 800);
+              }
+            }
+          }
+        }, c.flipped || c.matched ? c.val : '❓');
+
+        grid.append(cardBtn);
+      });
+    };
+
+    root.append(movesEl, grid);
+    renderGrid();
+  }
+
+  // -------------------------------------------------------------------------
+  // GAME 4: GROUPING (ГРУППИРОВКА)
+  // -------------------------------------------------------------------------
+  function playGrouping() {
+    const root = screen('activity');
+    root.append(titleBar('Группировка', openGames));
+
+    const categories = ['Живое', 'Неживое'];
+    const items = [
+      { text: '🐕 Собака', cat: 'Живое' },
+      { text: '🚗 Автомобиль', cat: 'Неживое' },
+      { text: '🌳 Дерево', cat: 'Живое' },
+      { text: '🪨 Камень', cat: 'Неживое' },
+      { text: '🦅 Орел', cat: 'Живое' },
+      { text: '💻 Компьютер', cat: 'Неживое' }
+    ].sort(() => Math.random() - 0.5);
+
+    let assignments = {};
+    let selectedItem = null;
+
+    const container = h('div', { class: 'flex flex-col gap-4 max-w-lg mx-auto' });
+
+    const render = () => {
+      container.innerHTML = '';
+
+      const itemsBox = h('div', { class: CARD + ' p-4 bg-night-800' },
+        h('p', { class: 'text-xs font-bold text-slate-400 mb-2' }, 'Выберите элемент:'),
+        h('div', { class: 'flex flex-wrap gap-2' },
+          items.map((it, idx) => {
+            const isAssigned = assignments[idx] !== undefined;
+            return h('button', {
+              type: 'button',
+              class: 'px-3 py-2 rounded-xl text-sm font-semibold border transition ' + (
+                selectedItem === idx ? 'bg-amber-400 text-slate-900 border-amber-300 ring-2 ring-amber-400' :
+                isAssigned ? 'bg-night-700 text-slate-400 border-transparent opacity-50' :
+                'bg-night-900 text-white border-white/10 hover:bg-night-700'
+              ),
+              onclick: () => { selectedItem = idx; render(); }
+            }, it.text);
+          })
+        )
+      );
+
+      const catGrid = h('div', { class: 'grid grid-cols-2 gap-3' });
+
+      categories.forEach(cat => {
+        catGrid.append(
+          h('button', {
+            type: 'button',
+            class: CARD + ' p-4 bg-night-900 border-2 border-dashed border-white/20 min-h-36 flex flex-col items-center gap-2 text-left hover:border-brand-500 transition',
+            onclick: () => {
+              if (selectedItem !== null) {
+                assignments[selectedItem] = cat;
+                selectedItem = null;
+                render();
+              }
+            }
+          },
+          h('span', { class: 'font-bold text-brand-300 text-base' }, cat),
+          h('div', { class: 'flex flex-col gap-1 w-full mt-2' },
+            Object.entries(assignments)
+              .filter(([_, c]) => c === cat)
+              .map(([idx, _]) => h('span', { class: 'text-xs bg-night-800 text-white px-2 py-1 rounded-lg border border-white/5' }, items[idx].text))
+          )
+          )
+        );
+      });
+
+      const checkBtn = h('button', {
+        type: 'button',
+        class: BTN,
+        onclick: () => {
+          let correct = 0;
+          items.forEach((it, idx) => {
+            if (assignments[idx] === it.cat) correct++;
+          });
+          gameResult(root, 'Группировка', ['Результат: ' + correct + ' из ' + items.length + ' верно!'], bestGame('group', correct), playGrouping);
+        }
+      }, ico('check'), 'Проверить распределение');
+
+      container.append(itemsBox, catGrid, checkBtn);
+    };
+
+    root.append(container);
+    render();
+  }
+
+  // -------------------------------------------------------------------------
+  // GAME 5: JEOPARDY (СВОЯ ИГРА)
+  // -------------------------------------------------------------------------
+  function playJeopardy() {
+    const root = screen('activity');
+    root.append(titleBar('Своя игра', openGames));
+
+    const board = [
+      {
+        category: 'Математика',
+        questions: [
+          { pts: 100, q: '5 × 5 = ?', a: '25' },
+          { pts: 200, q: 'Корень из 81:', a: '9' },
+          { pts: 300, q: '12 × 12 = ?', a: '144' }
+        ]
+      },
+      {
+        category: 'Природа',
+        questions: [
+          { pts: 100, q: 'Какая планета 3-я от Солнца?', a: 'Земля' },
+          { pts: 200, q: 'Самое быстрое животное на суше:', a: 'Гепард' },
+          { pts: 300, q: 'Формула воды:', a: 'H2O' }
+        ]
+      }
+    ];
+
+    let score = 0;
+    const played = new Set();
+
+    const scoreEl = h('div', { class: 'text-center font-bold text-amber-300 text-xl mb-4' }, 'Счёт: 0');
+    const grid = h('div', { class: 'grid grid-cols-2 gap-3 max-w-lg mx-auto' });
+
+    board.forEach((col, colIdx) => {
+      const colBox = h('div', { class: 'flex flex-col gap-2' },
+        h('div', { class: 'p-3 bg-brand-600 rounded-2xl text-center font-bold text-white text-sm shadow-md' }, col.category)
+      );
+
+      col.questions.forEach((qObj, qIdx) => {
+        const qKey = colIdx + '_' + qIdx;
+        colBox.append(
+          h('button', {
+            type: 'button',
+            class: 'h-16 rounded-2xl font-bold text-lg transition ' + (
+              played.has(qKey) ? 'bg-night-800 text-slate-600 cursor-default' : 'bg-night-900 text-amber-400 border border-amber-400/30 hover:bg-night-800'
+            ),
+            onclick: () => {
+              if (played.has(qKey)) return;
+              played.add(qKey);
+              showQModal(qObj, qKey);
+            }
+          }, played.has(qKey) ? '✓' : qObj.pts)
+        );
+      });
+
+      grid.append(colBox);
+    });
+
+    function showQModal(qObj, qKey) {
+      const modal = h('div', { class: 'fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm' });
+      const box = h('div', { class: CARD + ' w-full max-w-md p-6 bg-night-900 border border-white/10 text-center flex flex-col gap-4 rounded-3xl shadow-2xl' },
+        h('span', { class: 'text-xs font-bold text-amber-400' }, 'Вопрос на ' + qObj.pts + ' очков'),
+        h('p', { class: 'text-xl font-bold text-white' }, qObj.q),
+        h('div', { class: 'flex gap-3 mt-4' },
+          h('button', { type: 'button', class: BTN + ' bg-emerald-600 hover:bg-emerald-500', onclick: () => { score += qObj.pts; scoreEl.textContent = 'Счёт: ' + score; modal.remove(); } }, 'Верно (+' + qObj.pts + ')'),
+          h('button', { type: 'button', class: BTN2 + ' border-rose-500/50 text-rose-300', onclick: () => { score -= qObj.pts; scoreEl.textContent = 'Счёт: ' + score; modal.remove(); } }, 'Ошибка (-' + qObj.pts + ')')
+        )
+      );
+      modal.append(box);
+      document.body.append(modal);
+    }
+
+    root.append(scoreEl, grid);
+  }
+
+  // -------------------------------------------------------------------------
+  // GAME 6: TICKETS (БИЛЕТЫ)
+  // -------------------------------------------------------------------------
+  function playTickets() {
+    selectQuestionSetModal('Билеты: Выберите наборы', (qSet) => {
+      const root = screen('activity');
+      root.append(titleBar('Билеты', openGames));
+
+      const tickets = [];
+      const items = [...qSet.items];
+      for (let i = 0; i < items.length; i += 2) {
+        tickets.push(items.slice(i, i + 2));
+      }
+
+      const grid = h('div', { class: 'grid grid-cols-2 md:grid-cols-3 gap-3 max-w-lg mx-auto' });
+
+      tickets.forEach((tGroup, idx) => {
+        grid.append(
+          h('button', {
+            type: 'button',
+            class: CARD + ' p-6 bg-night-800 border border-white/10 flex flex-col items-center gap-2 hover:border-brand-400 transition',
+            onclick: () => openTicketModal(idx + 1, tGroup)
+          },
+          ico('file-text', 'h-8 w-8 text-brand-400'),
+          h('span', { class: 'font-bold text-white text-base' }, 'Билет №' + (idx + 1)),
+          h('span', { class: 'text-xs text-slate-400' }, tGroup.length + ' вопроса')
+          )
+        );
+      });
+
+      function openTicketModal(tNum, qList) {
+        root.innerHTML = '';
+        root.append(titleBar('Билет №' + tNum, playTickets));
+
+        const container = h('div', { class: 'flex flex-col gap-4 max-w-lg mx-auto' });
+
+        qList.forEach((q, i) => {
+          container.append(
+            h('div', { class: CARD + ' p-4 bg-night-800' },
+              h('p', { class: 'font-bold text-brand-300 text-sm mb-1' }, 'Вопрос ' + (i + 1) + ':'),
+              h('p', { class: 'text-white font-semibold mb-3' }, q.q),
+              h('input', { type: 'text', class: INPUT, placeholder: 'Ваш ответ' })
+            )
+          );
+        });
+
+        container.append(
+          h('button', {
+            type: 'button',
+            class: BTN,
+            onclick: () => gameResult(root, 'Билет №' + tNum, ['Билет успешно сдан!'], bestGame('tickets', 1), playTickets)
+          }, ico('check'), 'Сдать билет')
+        );
+
+        root.append(container);
+      }
+
+      root.append(grid);
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // GAME 7: TRUE / FALSE (ПРАВДА ИЛИ ЛОЖЬ)
+  // -------------------------------------------------------------------------
+  function playTrueFalse() {
+    selectQuestionSetModal('Правда или Ложь: Выберите набор', (qSet) => {
+      const root = screen('activity');
+      root.append(titleBar('Правда или Ложь', openGames));
+
+      const items = qSet.items.filter(x => x.isTrue !== undefined || x.a);
+      let idx = 0;
+      let score = 0;
+
+      const renderCard = () => {
+        if (idx >= items.length) {
+          gameResult(root, 'Правда или Ложь', ['Результат: ' + score + ' из ' + items.length], bestGame('tf', score), playTrueFalse);
+          return;
+        }
+
+        const curr = items[idx];
+        root.innerHTML = '';
+        root.append(titleBar('Правда или Ложь', openGames));
+
+        const card = h('div', { class: CARD + ' p-8 text-center flex flex-col gap-6 bg-night-800 max-w-lg mx-auto border border-white/10 shadow-2xl' },
+          h('span', { class: 'text-xs font-bold text-brand-400' }, 'Утверждение ' + (idx + 1) + ' из ' + items.length),
+          h('p', { class: 'text-xl font-bold text-white leading-relaxed' }, curr.q),
+          h('div', { class: 'grid grid-cols-2 gap-4 mt-4' },
+            h('button', {
+              type: 'button',
+              class: BTN + ' bg-emerald-600 hover:bg-emerald-500 text-lg',
+              onclick: () => check(true)
+            }, 'ПРАВДА'),
+            h('button', {
+              type: 'button',
+              class: BTN + ' bg-rose-600 hover:bg-rose-500 text-lg',
+              onclick: () => check(false)
+            }, 'ЛОЖЬ')
+          )
+        );
+
+        function check(userAns) {
+          const expected = curr.isTrue !== undefined ? curr.isTrue : String(curr.a).toLowerCase().includes('правда');
+          const isOk = (userAns === expected);
+          if (isOk) score++;
+
+          const modal = h('div', { class: 'fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm' });
+          const box = h('div', { class: CARD + ' w-full max-w-md p-6 bg-night-900 border border-white/10 text-center flex flex-col gap-4 rounded-3xl' },
+            h('span', { class: 'text-4xl' }, isOk ? '🎉' : '❌'),
+            h('h3', { class: 'text-2xl font-bold ' + (isOk ? 'text-emerald-400' : 'text-rose-400') }, isOk ? 'Верно!' : 'Неверно!'),
+            curr.explanation ? h('p', { class: 'text-sm text-slate-300' }, curr.explanation) : null,
+            h('button', { type: 'button', class: BTN, onclick: () => { modal.remove(); idx++; renderCard(); } }, 'Далее')
+          );
+          modal.append(box);
+          document.body.append(modal);
+        }
+
+        root.append(card);
+      };
+
+      renderCard();
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // GAME 8: FIND DIFFERENT COLOR (НАЙДИТЕ ДРУГОЙ ЦВЕТ)
+  // -------------------------------------------------------------------------
+  function playColor() {
+    const root = screen('activity');
+    root.append(titleBar('Найди цвет', openGames));
+
+    let level = 1;
+    let score = 0;
+
+    const renderLevel = () => {
+      root.innerHTML = '';
+      root.append(titleBar('Найди цвет', openGames));
+
+      const size = Math.min(6, 2 + Math.floor(level / 2));
+      const total = size * size;
+      const oddIdx = Math.floor(Math.random() * total);
+
+      const hVal = Math.floor(Math.random() * 360);
+      const sVal = 70;
+      const lVal = 50;
+
+      const diff = Math.max(3, 25 - level * 2);
+      const oddL = lVal + (Math.random() > 0.5 ? diff : -diff);
+
+      const scoreBox = h('div', { class: 'text-center font-bold text-slate-300 mb-4' }, 'Уровень: ' + level + ' | Очки: ' + score);
+      const grid = h('div', {
+        class: 'grid gap-2 max-w-sm mx-auto p-4 bg-night-900 rounded-3xl border border-white/10',
+        style: 'grid-template-columns: repeat(' + size + ', minmax(0, 1fr));'
+      });
+
+      for (let i = 0; i < total; i++) {
+        const isOdd = (i === oddIdx);
+        const bg = isOdd ? 'hsl(' + hVal + ', ' + sVal + '%, ' + oddL + '%)' : 'hsl(' + hVal + ', ' + sVal + '%, ' + lVal + '%)';
+
+        grid.append(
+          h('button', {
+            type: 'button',
+            class: 'w-full aspect-square rounded-xl transition transform active:scale-95 shadow-md flex items-center justify-center',
+            style: 'background-color: ' + bg,
+            onclick: () => {
+              if (isOdd) {
+                score += 10;
+                level++;
+                renderLevel();
+              } else {
+                gameResult(root, 'Найди цвет', ['Игра окончена! Достигнут уровень: ' + level], bestGame('color', score), playColor);
+              }
+            }
+          })
+        );
+      }
+
+      root.append(scoreBox, grid);
+    };
+
+    renderLevel();
+  }
+
+  // -------------------------------------------------------------------------
+  // GAME 9: MEMORY TRAINING (ТРЕНИРОВКА ПАМЯТИ)
+  // -------------------------------------------------------------------------
+  function playMemory() {
+    const root = screen('activity');
+    root.append(titleBar('Тренировка памяти', openGames));
+
+    let sequence = [];
+    let userSeq = [];
+    let level = 1;
+
+    const colors = [
+      { id: 0, bg: 'bg-rose-500' },
+      { id: 1, bg: 'bg-sky-500' },
+      { id: 2, bg: 'bg-emerald-500' },
+      { id: 3, bg: 'bg-amber-500' }
+    ];
+
+    const statusEl = h('div', { class: 'text-center font-bold text-white text-lg mb-4' }, 'Уровень ' + level);
+    const padGrid = h('div', { class: 'grid grid-cols-2 gap-4 max-w-xs mx-auto my-6' });
+
+    const pads = colors.map((c) => {
+      const btn = h('button', {
+        type: 'button',
+        class: 'h-32 rounded-3xl ' + c.bg + ' shadow-lg transition active:scale-95'
+      });
+      padGrid.append(btn);
+      return btn;
+    });
+
+    const nextRound = () => {
+      sequence.push(Math.floor(Math.random() * 4));
+      userSeq = [];
+      statusEl.textContent = 'Запоминайте... (Уровень ' + level + ')';
+      playSequence();
+    };
+
+    const playSequence = () => {
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i >= sequence.length) {
+          clearInterval(interval);
+          statusEl.textContent = 'Ваша очередь!';
+          return;
+        }
+        flashPad(sequence[i]);
+        i++;
+      }, 700);
+    };
+
+    const flashPad = (padIdx) => {
+      const p = pads[padIdx];
+      p.classList.add('brightness-150', 'scale-105');
+      setTimeout(() => p.classList.remove('brightness-150', 'scale-105'), 350);
+    };
+
+    pads.forEach((pBtn, pIdx) => {
+      pBtn.onclick = () => {
+        flashPad(pIdx);
+        userSeq.push(pIdx);
+
+        const currStep = userSeq.length - 1;
+        if (userSeq[currStep] !== sequence[currStep]) {
+          gameResult(root, 'Тренировка памяти', ['Ошибка! Ваш уровень: ' + level], bestGame('memory', level), playMemory);
+          return;
+        }
+
+        if (userSeq.length === sequence.length) {
+          level++;
+          setTimeout(nextRound, 1000);
+        }
+      };
+    });
+
+    root.append(statusEl, padGrid);
+    nextRound();
+  }
+
+  // -------------------------------------------------------------------------
+  // GAME 10: MENTAL ARITHMETIC (МЕНТАЛЬНАЯ АРИФМЕТИКА)
+  // -------------------------------------------------------------------------
+  function playMentalMath() {
+    playMental();
+  }
+
+  // -------------------------------------------------------------------------
+  // GAME 11: FIND FLAGS (НАЙДИТЕ ФЛАГИ)
+  // -------------------------------------------------------------------------
+  function playFlags() {
+    const root = screen('activity');
+    root.append(titleBar('Найди флаг', openGames));
+
+    let score = 0;
+    let round = 0;
+
+    const nextFlag = () => {
+      round++;
+      if (round > 10) {
+        gameResult(root, 'Найди флаг', ['Отлично! Счёт: ' + score + ' из 10'], bestGame('flags', score), playFlags);
+        return;
+      }
+
+      root.innerHTML = '';
+      root.append(titleBar('Найди флаг', openGames));
+
+      const randCountry = COUNTRY_FLAGS_DATA[Math.floor(Math.random() * COUNTRY_FLAGS_DATA.length)];
+
+      const wrongOpts = COUNTRY_FLAGS_DATA.filter(c => c.code !== randCountry.code)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+
+      const allOpts = [randCountry, ...wrongOpts].sort(() => Math.random() - 0.5);
+
+      const card = h('div', { class: CARD + ' p-8 text-center flex flex-col items-center gap-6 bg-night-800 max-w-lg mx-auto border border-white/10 shadow-2xl' },
+        h('span', { class: 'text-xs font-bold text-brand-400' }, 'Флаг ' + round + ' из 10'),
+        h('span', { class: 'text-8xl my-4 drop-shadow-md' }, randCountry.flag),
+        h('div', { class: 'grid grid-cols-1 md:grid-cols-2 gap-3 w-full' },
+          allOpts.map(opt => h('button', {
+            type: 'button',
+            class: BTN2 + ' py-4 text-base font-bold',
+            onclick: () => {
+              if (opt.code === randCountry.code) score++;
+              nextFlag();
+            }
+          }, opt.ru))
+        )
+      );
+
+      root.append(card);
+    };
+
+    nextFlag();
+  }
+
+  // -------------------------------------------------------------------------
+  // GAME 12: ONLINE TUG OF WAR (ОНЛАЙН ПЕРЕТЯГИВАНИЕ)
+  // -------------------------------------------------------------------------
+
+  // -------------------------------------------------------------------------
+  // GAME 12: ONLINE TUG OF WAR (ОНЛАЙН ПЕРЕТЯГИВАНИЕ) - REAL-TIME
+  // -------------------------------------------------------------------------
+  function playOnlineTug() {
+    const root = screen('activity');
+    root.append(titleBar('Онлайн Канат', openGames));
+
+    const box = h('div', { class: CARD + ' p-6 text-center max-w-md mx-auto flex flex-col gap-4 bg-night-800' },
+      h('span', { class: 'text-4xl' }, '⚡'),
+      h('h3', { class: 'text-xl font-bold text-white' }, 'Онлайн Перетягивание Каната'),
+      h('p', { class: 'text-xs text-slate-300' }, 'Многопользовательский режим в реальном времени'),
+      h('input', { id: 'tugPlayerName', type: 'text', class: INPUT + ' text-center', placeholder: 'Ваше имя', value: (data.profile && data.profile.name) || 'Ученик' }),
+      h('input', { id: 'tugRoomCode', type: 'text', class: INPUT + ' text-center font-mono text-xl tracking-widest', placeholder: 'Код комнаты (6 цифр)' }),
+      h('div', { class: 'flex gap-3' },
+        h('button', { type: 'button', class: BTN, onclick: joinTug }, 'Войти в комнату'),
+        h('button', { type: 'button', class: BTN2, onclick: createTug }, 'Создать комнату')
+      )
+    );
+
+    root.append(box);
+
+    async function createTug() {
+      selectQuestionSetModal('Выберите набор вопросов для комнаты', async (qSet) => {
+        try {
+          const res = await N.postJson('/api/games/online/create', { type: 'tug', questions: qSet.items });
+          if (res && res.code) {
+            joinRoomLobby(res.code, true, qSet.items);
+          } else {
+            alert('Не удалось создать комнату');
+          }
+        } catch {
+          alert('Ошибка соединения с сервером');
+        }
+      });
+    }
+
+    async function joinTug() {
+      const code = document.getElementById('tugRoomCode').value.trim();
+      const name = document.getElementById('tugPlayerName').value.trim() || 'Игрок';
+      if (!code) return alert('Введите код комнаты!');
+
+      try {
+        const res = await N.postJson('/api/games/online/join', { code, playerName: name });
+        if (res && res.ok) {
+          joinRoomLobby(code, false, res.room.questions, res.player);
+        } else {
+          alert(res?.message || 'Комната не найдена');
+        }
+      } catch {
+        alert('Ошибка подключения');
+      }
+    }
+
+    function joinRoomLobby(code, isHost, questions, playerInfo) {
+      root.innerHTML = '';
+      root.append(titleBar('Комната #' + code, playOnlineTug));
+
+      const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(window.location.origin + '?room=' + code);
+
+      let currentPos = 0;
+      let pollTimer = null;
+
+      const ropeBar = h('div', { class: 'relative w-full h-12 bg-night-800 rounded-full my-6 flex items-center justify-between px-4 overflow-hidden border border-white/10' });
+      const ribbon = h('div', { class: 'absolute w-8 h-8 rounded-full bg-brand-500 shadow-lg border-2 border-white flex items-center justify-center text-xs font-bold transition-all duration-500' }, '🚩');
+      ropeBar.append(ribbon);
+
+      const updateRope = (pos) => {
+        const pct = 50 + (pos * 9);
+        ribbon.style.left = 'calc(' + pct + '% - 16px)';
+      };
+
+      const playersList = h('div', { class: 'text-xs text-slate-300 font-bold mb-4' }, 'Игроки в комнате: подключение...');
+      const qBox = h('div', { class: CARD + ' p-6 text-center text-xl font-bold text-white mb-4 bg-night-800' });
+      const optionsBox = h('div', { class: 'grid grid-cols-1 md:grid-cols-2 gap-3' });
+
+      let qIndex = 0;
+
+      const showQuestion = () => {
+        if (!questions || qIndex >= questions.length) {
+          qBox.textContent = 'Вопросы закончились!';
+          optionsBox.innerHTML = '';
+          return;
+        }
+
+        const currQ = questions[qIndex];
+        qBox.textContent = currQ.q;
+        optionsBox.innerHTML = '';
+
+        const opts = currQ.options && currQ.options.length ? currQ.options : [currQ.a, 'Другой ответ'];
+
+        opts.forEach(opt => {
+          optionsBox.append(
+            h('button', {
+              type: 'button',
+              class: BTN2 + ' py-4 text-base font-semibold',
+              onclick: async () => {
+                try {
+                  const res = await N.postJson('/api/games/online/answer', {
+                    code,
+                    playerId: playerInfo?.id || 'host',
+                    answer: opt,
+                    questionIndex: qIndex
+                  });
+                  if (res && res.ok) {
+                    if (res.isCorrect) flash(qBox, true);
+                    else flash(qBox, false);
+                    qIndex++;
+                    showQuestion();
+                  }
+                } catch {}
+              }
+            }, opt)
+          );
+        });
+      };
+
+      // Poll room state
+      pollTimer = setInterval(async () => {
+        try {
+          const res = await N.postJson('/api/games/online/state', { code });
+          if (res && res.ok) {
+            currentPos = res.room.ropePos;
+            updateRope(currentPos);
+            playersList.textContent = 'Игроков в комнате: ' + (res.room.players.length || 1);
+            if (currentPos <= -5 || currentPos >= 5) {
+              clearInterval(pollTimer);
+              const winner = currentPos <= -5 ? 'Красная команда' : 'Синяя команда';
+              gameResult(root, 'Онлайн Канат', ['🎉 Победила ' + winner + '!'], bestGame('onlineTug', 10), playOnlineTug);
+            }
+          }
+        } catch {}
+      }, 1500);
+
+      stopActive = () => clearInterval(pollTimer);
+
+      const lobbyHeader = h('div', { class: CARD + ' p-4 text-center mb-4 bg-night-800' },
+        h('p', { class: 'text-xs text-amber-400 font-bold' }, 'КОД ДЛЯ ПОДКЛЮЧЕНИЯ ПО ТЕЛЕФОНУ:'),
+        h('h2', { class: 'text-3xl font-mono font-extrabold text-white tracking-widest my-1' }, code),
+        h('img', { src: qrUrl, class: 'w-28 h-28 mx-auto rounded-xl bg-white p-2 my-2' })
+      );
+
+      root.append(lobbyHeader, ropeBar, playersList, qBox, optionsBox);
+      showQuestion();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // GAME 13: ONLINE QUIZ (ОНЛАЙН ВИКТОРИНА) - REAL-TIME
+  // -------------------------------------------------------------------------
+  function playOnlineQuiz() {
+    const root = screen('activity');
+    root.append(titleBar('Онлайн Викторина', openGames));
+
+    const box = h('div', { class: CARD + ' p-6 text-center max-w-md mx-auto flex flex-col gap-4 bg-night-800' },
+      h('span', { class: 'text-4xl' }, '🏆'),
+      h('h3', { class: 'text-xl font-bold text-white' }, 'Онлайн Викторина'),
+      h('p', { class: 'text-xs text-slate-300' }, 'Соревнуйтесь по коду комнаты с реальным подсчетом очков на сервере'),
+      h('input', { id: 'quizPlayerName', type: 'text', class: INPUT + ' text-center', placeholder: 'Ваше имя', value: (data.profile && data.profile.name) || 'Ученик' }),
+      h('input', { id: 'quizRoomCode', type: 'text', class: INPUT + ' text-center font-mono text-xl tracking-widest', placeholder: 'Код викторины' }),
+      h('div', { class: 'flex gap-3' },
+        h('button', { type: 'button', class: BTN, onclick: joinQuiz }, 'Присоединиться'),
+        h('button', { type: 'button', class: BTN2, onclick: createQuiz }, 'Создать викторину')
+      )
+    );
+
+    async function createQuiz() {
+      selectQuestionSetModal('Выберите вопросы для викторины', async (qSet) => {
+        try {
+          const res = await N.postJson('/api/games/online/create', { type: 'quiz', questions: qSet.items });
+          if (res && res.code) {
+            startQuizSession(res.code, true, qSet.items);
+          } else {
+            alert('Ошибка создания викторины');
+          }
+        } catch {
+          alert('Ошибка соединения с сервером');
+        }
+      });
+    }
+
+    async function joinQuiz() {
+      const code = document.getElementById('quizRoomCode').value.trim();
+      const name = document.getElementById('quizPlayerName').value.trim() || 'Игрок';
+      if (!code) return alert('Введите код викторины!');
+
+      try {
+        const res = await N.postJson('/api/games/online/join', { code, playerName: name });
+        if (res && res.ok) {
+          startQuizSession(code, false, res.room.questions, res.player);
+        } else {
+          alert(res?.message || 'Комната не найдена');
+        }
+      } catch {
+        alert('Ошибка подключения');
+      }
+    }
+
+    function startQuizSession(code, isHost, questions, playerInfo) {
+      root.innerHTML = '';
+      root.append(titleBar('Викторина #' + code, playOnlineQuiz));
+
+      let qIndex = 0;
+      let score = 0;
+
+      const card = h('div', { class: CARD + ' p-6 text-center max-w-lg mx-auto bg-night-800' });
+
+      const showNext = () => {
+        if (!questions || qIndex >= questions.length) {
+          gameResult(root, 'Онлайн Викторина', ['Викторина окончена!', 'Ваш счет: ' + score], bestGame('onlineQuiz', score), playOnlineQuiz);
+          return;
+        }
+
+        card.innerHTML = '';
+        const currQ = questions[qIndex];
+
+        card.append(
+          h('span', { class: 'text-xs font-bold text-amber-400' }, 'Вопрос ' + (qIndex + 1) + ' из ' + questions.length),
+          h('p', { class: 'text-xl font-bold text-white my-4' }, currQ.q)
+        );
+
+        const opts = currQ.options && currQ.options.length ? currQ.options : [currQ.a, 'Другой вариант'];
+        const grid = h('div', { class: 'grid grid-cols-1 md:grid-cols-2 gap-3 mt-4' });
+
+        opts.forEach(opt => {
+          grid.append(
+            h('button', {
+              type: 'button',
+              class: BTN2 + ' py-4 text-base font-bold',
+              onclick: async () => {
+                try {
+                  const res = await N.postJson('/api/games/online/answer', {
+                    code,
+                    playerId: playerInfo?.id || 'host',
+                    answer: opt,
+                    questionIndex: qIndex
+                  });
+                  if (res && res.isCorrect) score += 100;
+                } catch {}
+                qIndex++;
+                showNext();
+              }
+            }, opt)
+          );
+        });
+
+        card.append(grid);
+      };
+
+      root.append(card);
+      showNext();
+    }
+
+    root.append(box);
   }
 
   window.NimiLearn = { load, render, markDay, openSubscribe, openAdmin, openSettings, renderParent, renderLanding };
