@@ -1202,7 +1202,7 @@
   function openSubscribe() {
     const root = screen('activity');
     const S = t('sub');
-    const price = N.billing.price || 45000;
+    const price = N.billing.price || 70000;
     const st = planStatus();
     root.append(titleBar(S.title));
     root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-white shadow-lg shadow-brand-500/30' },
@@ -1316,7 +1316,7 @@
         h('div', { class: 'flex items-center justify-between gap-2' },
           h('p', { class: 'min-w-0 truncate font-semibold text-white' }, `№${q.id} · ${q.email}`),
           h('span', { class: `shrink-0 rounded-full px-2.5 py-1 text-xs ${pending ? 'bg-amber-400/15 text-amber-200' : ['paid', 'granted'].includes(q.status) ? 'bg-emerald-500/15 text-emerald-200' : 'bg-night-700 text-slate-400'}` }, A.status[q.status] || q.status)),
-        h('p', { class: 'text-sm text-slate-400' }, `${Number(q.months) ? `${t('sub').monthLabel(q.months)} · ${sum((N.billing.price || 45000) * q.months)}` : A.week} · ${dateStr(q.created_at)}${q.premium_until ? ` · ${t('sub').active(dateStr(q.premium_until))}` : ''}`),
+        h('p', { class: 'text-sm text-slate-400' }, `${Number(q.months) ? `${t('sub').monthLabel(q.months)} · ${sum((N.billing.price || 70000) * q.months)}` : A.week} · ${dateStr(q.created_at)}${q.premium_until ? ` · ${t('sub').active(dateStr(q.premium_until))}` : ''}`),
         pending ? h('div', { class: 'grid grid-cols-2 gap-2' },
           h('button', { type: 'button', class: BTN, onclick: () => grant(q.email, Number(q.months), q.id) }, A.grant(Number(q.months))),
           h('button', { type: 'button', class: BTN2, onclick: async () => { await N.postJson('/api/admin/reject', { requestId: q.id }); openAdmin(); } }, A.reject)) : null));
@@ -1428,7 +1428,7 @@
       h('p', { class: 'text-sm text-slate-400' }, P.child), h('p', { class: 'break-all text-lg font-semibold text-white' }, r.child.email),
       h('p', { class: `rounded-2xl p-3 text-sm ring-1 ${plan.active ? 'bg-emerald-500/10 text-emerald-100 ring-emerald-400/30' : 'bg-amber-400/10 text-amber-100 ring-amber-400/30'}` }, access),
       plan.never ? askBtn(0, S.trialAsk) : null,
-      askBtn(1, `${plan.active && !plan.trial ? S.renew : S.order} · ${sum(N.billing.price || 45000)}`),
+      askBtn(1, `${plan.active && !plan.trial ? S.renew : S.order} · ${sum(N.billing.price || 70000)}`),
       subBox));
     // Activity
     const daySet = new Set(p.days || []);
@@ -1505,7 +1505,7 @@
         h('p', { class: 'pt-1 text-slate-300' }, x)))));
     root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-white' },
       h('p', { class: 'text-sm text-white/80' }, W.priceTitle),
-      h('p', { class: 'text-3xl font-semibold' }, t('sub').price(sum(N.billing.price || 45000))),
+      h('p', { class: 'text-3xl font-semibold' }, t('sub').price(sum(N.billing.price || 70000))),
       h('p', { class: 'text-sm text-white/85' }, W.priceText),
       h('button', { type: 'button', class: 'min-h-12 rounded-2xl bg-white font-semibold text-brand-600', onclick: () => N.showAuth('register') }, W.start)));
     root.append(h('div', { class: `${CARD} flex flex-col gap-2` }, h('p', { class: 'font-semibold text-white' }, W.parentTitle), h('p', { class: 'text-sm text-slate-400' }, W.parentText),
@@ -1532,7 +1532,7 @@
       root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-amber-400/10 p-5 ring-1 ring-amber-400/30' },
         h('p', { class: 'text-lg font-semibold text-amber-100' }, none ? S.none : S.expired),
         h('p', { class: 'text-sm text-amber-100/80' }, none ? S.noneText : S.expiredText),
-        h('button', { type: 'button', class: BTN, onclick: openSubscribe }, ico(none ? 'sparkles' : 'star'), none ? S.trialAsk : `${S.order} · ${sum(N.billing.price || 45000)}`)));
+        h('button', { type: 'button', class: BTN, onclick: openSubscribe }, ico(none ? 'sparkles' : 'star'), none ? S.trialAsk : `${S.order} · ${sum(N.billing.price || 70000)}`)));
     } else if (st) {
       root.append(h('button', { type: 'button', class: `flex items-center gap-2 rounded-2xl px-4 py-3 text-left text-sm ring-1 ${st.tone === 'ending' ? 'bg-amber-400/10 text-amber-100 ring-amber-400/30' : 'bg-night-900/80 text-slate-300 ring-white/5'}`, onclick: openSubscribe },
         ico('star', 'icon text-amber-300'), h('span', { class: 'min-w-0 flex-1' }, st.text), ico('chevron-right', 'icon text-slate-500')));

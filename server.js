@@ -21,7 +21,7 @@ const LEARN_LIMIT = 20;
 const DATA_KEYS = new Set(['progress', 'diary', 'cards']);
 
 // Subscription: price and how students reach the owner (set on Render).
-const PRICE_UZS = Number(process.env.PRICE_UZS) || 45000;
+const PRICE_UZS = Number(process.env.PRICE_UZS) || 70000;
 const CONTACT_TELEGRAM = (process.env.CONTACT_TELEGRAM || '').replace(/^@/, '');
 const CONTACT_PHONE = process.env.CONTACT_PHONE || '';
 const PAYMENT_CARD = process.env.PAYMENT_CARD || '';
