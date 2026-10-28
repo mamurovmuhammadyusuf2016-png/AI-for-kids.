@@ -543,7 +543,7 @@
   const R = (tag, props, text) => { const el = h(tag, props); el.innerHTML = N.formatReply(String(text ?? '')); return el; };
   const ico = (name, cls = 'icon') => { const s = h('span', { class: 'inline-flex shrink-0' }); s.innerHTML = N.icon(name, cls); return s; };
   const CARD = 'rounded-3xl bg-night-900/80 p-4 ring-1 ring-white/5';
-  const BTN = 'flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-500 px-4 text-base font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-400 active:scale-[.98] disabled:bg-night-700 disabled:text-slate-500 disabled:shadow-none';
+  const BTN = 'flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-500 px-4 text-base font-semibold text-onfill shadow-lg shadow-brand-500/30 transition hover:bg-brand-400 active:scale-[.98] disabled:bg-night-700 disabled:text-slate-500 disabled:shadow-none';
   const BTN2 = 'flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-night-800 px-4 text-[15px] font-medium text-slate-100 ring-1 ring-white/10 transition hover:bg-night-700 active:scale-[.98]';
   const INPUT = 'min-h-14 w-full rounded-2xl bg-night-800 px-4 text-base text-slate-100 outline-none ring-1 ring-white/10 placeholder:text-slate-500 focus:ring-brand-400/60';
 
@@ -939,7 +939,7 @@
     root.append(titleBar(t('cards')));
     root.append(h('p', { class: 'text-slate-300' }, t('learnLang')),
       h('div', { class: 'grid grid-cols-2 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5' }, learnLangs().map((l) =>
-        h('button', { type: 'button', class: `min-h-12 rounded-xl text-[15px] font-medium ${l === cardsLang ? 'bg-brand-500 text-white' : 'text-slate-300'}`, onclick: () => { cardsLang = l; openCards(); } }, t('langs')[l]))));
+        h('button', { type: 'button', class: `min-h-12 rounded-xl text-[15px] font-medium ${l === cardsLang ? 'bg-brand-500 text-onfill' : 'text-slate-300'}`, onclick: () => { cardsLang = l; openCards(); } }, t('langs')[l]))));
     const decks = data.cards.decks.filter((d) => d.learn === cardsLang && d.native === N.lang);
     const due = dueWords(decks);
     root.append(h('button', { type: 'button', class: BTN, disabled: !due.length, onclick: () => review(due.slice(0, 15)) }, ico('repeat'), t('reviewDue')(due.length)));
@@ -1205,10 +1205,10 @@
     const price = N.billing.price || 70000;
     const st = planStatus();
     root.append(titleBar(S.title));
-    root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-white shadow-lg shadow-brand-500/30' },
+    root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-onfill shadow-lg shadow-brand-500/30' },
       h('p', { class: 'text-3xl font-semibold' }, S.price(sum(price))),
       h('ul', { class: 'flex flex-col gap-2' }, S.includes.map((x) => h('li', { class: 'flex items-start gap-2' }, ico('circle-check', 'icon mt-0.5'), x))),
-      h('p', { class: 'text-sm text-white/80' }, S.freeLeft)));
+      h('p', { class: 'text-sm text-onfill/80' }, S.freeLeft)));
     if (st && st.tone === 'none') {
       const trialSteps = h('div', { class: 'flex flex-col gap-3' });
       const ask = h('button', { type: 'button', class: BTN }, ico('sparkles'), S.trialAsk);
@@ -1231,7 +1231,7 @@
     const monthsRow = h('div', { class: 'grid grid-cols-4 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5' });
     const drawMonths = () => {
       monthsRow.innerHTML = '';
-      [1, 3, 6, 12].forEach((m) => monthsRow.append(h('button', { type: 'button', class: `min-h-12 rounded-xl text-[15px] font-medium ${m === months ? 'bg-brand-500 text-white' : 'text-slate-300'}`, onclick: () => { months = m; drawMonths(); } }, S.monthLabel(m))));
+      [1, 3, 6, 12].forEach((m) => monthsRow.append(h('button', { type: 'button', class: `min-h-12 rounded-xl text-[15px] font-medium ${m === months ? 'bg-brand-500 text-onfill' : 'text-slate-300'}`, onclick: () => { months = m; drawMonths(); } }, S.monthLabel(m))));
       priceBtn.textContent = `${N.user?.plan?.active && !N.user?.plan?.trial ? S.renew : S.order} · ${sum(price * months)}`;
     };
     drawMonths();
@@ -1343,7 +1343,7 @@
         confirmDelete.onclick = () => {
           out.replaceChildren(h('p', { class: 'text-sm text-rose-200' }, A.delConfirm(u.email)),
             h('div', { class: 'grid grid-cols-2 gap-2' },
-              h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-rose-500 px-3 text-sm font-semibold text-white', onclick: async () => { await N.postJson('/api/admin/delete-user', { email: u.email }); load(); } }, A.delYes),
+              h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-rose-500 px-3 text-sm font-semibold text-onfill', onclick: async () => { await N.postJson('/api/admin/delete-user', { email: u.email }); load(); } }, A.delYes),
               h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-night-700 px-3 text-sm text-white', onclick: () => out.replaceChildren() }, A.cancel)));
         };
         const resetBtn = h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-night-700 px-3 text-sm text-white' }, A.resetPw);
@@ -1356,7 +1356,7 @@
         list.append(h('div', { class: 'flex flex-col gap-2 rounded-2xl bg-night-800 p-3 ring-1 ring-white/5' },
           h('p', { class: 'truncate font-semibold text-white' }, u.email), info,
           h('div', { class: 'flex flex-wrap gap-2' },
-            h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500 px-3 text-sm font-semibold text-white', onclick: () => grant(u.email, 0) }, A.grant(0)),
+            h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500 px-3 text-sm font-semibold text-onfill', onclick: () => grant(u.email, 0) }, A.grant(0)),
             h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500/20 px-3 text-sm text-white ring-1 ring-brand-400/40', onclick: () => grant(u.email, 1) }, A.grant(1)),
             resetBtn, confirmDelete),
           out));
@@ -1485,7 +1485,7 @@
     const root = screen('landing');
     const W = t('landing');
     const langToggle = h('div', { class: 'flex justify-end' }, h('div', { class: 'flex rounded-2xl bg-night-800 p-1 ring-1 ring-white/5' },
-      ['uz', 'ru'].map((l) => h('button', { type: 'button', class: `min-h-11 min-w-12 rounded-xl px-3 text-[15px] font-medium ${N.lang === l ? 'bg-brand-500 text-white' : 'text-slate-300'}`, onclick: () => document.querySelector(`.lang-btn[data-lang="${l}"]`).click() }, l.toUpperCase()))));
+      ['uz', 'ru'].map((l) => h('button', { type: 'button', class: `min-h-11 min-w-12 rounded-xl px-3 text-[15px] font-medium ${N.lang === l ? 'bg-brand-500 text-onfill' : 'text-slate-300'}`, onclick: () => document.querySelector(`.lang-btn[data-lang="${l}"]`).click() }, l.toUpperCase()))));
     root.append(langToggle,
       h('div', { class: 'flex flex-col items-center gap-4 rounded-3xl bg-night-900/80 p-6 text-center ring-1 ring-white/5' },
         h('img', { src: '/img/welcome.webp', alt: '', class: 'h-32 w-32 rounded-3xl object-cover' }),
@@ -1501,13 +1501,13 @@
       h('div', { class: 'flex flex-wrap gap-2' }, W.inside.map((x) => h('span', { class: 'rounded-full bg-night-800 px-3 py-2 text-sm text-slate-200 ring-1 ring-white/10' }, x))));
     root.append(h('h3', { class: 'mt-2 text-xl font-semibold text-white' }, W.howTitle),
       h('div', { class: 'flex flex-col gap-2' }, W.how.map((x, i) => h('div', { class: 'flex items-start gap-3' },
-        h('span', { class: 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white' }, String(i + 1)),
+        h('span', { class: 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-onfill' }, String(i + 1)),
         h('p', { class: 'pt-1 text-slate-300' }, x)))));
-    root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-white' },
-      h('p', { class: 'text-sm text-white/80' }, W.priceTitle),
+    root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-onfill' },
+      h('p', { class: 'text-sm text-onfill/80' }, W.priceTitle),
       h('p', { class: 'text-3xl font-semibold' }, t('sub').price(sum(N.billing.price || 70000))),
-      h('p', { class: 'text-sm text-white/85' }, W.priceText),
-      h('button', { type: 'button', class: 'min-h-12 rounded-2xl bg-white font-semibold text-brand-600', onclick: () => N.showAuth('register') }, W.start)));
+      h('p', { class: 'text-sm text-onfill/85' }, W.priceText),
+      h('button', { type: 'button', class: 'min-h-12 rounded-2xl bg-onfill font-semibold text-brand-600', onclick: () => N.showAuth('register') }, W.start)));
     root.append(h('div', { class: `${CARD} flex flex-col gap-2` }, h('p', { class: 'font-semibold text-white' }, W.parentTitle), h('p', { class: 'text-sm text-slate-400' }, W.parentText),
       h('button', { type: 'button', class: BTN2, onclick: () => N.showAuth('login') }, ico('users'), W.parentLogin)));
     root.append(h('a', { href: '/privacy.html', target: '_blank', class: 'self-center text-sm text-slate-400 underline' }, t('privacyTitle')));
@@ -1540,11 +1540,11 @@
     const locked = !N.hasAccess();
     const guard = (fn) => (locked ? openSubscribe : fn);
 
-    root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-white shadow-lg shadow-brand-500/30' },
+    root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-onfill shadow-lg shadow-brand-500/30' },
       h('div', { class: 'flex items-center gap-3' },
-        h('span', { class: 'flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15' }, ico(locked ? 'lock' : 'dumbbell')),
-        h('div', { class: 'min-w-0' }, h('p', { class: 'text-lg font-semibold' }, t('dailyTitle')), h('p', { class: 'text-sm text-white/80' }, daily ? t('dailyDone')(daily.score) : t('dailyDesc')(level())))),
-      h('button', { type: 'button', class: 'flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white text-base font-semibold text-brand-600 transition hover:bg-white/90 active:scale-[.98]', onclick: guard(() => startTraining()) }, daily ? ico('repeat') : ico('chevron-right'), locked ? S.open : daily ? t('again') : t('start'))));
+        h('span', { class: 'flex h-12 w-12 items-center justify-center rounded-2xl bg-onfill/15' }, ico(locked ? 'lock' : 'dumbbell')),
+        h('div', { class: 'min-w-0' }, h('p', { class: 'text-lg font-semibold' }, t('dailyTitle')), h('p', { class: 'text-sm text-onfill/80' }, daily ? t('dailyDone')(daily.score) : t('dailyDesc')(level())))),
+      h('button', { type: 'button', class: 'flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-onfill text-base font-semibold text-brand-600 transition hover:bg-onfill/90 active:scale-[.98]', onclick: guard(() => startTraining()) }, daily ? ico('repeat') : ico('chevron-right'), locked ? S.open : daily ? t('again') : t('start'))));
 
     const tiles = t('tiles');
     // paid: part of the subscription (shows a lock after the free week).
@@ -1671,7 +1671,7 @@
       const overdue = !item.done && item.due < today;
       const when = item.due === today ? t('todayWord') : item.due === tomorrowIso ? t('tomorrowWord') : t('until')(fmtDate(item.due));
       return h('div', { class: `flex items-center gap-3 rounded-2xl bg-night-900/80 p-3 ring-1 ${overdue ? 'ring-rose-400/40' : 'ring-white/5'}` },
-        h('button', { type: 'button', class: `flex h-10 w-10 shrink-0 items-center justify-center rounded-full ring-2 ${item.done ? 'bg-emerald-500 text-white ring-emerald-500' : 'text-transparent ring-slate-500 hover:ring-brand-400'}`, 'aria-label': item.done ? 'done' : 'todo', onclick: () => { item.done = !item.done; if (item.done) markDay(); save('diary'); renderDiary(); } }, ico('check')),
+        h('button', { type: 'button', class: `flex h-10 w-10 shrink-0 items-center justify-center rounded-full ring-2 ${item.done ? 'bg-emerald-500 text-onfill ring-emerald-500' : 'text-transparent ring-slate-500 hover:ring-brand-400'}`, 'aria-label': item.done ? 'done' : 'todo', onclick: () => { item.done = !item.done; if (item.done) markDay(); save('diary'); renderDiary(); } }, ico('check')),
         h('div', { class: 'min-w-0 flex-1' },
           h('p', { class: `break-words ${item.done ? 'text-slate-500 line-through' : 'text-white'}` }, item.text),
           h('p', { class: `text-xs ${overdue ? 'text-rose-300' : 'text-slate-400'}` }, `${N.subjectName(item.subject)} · ${overdue ? `${t('overdue')} (${fmtDate(item.due)})` : when}`)),

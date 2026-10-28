@@ -53,6 +53,8 @@
       micDenied: 'Нет доступа к микрофону. Разреши его в настройках браузера.',
       speakNow: 'Говори, я слушаю…',
       language: 'Язык',
+      themeToLight: 'Светлая тема',
+      themeToDark: 'Тёмная тема',
       share: 'Поделиться',
       back: 'Назад',
       questionsLeft: 'Вопросов осталось:',
@@ -141,6 +143,8 @@
       micDenied: "Mikrofonga ruxsat yo'q. Brauzer sozlamalarida ruxsat ber.",
       speakNow: 'Gapir, tinglayapman…',
       language: 'Til',
+      themeToLight: 'Yorug\' rejim',
+      themeToDark: 'Qorong\'i rejim',
       share: 'Ulashish',
       back: 'Orqaga',
       questionsLeft: 'Qolgan savollar:',
@@ -282,9 +286,10 @@
       const on = b.dataset.lang === lang;
       const size = b.classList.contains('lang-sm') ? 'lang-sm min-h-9 min-w-10 rounded-lg px-2 text-sm' : 'min-h-12 min-w-12 rounded-xl px-3 text-[15px]';
       b.className = `lang-btn ${size} font-medium transition ` +
-        (on ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/30' : 'text-slate-300 hover:text-white');
+        (on ? 'bg-brand-500 text-onfill shadow-lg shadow-brand-500/30' : 'text-slate-300 hover:text-white');
       b.setAttribute('aria-pressed', on);
     });
+    renderThemeBtn();
     $('input').placeholder = t('placeholder');
     $('authEmail').placeholder = t('emailPh');
     $('authPassword').placeholder = t('passwordPh');
@@ -296,6 +301,23 @@
     renderSetupOptions();
     renderStatus();
   }
+
+  // ---------- theme: dark (black, white, blue) or light (white, green) ----------
+  const theme = () => document.documentElement.dataset.theme;
+  function renderThemeBtn() {
+    const label = t(theme() === 'light' ? 'themeToDark' : 'themeToLight');
+    $('themeBtn').innerHTML = icon(theme() === 'light' ? 'moon' : 'sun');
+    $('themeBtn').setAttribute('aria-label', label);
+    $('themeBtn').title = label;
+  }
+  $('themeBtn').onclick = () => {
+    const next = theme() === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = next;
+    document.querySelector('meta[name="theme-color"]').content = next === 'light' ? '#ffffff' : '#000000';
+    try { localStorage.setItem('nimi-theme', next); } catch {}
+    renderThemeBtn();
+    if (!$('auth').classList.contains('hidden')) renderGoogleButton();
+  };
 
   function optionClass(on) {
     return 'flex min-h-14 items-center gap-3 rounded-2xl p-2 pr-3 text-left text-[15px] ring-1 transition active:scale-95 ' +
@@ -310,7 +332,7 @@
       const b = document.createElement('button');
       b.type = 'button';
       b.className = optionClass(on);
-      b.innerHTML = `<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${on ? 'bg-brand-500 text-white' : 'bg-night-700 text-slate-200'}">${icon(ic)}</span><span class="min-w-0"></span>`;
+      b.innerHTML = `<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${on ? 'bg-brand-500 text-onfill' : 'bg-night-700 text-slate-200'}">${icon(ic)}</span><span class="min-w-0"></span>`;
       b.lastChild.textContent = subjectName(key);
       b.onclick = () => { pendingSubject = key; renderSetupOptions(); };
       subjects.appendChild(b);
@@ -322,7 +344,7 @@
       b.type = 'button';
       b.textContent = g;
       b.className = optionClass(g === pendingGrade) + ' justify-center text-lg font-medium' +
-        (g === pendingGrade ? ' bg-brand-500 ring-brand-500' : '');
+        (g === pendingGrade ? ' bg-brand-500! text-onfill! ring-brand-500' : '');
       b.onclick = () => { pendingGrade = g; renderSetupOptions(); };
       grades.appendChild(b);
     }
@@ -402,10 +424,10 @@
     meta.className = 'mt-1.5 flex items-center justify-end gap-1 text-xs';
     if (role === 'user') {
       row.className = 'flex justify-end pl-10';
-      bubble.className = 'bubble max-w-[85%] whitespace-pre-wrap break-words rounded-3xl rounded-br-md bg-brand-500 px-4 pb-2 pt-3 text-base leading-relaxed text-white shadow-lg shadow-brand-500/20 ' + extra;
+      bubble.className = 'bubble max-w-[85%] whitespace-pre-wrap break-words rounded-3xl rounded-br-md bg-brand-500 px-4 pb-2 pt-3 text-base leading-relaxed text-onfill shadow-lg shadow-brand-500/20 ' + extra;
       if (img) bubble.appendChild(Object.assign(document.createElement('img'), { src: img, alt: '', className: 'mb-2 max-h-48 rounded-2xl object-cover' }));
       bubble.appendChild(document.createTextNode(text));
-      meta.className += ' text-white/70';
+      meta.className += ' text-onfill/70';
       if (ts) meta.innerHTML = `<span>${timeLabel(ts)}</span>${icon('check-check', 'h-4 w-4')}`;
     } else {
       row.className = 'flex items-start gap-3 pr-6';
@@ -632,7 +654,7 @@
   function setMic(on) {
     $('micBtn').innerHTML = icon(on ? 'square' : 'mic');
     $('micBtn').classList.toggle('bg-rose-500', on);
-    $('micBtn').classList.toggle('text-white', on);
+    $('micBtn').classList.toggle('text-onfill', on);
     $('micBtn').classList.toggle('animate-pulse', on);
   }
   $('micBtn').onclick = () => {
@@ -880,7 +902,7 @@
     document.querySelectorAll('.auth-tab').forEach((b) => {
       const on = b.dataset.mode === authMode;
       b.className = 'auth-tab min-h-12 rounded-xl text-[15px] font-medium transition ' +
-        (on ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/30' : 'text-slate-300 hover:text-white');
+        (on ? 'bg-brand-500 text-onfill shadow-lg shadow-brand-500/30' : 'text-slate-300 hover:text-white');
       b.setAttribute('aria-selected', on);
     });
     $('confirmWrap').classList.toggle('hidden', !reg);
@@ -989,7 +1011,7 @@
     const p = (text, cls = 'text-sm text-slate-300') => Object.assign(document.createElement('p'), { className: cls, textContent: text });
     const link = (href, label, primary) => Object.assign(document.createElement('a'), {
       href, target: '_blank', rel: 'noopener', textContent: label,
-      className: `flex min-h-12 items-center justify-center rounded-2xl px-4 font-semibold ${primary ? 'bg-brand-500 text-white' : 'bg-night-700 text-slate-100'}`,
+      className: `flex min-h-12 items-center justify-center rounded-2xl px-4 font-semibold ${primary ? 'bg-brand-500 text-onfill' : 'bg-night-700 text-slate-100'}`,
     });
     box.replaceChildren(p(t('forgotText'), 'font-semibold text-white'), p(`1. ${t('forgotParent')}`), p(`2. ${t('forgotWrite')}`));
     if (b.telegram) box.append(link(`https://t.me/${encodeURIComponent(b.telegram)}?text=${encodeURIComponent(msg)}`, t('writeTelegram'), true));
@@ -1052,7 +1074,7 @@
     $('googleBlock').classList.remove('hidden');
     $('googleBtn').innerHTML = '';
     google.accounts.id.renderButton($('googleBtn'), {
-      theme: 'filled_black',
+      theme: theme() === 'light' ? 'outline' : 'filled_black',
       size: 'large',
       shape: 'pill',
       text: 'continue_with',

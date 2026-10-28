@@ -1,20 +1,65 @@
 @import "tailwindcss";
 @source "../public";
 
+/* Colors are theme tokens: the same class (bg-night-800, text-white, text-brand-400...)
+   gets its value from the active theme on <html data-theme="dark|light">.
+   Dark: black first, white second, a little blue. Light: white and green.
+   "white" means the main text color, "onfill" is text on a solid brand/status fill. */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --color-night-950: #070c18;
-  --color-night-900: #0c1426;
-  --color-night-800: #131d34;
-  --color-night-700: #1b2744;
-  --color-night-600: #26345a;
-  --color-brand-600: #2a45e8;
-  --color-brand-500: #3352ff;
-  --color-brand-400: #5a74ff;
+  --color-onfill: #ffffff;
+  --color-white: #ffffff;
+  --color-night-950: #000000;
+  --color-night-900: #0a0a0a;
+  --color-night-800: #151515;
+  --color-night-700: #212121;
+  --color-night-600: #2e2e2e;
+  --color-brand-600: #1d4ed8;
+  --color-brand-500: #2563eb;
+  --color-brand-400: #4d8bff;
+  --color-slate-100: #f5f5f5;
+  --color-slate-200: #e5e5e5;
+  --color-slate-300: #c4c4c4;
+  --color-slate-400: #9a9a9a;
+  --color-slate-500: #707070;
 }
 
-html { color-scheme: dark; }
-.bubble strong { font-weight: 700; color: #fff; }
+:root { color-scheme: dark; --page-glow: #081127; }
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --page-glow: #e3f6ea;
+  --color-white: #0f1f16;
+  --color-night-950: #ffffff;
+  --color-night-900: #f6f9f7;
+  --color-night-800: #eef4f0;
+  --color-night-700: #e1ebe4;
+  --color-night-600: #cfdcd3;
+  --color-brand-600: #0f7438;
+  --color-brand-500: #138a43;
+  --color-brand-400: #12863f;
+  --color-slate-100: #13241a;
+  --color-slate-200: #1f3127;
+  --color-slate-300: #3a4b41;
+  --color-slate-400: #56665c;
+  --color-slate-500: #7b8981;
+  /* Status texts are light shades made for black; on white they need dark ones. */
+  --color-emerald-100: #065f46;
+  --color-emerald-200: #047857;
+  --color-emerald-300: #059669;
+  --color-rose-100: #9f1239;
+  --color-rose-200: #be123c;
+  --color-rose-300: #e11d48;
+  --color-amber-100: #78350f;
+  --color-amber-200: #92400e;
+  --color-amber-300: #b45309;
+  --color-sky-100: #075985;
+  --color-sky-300: #0369a1;
+}
+
+.page-bg { background: radial-gradient(ellipse at top, var(--page-glow) 0%, var(--color-night-950) 60%) var(--color-night-950); }
+.bubble strong { font-weight: 700; color: var(--color-white); }
+.bubble.bg-brand-500 strong { color: var(--color-onfill); }
 .icon { width: 1.25rem; height: 1.25rem; flex-shrink: 0; }
 #chat::-webkit-scrollbar { width: 0; }
 /* Google button iframe would get a white backdrop under the dark color scheme. */
