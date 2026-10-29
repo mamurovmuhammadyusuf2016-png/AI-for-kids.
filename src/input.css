@@ -65,3 +65,23 @@
 /* Google button iframe would get a white backdrop under the dark color scheme. */
 #googleBtn iframe { color-scheme: light; }
 .bubble .katex { font-size: 1.12em; }
+
+/* Monster battle (quest.js): emoji characters and their moves. */
+.q-emoji { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; line-height: 1; }
+@keyframes q-idle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes q-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px) rotate(-6deg); } 40% { transform: translateX(8px) rotate(6deg); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+@keyframes q-lunge-r { 0%, 100% { transform: translateX(0); } 40% { transform: translateX(45%) scale(1.15); } }
+@keyframes q-lunge-l { 0%, 100% { transform: translateX(0); } 40% { transform: translateX(-45%) scale(1.15); } }
+@keyframes q-float { 0% { opacity: 0; transform: translate(-50%, 0) scale(.6); } 15% { opacity: 1; transform: translate(-50%, -10px) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -64px); } }
+@keyframes q-pop { 0% { opacity: 0; transform: scale(.3); } 70% { opacity: 1; transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes q-defeat { to { opacity: 0; transform: scale(.2) rotate(35deg); } }
+.q-idle { display: inline-block; animation: q-idle 2.4s ease-in-out infinite; }
+.q-shake { animation: q-shake .45s ease-in-out; }
+.q-lunge-r { animation: q-lunge-r .4s ease-out; }
+.q-lunge-l { animation: q-lunge-l .4s ease-out; }
+.q-float { position: absolute; left: 50%; top: 0; animation: q-float .95s ease-out forwards; pointer-events: none; }
+.q-pop { display: inline-block; animation: q-pop .5s ease-out both; }
+.q-defeat { animation: q-defeat .6s ease-in forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .q-idle, .q-shake, .q-lunge-r, .q-lunge-l, .q-pop { animation: none; }
+}
