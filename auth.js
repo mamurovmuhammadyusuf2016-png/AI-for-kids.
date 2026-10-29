@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const { promisify } = require('util');
 const { Pool } = require('pg');
+const { PLANS, DEFAULT_PLAN, planId } = require('./plans');
 
 const scrypt = promisify(crypto.scrypt);
 
@@ -76,6 +77,7 @@ async function init() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'student';
     ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_of BIGINT REFERENCES users(id) ON DELETE CASCADE;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS secret_enc TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_tier TEXT;
     CREATE TABLE IF NOT EXISTS payment_requests (
       id BIGSERIAL PRIMARY KEY,
       user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -83,6 +85,14 @@ async function init() {
       status TEXT NOT NULL DEFAULT 'pending',
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       resolved_at TIMESTAMPTZ
+    );
+    ALTER TABLE payment_requests ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'pro';
+    CREATE TABLE IF NOT EXISTS token_usage (
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      month TEXT NOT NULL,
+      input BIGINT NOT NULL DEFAULT 0,
+      output BIGINT NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, month)
     );
     CREATE TABLE IF NOT EXISTS topic_cache (
       subject TEXT NOT NULL,
@@ -175,7 +185,7 @@ async function getUser(req) {
   const token = parseCookies(req)[SESSION_COOKIE];
   if (!token) return null;
   const { rows } = await pool.query(
-    `SELECT u.id, u.email, u.created_at, u.premium_until, u.plan_kind, u.role, u.parent_of,
+    `SELECT u.id, u.email, u.created_at, u.premium_until, u.plan_kind, u.plan_tier, u.role, u.parent_of,
             u.password_hash IS NOT NULL AS has_password, u.google_sub IS NOT NULL AS has_google
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = $1 AND s.expires_at > now()`,
@@ -188,10 +198,13 @@ async function getUser(req) {
 const TRIAL_DAYS = 7;
 
 // never: no free week or subscription was ever given; trial: the current access is the free week.
+// tier: pro/gold/max (the free week counts as Pro); limits are its monthly token limits.
 function plan(u) {
-  if (!u.created_at) return { active: true, trial: false, never: false, until: null };
+  const tier = u.plan_kind === 'trial' ? DEFAULT_PLAN : planId(u.plan_tier);
+  const limits = { input: PLANS[tier].input, output: PLANS[tier].output };
+  if (!u.created_at) return { active: true, trial: false, never: false, until: null, tier, limits };
   const until = u.premium_until ? new Date(u.premium_until).getTime() : 0;
-  return { active: until > Date.now(), trial: u.plan_kind === 'trial', never: !until, until: until ? new Date(until).toISOString() : null };
+  return { active: until > Date.now(), trial: u.plan_kind === 'trial', never: !until, until: until ? new Date(until).toISOString() : null, tier, limits };
 }
 
 function publicUser(u) {
@@ -264,7 +277,7 @@ async function resetParentPassword(childId) {
 
 async function getChild(childId) {
   const { rows } = await requirePool().query(
-    `SELECT id, email, created_at, premium_until, plan_kind, role FROM users WHERE id = $1 AND role = 'student'`,
+    `SELECT id, email, created_at, premium_until, plan_kind, plan_tier, role FROM users WHERE id = $1 AND role = 'student'`,
     [childId],
   );
   return rows[0] || null;
@@ -279,7 +292,7 @@ async function setPassword(userId, password) {
 async function listStudents(search) {
   const q = `%${(search || '').toLowerCase().slice(0, 60)}%`;
   const { rows } = await requirePool().query(
-    `SELECT email, created_at, premium_until, plan_kind, google_sub IS NOT NULL AS google
+    `SELECT email, created_at, premium_until, plan_kind, plan_tier, google_sub IS NOT NULL AS google
        FROM users WHERE role = 'student' AND email LIKE $1 ORDER BY created_at DESC LIMIT 100`,
     [q],
   );
@@ -315,20 +328,20 @@ async function createAdminAccount(login) {
 }
 
 // One open request per student; returns the existing one if it is still pending.
-async function requestSubscription(userId, months) {
+async function requestSubscription(userId, months, tier) {
   const db = requirePool();
-  const open = await db.query(`SELECT id, months, created_at FROM payment_requests WHERE user_id = $1 AND status = 'pending'`, [userId]);
+  const open = await db.query(`SELECT id, months, plan, created_at FROM payment_requests WHERE user_id = $1 AND status = 'pending'`, [userId]);
   if (open.rows.length) {
-    if (open.rows[0].months !== months) await db.query('UPDATE payment_requests SET months = $2 WHERE id = $1', [open.rows[0].id, months]);
-    return { ...open.rows[0], months };
+    if (open.rows[0].months !== months || open.rows[0].plan !== tier) await db.query('UPDATE payment_requests SET months = $2, plan = $3 WHERE id = $1', [open.rows[0].id, months, tier]);
+    return { ...open.rows[0], months, plan: tier };
   }
-  const { rows } = await db.query('INSERT INTO payment_requests (user_id, months) VALUES ($1, $2) RETURNING id, months, created_at', [userId, months]);
+  const { rows } = await db.query('INSERT INTO payment_requests (user_id, months, plan) VALUES ($1, $2, $3) RETURNING id, months, plan, created_at', [userId, months, tier]);
   return rows[0];
 }
 
 async function listRequests() {
   const { rows } = await requirePool().query(
-    `SELECT r.id, r.months, r.status, r.created_at, r.resolved_at, u.email, u.premium_until
+    `SELECT r.id, r.months, r.plan, r.status, r.created_at, r.resolved_at, u.email, u.premium_until, u.plan_kind, u.plan_tier
        FROM payment_requests r JOIN users u ON u.id = r.user_id
       ORDER BY (r.status = 'pending') DESC, r.created_at DESC LIMIT 50`,
   );
@@ -336,13 +349,15 @@ async function listRequests() {
 }
 
 // Adds access after the current end (or from now if it has passed).
-// months = 0 is the free week; otherwise paid months of 30 days.
-async function grantMonths(email, months, requestId) {
+// months = 0 is the free week; otherwise paid months of 30 days on the given plan (pro/gold/max;
+// without a plan the student keeps the current one).
+async function grantMonths(email, months, requestId, tier) {
   const db = requirePool();
   const { rows } = await db.query(
-    `UPDATE users SET premium_until = GREATEST(COALESCE(premium_until, now()), now()) + make_interval(days => $2), plan_kind = $3
-      WHERE email = $1 RETURNING id, email, premium_until, plan_kind`,
-    [normalizeEmail(email), months ? months * 30 : TRIAL_DAYS, months ? 'paid' : 'trial'],
+    `UPDATE users SET premium_until = GREATEST(COALESCE(premium_until, now()), now()) + make_interval(days => $2), plan_kind = $3,
+            plan_tier = CASE WHEN $3 = 'paid' THEN COALESCE($4::text, plan_tier, 'pro') ELSE plan_tier END
+      WHERE email = $1 RETURNING id, email, premium_until, plan_kind, plan_tier`,
+    [normalizeEmail(email), months ? months * 30 : TRIAL_DAYS, months ? 'paid' : 'trial', tier ? planId(tier) : null],
   );
   if (!rows.length) throw new AuthError('user_not_found', 404);
   // Close the request it pays for, or every open request of this student.
@@ -468,6 +483,21 @@ async function countQuestion(userId, day) {
   return rows[0].count;
 }
 
+// ---------- monthly token counter (the plan limits) ----------
+async function tokensThisMonth(userId, month) {
+  const { rows } = await requirePool().query('SELECT input, output FROM token_usage WHERE user_id = $1 AND month = $2', [userId, month]);
+  return { input: Number(rows[0]?.input || 0), output: Number(rows[0]?.output || 0) };
+}
+
+async function addTokens(userId, month, used) {
+  if (!used.input && !used.output) return;
+  await requirePool().query(
+    `INSERT INTO token_usage (user_id, month, input, output) VALUES ($1, $2, $3, $4)
+     ON CONFLICT (user_id, month) DO UPDATE SET input = token_usage.input + $3, output = token_usage.output + $4`,
+    [userId, month, used.input, used.output],
+  );
+}
+
 // ---------- learning data ----------
 // Daily counter for generated exercises (separate from chat questions).
 async function countGeneration(userId, day) {
@@ -528,6 +558,8 @@ module.exports = {
   rejectRequest,
   countGeneration,
   generationsToday,
+  tokensThisMonth,
+  addTokens,
   getData,
   setData,
   cachedTopics,

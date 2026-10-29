@@ -5,6 +5,7 @@ const { buildSystemPrompt, REPORT_PROMPT } = require('./prompt');
 const { verifyStudentMessages, findWrongClaims, fmt } = require('./math');
 const auth = require('./auth');
 const learn = require('./learn');
+const { PLANS, planId } = require('./plans');
 
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.AI_API_KEY;
@@ -21,7 +22,6 @@ const LEARN_LIMIT = 20;
 const DATA_KEYS = new Set(['progress', 'diary', 'cards']);
 
 // Subscription: price and how students reach the owner (set on Render).
-const PRICE_UZS = Number(process.env.PRICE_UZS) || 70000;
 const CONTACT_TELEGRAM = (process.env.CONTACT_TELEGRAM || '').replace(/^@/, '');
 const CONTACT_PHONE = process.env.CONTACT_PHONE || '';
 const PAYMENT_CARD = process.env.PAYMENT_CARD || '';
@@ -69,6 +69,31 @@ function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tashkent' });
 }
 
+// ---------- plan token limits (per calendar month, Tashkent time) ----------
+const month = () => today().slice(0, 7);
+const metered = (user) => auth.enabled() && !!user?.created_at;
+
+// Guests and admins have no limit; a student stops when either monthly limit is used up.
+async function tokensLeft(user) {
+  if (!metered(user) || isAdmin(user)) return true;
+  const used = await auth.tokensThisMonth(user.id, month());
+  const { limits } = auth.plan(user);
+  return used.input < limits.input && used.output < limits.output;
+}
+
+async function chargeTokens(user, meter) {
+  if (metered(user)) await auth.addTokens(user.id, month(), meter);
+}
+
+const newMeter = () => ({ input: 0, output: 0 });
+
+// Adds the model's reported token counts to a meter; thinking counts as output.
+function addUsage(meter, u) {
+  if (!meter || !u) return;
+  meter.input += u.promptTokenCount || 0;
+  meter.output += (u.candidatesTokenCount || 0) + (u.thoughtsTokenCount || 0);
+}
+
 function sendJson(res, status, data, headers = {}) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', ...headers });
   res.end(JSON.stringify(data));
@@ -109,7 +134,7 @@ class AiError extends Error {
   }
 }
 
-async function callModel(model, systemText, contents, timeoutMs, generationConfig) {
+async function callModel(model, systemText, contents, timeoutMs, generationConfig, meter) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -125,6 +150,7 @@ async function callModel(model, systemText, contents, timeoutMs, generationConfi
       console.error(`Gemini ${model} error`, r.status, JSON.stringify(data).slice(0, 500));
       throw new AiError(r.status === 503 || r.status >= 500 ? 'overloaded' : 'ai_error', r.status);
     }
+    addUsage(meter, data.usageMetadata);
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
     if (!text) {
       console.error(`Gemini ${model} empty`, JSON.stringify(data).slice(0, 500));
@@ -148,10 +174,11 @@ function toContents(messages) {
 }
 
 // Streams the answer piece by piece: onDelta(text) for each piece, returns the whole text.
-async function streamModel(model, systemText, contents, timeoutMs, onDelta) {
+async function streamModel(model, systemText, contents, timeoutMs, onDelta, meter) {
   const ctrl = new AbortController();
   let timer = setTimeout(() => ctrl.abort(), timeoutMs);
   let text = '';
+  let usage = null;
   try {
     const r = await fetch(`${GEMINI_BASE}/${model}:streamGenerateContent?alt=sse`, {
       method: 'POST',
@@ -180,6 +207,8 @@ async function streamModel(model, systemText, contents, timeoutMs, onDelta) {
           if (!line.startsWith('data:')) continue;
           let json;
           try { json = JSON.parse(line.slice(5).trim()); } catch { continue; }
+          // Every chunk carries the running totals; the last one is the whole answer.
+          if (json.usageMetadata) usage = json.usageMetadata;
           const piece = (json.candidates?.[0]?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
           if (!piece) continue;
           if (!text) { clearTimeout(timer); timer = setTimeout(() => ctrl.abort(), 90000); }
@@ -188,6 +217,7 @@ async function streamModel(model, systemText, contents, timeoutMs, onDelta) {
         }
       }
     }
+    addUsage(meter, usage);
     if (!text.trim()) throw new AiError('blocked', 200);
     return text.trim();
   } catch (err) {
@@ -200,28 +230,29 @@ async function streamModel(model, systemText, contents, timeoutMs, onDelta) {
   }
 }
 
-async function generateStream(systemText, messages, onDelta) {
+async function generateStream(systemText, messages, onDelta, meter) {
   const contents = toContents(messages);
   try {
-    return await streamModel(MODEL, systemText, contents, MODEL_TIMEOUT_MS, onDelta);
+    return await streamModel(MODEL, systemText, contents, MODEL_TIMEOUT_MS, onDelta, meter);
   } catch (err) {
     if (!['overloaded', 'rate_limited'].includes(err.code) || !FALLBACK_MODEL) throw err;
     console.log(`Main model ${err.code}, streaming from ${FALLBACK_MODEL}`);
-    return streamModel(FALLBACK_MODEL, systemText, contents, FALLBACK_TIMEOUT_MS, onDelta);
+    return streamModel(FALLBACK_MODEL, systemText, contents, FALLBACK_TIMEOUT_MS, onDelta, meter);
   }
 }
 
-// opts.schema asks Gemini for JSON in that shape; opts.slow allows more time (big exercise sets).
+// opts.schema asks Gemini for JSON in that shape; opts.slow allows more time (big exercise sets);
+// opts.meter collects the tokens used.
 async function generate(systemText, messages, opts = {}) {
   const contents = toContents(messages);
   const config = opts.schema ? { responseMimeType: 'application/json', responseSchema: opts.schema } : undefined;
   const scale = opts.slow ? 2 : 1;
   try {
-    return await callModel(MODEL, systemText, contents, MODEL_TIMEOUT_MS * scale, config);
+    return await callModel(MODEL, systemText, contents, MODEL_TIMEOUT_MS * scale, config, opts.meter);
   } catch (err) {
     if (!['overloaded', 'rate_limited'].includes(err.code) || !FALLBACK_MODEL) throw err;
     console.log(`Main model ${err.code}, using ${FALLBACK_MODEL}`);
-    return callModel(FALLBACK_MODEL, systemText, contents, FALLBACK_TIMEOUT_MS * scale, config);
+    return callModel(FALLBACK_MODEL, systemText, contents, FALLBACK_TIMEOUT_MS * scale, config, opts.meter);
   }
 }
 
@@ -255,6 +286,7 @@ async function handleChat(req, res, body, user) {
   if ((await usedToday(user.id, day)) >= DAILY_LIMIT) {
     return sendJson(res, 429, { code: 'daily_limit', remaining: 0, limit: DAILY_LIMIT });
   }
+  if (!(await tokensLeft(user))) return sendJson(res, 429, { code: 'tokens_out' });
   const now = Date.now();
   const recent = (recentQuestions.get(user.id) || []).filter((t) => now - t < FREQUENT_WINDOW_MS);
   recentQuestions.set(user.id, recent);
@@ -277,9 +309,13 @@ async function handleChat(req, res, body, user) {
     send = (obj) => res.write(`data: ${JSON.stringify(obj)}\n\n`);
   }
   let reply;
+  const meter = newMeter();
   try {
-    const raw = send ? await generateStream(systemText, messages, (text) => send({ type: 'delta', text })) : await generate(systemText, messages);
+    const raw = send
+      ? await generateStream(systemText, messages, (text) => send({ type: 'delta', text }), meter)
+      : await generate(systemText, messages, { meter });
     reply = stripEmoji(raw);
+    await chargeTokens(user, meter);
   } catch (err) {
     if (!send) return aiErrorResponse(res, err);
     send({ type: 'error', code: ['rate_limited', 'blocked'].includes(err.code) ? err.code : 'ai_error' });
@@ -303,8 +339,9 @@ async function handleChat(req, res, body, user) {
   res.end();
 }
 
-async function handleReport(req, res, body) {
+async function handleReport(req, res, body, user) {
   if (!API_KEY) return sendJson(res, 500, { code: 'ai_error' });
+  if (!(await tokensLeft(user))) return sendJson(res, 429, { code: 'tokens_out' });
   const sessions = Array.isArray(body.sessions) ? body.sessions.slice(-10) : [];
   const transcript = sessions
     .map((s) => {
@@ -319,9 +356,11 @@ async function handleReport(req, res, body) {
 
   const lang = body.lang === 'uz' ? 'узбекский (латиница)' : 'русский';
   try {
+    const meter = newMeter();
     const report = await generate(REPORT_PROMPT.replace('{LANG}', lang), [
       { role: 'user', content: `Переписка ученика с репетитором:\n\n${transcript}` },
-    ]);
+    ], { meter });
+    await chargeTokens(user, meter);
     sendJson(res, 200, { report: stripEmoji(report) });
   } catch (err) {
     aiErrorResponse(res, err);
@@ -426,11 +465,14 @@ async function handleLearn(req, res, body, user, kind) {
   }
   const day = today();
   if ((await generationsToday(user.id, day)) >= LEARN_LIMIT) return sendJson(res, 429, { code: 'learn_limit' });
+  if (!(await tokensLeft(user))) return sendJson(res, 429, { code: 'tokens_out' });
 
   const spec = LEARN_KINDS[kind](params);
   let data;
   try {
-    const text = await generate(spec.prompt, [{ role: 'user', content: 'Составь материал по инструкции.' }], { schema: spec.schema, slow: true });
+    const meter = newMeter();
+    const text = await generate(spec.prompt, [{ role: 'user', content: 'Составь материал по инструкции.' }], { schema: spec.schema, slow: true, meter });
+    await chargeTokens(user, meter);
     let parsed;
     try {
       parsed = JSON.parse(text);
@@ -474,8 +516,9 @@ async function handleMe(req, res) {
   const user = await auth.getUser(req);
   if (!user) return sendJson(res, 200, { user: null });
   const used = await auth.usedToday(user.id, today());
+  const tokens = user.role === 'student' ? await auth.tokensThisMonth(user.id, month()) : undefined;
   sendJson(res, 200, {
-    user: { ...auth.publicUser(user), admin: isAdmin(user) },
+    user: { ...auth.publicUser(user), admin: isAdmin(user), tokens },
     child: user.role === 'parent' ? (await auth.getChild(user.parent_of))?.email || null : undefined,
     remaining: Math.max(0, DAILY_LIMIT - used),
     limit: DAILY_LIMIT,
@@ -487,8 +530,8 @@ async function handleSubscribe(req, res, body, user) {
   if (!auth.enabled()) return sendJson(res, 503, { code: 'auth_unavailable' });
   // months = 0 asks for the free week.
   const months = [0, 1, 3, 6, 12].includes(Number(body.months)) ? Number(body.months) : 1;
-  const request = await auth.requestSubscription(user.id, months);
-  sendJson(res, 200, { request: { id: request.id, months: request.months }, price: PRICE_UZS * request.months });
+  const request = await auth.requestSubscription(user.id, months, planId(body.plan));
+  sendJson(res, 200, { request: { id: request.id, months: request.months, plan: request.plan }, price: PLANS[request.plan].price * request.months });
 }
 
 async function handleAdmin(req, res, body, user, action) {
@@ -496,8 +539,8 @@ async function handleAdmin(req, res, body, user, action) {
   if (action === 'requests') return sendJson(res, 200, { requests: await auth.listRequests() });
   if (action === 'grant') {
     const months = Number(body.months) === 0 ? 0 : Math.min(12, Math.max(1, parseInt(body.months, 10) || 1));
-    const granted = await auth.grantMonths(cleanText(body.email, 254), months, parseInt(body.requestId, 10) || null);
-    return sendJson(res, 200, { email: granted.email, until: granted.premium_until, kind: granted.plan_kind });
+    const granted = await auth.grantMonths(cleanText(body.email, 254), months, parseInt(body.requestId, 10) || null, body.plan ? planId(body.plan) : null);
+    return sendJson(res, 200, { email: granted.email, until: granted.premium_until, kind: granted.plan_kind, plan: granted.plan_tier });
   }
   if (action === 'reject') {
     await auth.rejectRequest(parseInt(body.requestId, 10));
@@ -537,7 +580,7 @@ async function handleParent(req, res, body, user, action) {
   if (action === 'overview') {
     const data = await auth.getData(child.id);
     return sendJson(res, 200, {
-      child: { email: child.email, plan: auth.plan(child) },
+      child: { email: child.email, plan: auth.plan(child), tokens: await auth.tokensThisMonth(child.id, month()) },
       usedToday: await auth.usedToday(child.id, today()),
       limit: DAILY_LIMIT,
       progress: data.progress || null,
@@ -550,16 +593,19 @@ async function handleParent(req, res, body, user, action) {
   }
   if (action === 'subscribe') {
     const months = [0, 1, 3, 6, 12].includes(Number(body.months)) ? Number(body.months) : 1;
-    const request = await auth.requestSubscription(child.id, months);
-    return sendJson(res, 200, { request: { id: request.id, months: request.months }, price: PRICE_UZS * request.months, email: child.email });
+    const request = await auth.requestSubscription(child.id, months, planId(body.plan));
+    return sendJson(res, 200, { request: { id: request.id, months: request.months, plan: request.plan }, price: PLANS[request.plan].price * request.months, email: child.email });
   }
   if (action === 'report') {
     if (!auth.plan(child).active) return sendJson(res, 402, { code: 'premium_required' });
+    if (!(await tokensLeft(child))) return sendJson(res, 429, { code: 'tokens_out' });
     const data = await auth.getData(child.id);
     const stats = JSON.stringify({ progress: data.progress || {}, diary: (data.diary || []).slice(-30) }).slice(0, 20000);
     const lang = body.lang === 'uz' ? 'узбекский (латиница)' : 'русский';
     try {
-      const report = await generate(PARENT_REPORT_PROMPT.replace('{LANG}', lang), [{ role: 'user', content: `Статистика ребёнка (JSON): ${stats}` }]);
+      const meter = newMeter();
+      const report = await generate(PARENT_REPORT_PROMPT.replace('{LANG}', lang), [{ role: 'user', content: `Статистика ребёнка (JSON): ${stats}` }], { meter });
+      await chargeTokens(child, meter);
       return sendJson(res, 200, { report: stripEmoji(report) });
     } catch (err) {
       return aiErrorResponse(res, err);
@@ -638,7 +684,14 @@ async function route(req, res) {
       return sendJson(res, 200, {
         googleClientId: auth.GOOGLE_CLIENT_ID,
         accounts: auth.enabled(),
-        billing: { price: PRICE_UZS, trialDays: 7, telegram: CONTACT_TELEGRAM, phone: CONTACT_PHONE, card: PAYMENT_CARD },
+        billing: {
+          plans: Object.entries(PLANS).map(([id, p]) => ({ id, ...p })),
+          price: PLANS.pro.price,
+          trialDays: 7,
+          telegram: CONTACT_TELEGRAM,
+          phone: CONTACT_PHONE,
+          card: PAYMENT_CARD,
+        },
       });
     }
     if (req.method === 'GET' && urlPath === '/health') return sendJson(res, 200, { ok: true });

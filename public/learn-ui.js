@@ -58,7 +58,7 @@
         inside: ['Чат с учителем', 'Фото задачи', 'Голос', 'Тренировки', 'Тесты', 'Экзамены и DTM', 'Олимпиада', 'Чтение', 'Карточки слов', 'Игры на счёт', 'Дневник'],
         howTitle: 'Как начать',
         how: ['Зарегистрируйтесь — это бесплатно. Карточки, игры и дневник открыты сразу.', 'Напишите нам в Telegram — познакомимся и подключим бесплатную неделю.', 'Понравится — оформите подписку.'],
-        priceTitle: 'Подписка',
+        priceTitle: 'Тарифы',
         priceText: 'Все разделы, 30 вопросов в день, фото задачи, экзамены, отчёты для родителей.',
         parentTitle: 'Вы родитель?',
         parentText: 'Логин и пароль родителя ребёнок найдёт у себя в Nimi: меню ⋮ → «Настройки».',
@@ -132,7 +132,20 @@
         noContacts: 'Контакты для оплаты скоро появятся. Загляни позже.',
         step3: 'Подписка включится после проверки. Потом нажми «Проверить статус».',
         check: 'Проверить статус',
-        message: (m, id, email) => `Здравствуйте! Хочу подписку Nimi на ${m} мес. Заявка №${id}, аккаунт: ${email}`,
+        message: (m, id, email, plan) => `Здравствуйте! Хочу подписку Nimi ${plan} на ${m} мес. Заявка №${id}, аккаунт: ${email}`,
+        plansTitle: 'Выбери тариф',
+        perMonthShort: 'сум/мес',
+        inLabel: 'Вход',
+        outLabel: 'Выход',
+        allPlans: 'Во всех тарифах',
+        tokensHint: 'Токены — это кусочки текста. Вход — твои вопросы и фото, выход — ответы Nimi. Чем больше тариф, тем больше можно спрашивать за месяц.',
+        usageTitle: 'Токены в этом месяце',
+        usageIn: 'Вход (твои вопросы)',
+        usageOut: 'Выход (ответы Nimi)',
+        of: (a, b) => `${a} из ${b}`,
+        from: (p) => `от ${p}`,
+        million: 'млн',
+        thousand: 'тыс.',
         locked: 'По подписке',
         open: 'Подписка',
       },
@@ -168,6 +181,7 @@
       loadingTopics: 'Загружаю темы…',
       errors: {
         learn_limit: 'На сегодня новые задания закончились (20 наборов). Повтори карточки или поиграй в игры на счёт.',
+        tokens_out: 'Токены твоего тарифа на этот месяц закончились. Выбери тариф побольше: меню ⋮ → «Подписка».',
         rate_limited: 'Слишком много запросов, попробуй через минуту',
         unauthorized: 'Нужно войти снова.',
         default: 'Не получилось подготовить задания. Попробуй ещё раз.',
@@ -312,7 +326,7 @@
         inside: ["O'qituvchi bilan chat", 'Masala surati', 'Ovoz', 'Mashqlar', 'Testlar', 'Imtihonlar va DTM', 'Olimpiada', "O'qish", "So'z kartochkalari", "Hisob o'yinlari", 'Kundalik'],
         howTitle: 'Qanday boshlash kerak',
         how: ["Ro'yxatdan o'ting — bu bepul. Kartochkalar, o'yinlar va kundalik darhol ochiladi.", 'Bizga Telegramda yozing — tanishamiz va bepul haftani yoqamiz.', "Yoqsa — obuna rasmiylashtiring."],
-        priceTitle: 'Obuna',
+        priceTitle: 'Tariflar',
         priceText: "Barcha bo'limlar, kuniga 30 ta savol, masala surati, imtihonlar, ota-onalar uchun hisobot.",
         parentTitle: 'Siz ota-onamisiz?',
         parentText: "Ota-ona login va parolini farzandingiz Nimi'da topadi: ⋮ menyu → «Sozlamalar».",
@@ -386,7 +400,20 @@
         noContacts: "To'lov uchun kontaktlar tez orada paydo bo'ladi. Keyinroq kirib ko'r.",
         step3: "Tekshiruvdan keyin obuna yoqiladi. So'ng «Holatni tekshirish»ni bos.",
         check: 'Holatni tekshirish',
-        message: (m, id, email) => `Assalomu alaykum! Nimi obunasini ${m} oyga olmoqchiman. Ariza №${id}, akkaunt: ${email}`,
+        message: (m, id, email, plan) => `Assalomu alaykum! Nimi ${plan} obunasini ${m} oyga olmoqchiman. Ariza №${id}, akkaunt: ${email}`,
+        plansTitle: 'Tarifni tanla',
+        perMonthShort: "so'm/oy",
+        inLabel: 'Kirish',
+        outLabel: 'Chiqish',
+        allPlans: 'Barcha tariflarda',
+        tokensHint: "Tokenlar — matn bo'laklari. Kirish — sening savollaring va suratlaring, chiqish — Nimi javoblari. Tarif qanchalik katta bo'lsa, oyiga shuncha ko'p so'rash mumkin.",
+        usageTitle: 'Bu oydagi tokenlar',
+        usageIn: 'Kirish (sening savollaring)',
+        usageOut: 'Chiqish (Nimi javoblari)',
+        of: (a, b) => `${a} / ${b}`,
+        from: (p) => `${p}dan`,
+        million: 'mln',
+        thousand: 'ming',
         locked: 'Obuna bilan',
         open: 'Obuna',
       },
@@ -422,6 +449,7 @@
       loadingTopics: 'Mavzular yuklanmoqda…',
       errors: {
         learn_limit: "Bugungi yangi topshiriqlar tugadi (20 ta to'plam). Kartochkalarni takrorla yoki hisob o'yinlarini o'yna.",
+        tokens_out: "Tarifingning bu oydagi tokenlari tugadi. Kattaroq tarifni tanla: ⋮ menyu → «Obuna».",
         rate_limited: "Juda ko'p so'rov, bir daqiqadan keyin urinib ko'r",
         unauthorized: 'Qaytadan kirish kerak.',
         default: "Topshiriqlarni tayyorlab bo'lmadi. Qayta urinib ko'r.",
@@ -652,7 +680,7 @@
     const msg = t('errors')[code] || t('errors').default;
     return h('div', { class: `${CARD} flex flex-col gap-3` },
       h('div', { class: 'flex items-start gap-2 text-rose-200' }, ico('circle-alert'), h('p', {}, msg)),
-      retry && code !== 'learn_limit' ? h('button', { type: 'button', class: BTN2, onclick: retry }, ico('repeat'), t('retry')) : null,
+      retry && !['learn_limit', 'tokens_out'].includes(code) ? h('button', { type: 'button', class: BTN2, onclick: retry }, ico('repeat'), t('retry')) : null,
       h('button', { type: 'button', class: BTN2, onclick: () => N.showScreen('home') }, t('home')));
   }
 
@@ -1183,7 +1211,17 @@
   }
 
   // ---------- subscription ----------
-  const sum = (n) => `${n.toLocaleString('ru-RU').replace(/,/g, ' ')} ${N.lang === 'uz' ? "so'm" : 'сум'}`;
+  const money = (n) => n.toLocaleString('ru-RU').replace(/,/g, ' ');
+  const sum = (n) => `${money(n)} ${N.lang === 'uz' ? "so'm" : 'сум'}`;
+  // Plans come from the server: [{ id, name, price, input, output }].
+  const plans = () => N.billing.plans || [];
+  const planById = (id) => plans().find((p) => p.id === id) || plans()[0];
+  const minPrice = () => Math.min(...plans().map((p) => p.price));
+  const tok = (n) => {
+    const S = t('sub');
+    if (n >= 1e6) return `${(n / 1e6).toLocaleString('ru-RU', { maximumFractionDigits: 1 })} ${S.million}`;
+    return n >= 1000 ? `${Math.round(n / 1000)} ${S.thousand}` : String(n);
+  };
   const dateStr = (iso) => new Date(iso).toLocaleDateString(N.lang === 'uz' ? 'uz-UZ' : 'ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const daysLeft = (iso) => Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / DAY));
 
@@ -1199,16 +1237,51 @@
     return { tone: 'active', text: S.active(dateStr(plan.until)) };
   }
 
+  // Three plan cards side by side; onSelect(plan) runs when another one is chosen.
+  function planPicker(selected, onSelect) {
+    const S = t('sub');
+    const row = h('div', { class: 'grid grid-cols-3 gap-2' });
+    const draw = () => row.replaceChildren(...plans().map((p) => {
+      const on = p.id === selected;
+      return h('button', {
+        type: 'button',
+        'aria-pressed': String(on),
+        class: `flex flex-col items-start gap-0.5 rounded-2xl p-3 text-left transition active:scale-95 ${on ? 'bg-brand-500/15 ring-2 ring-brand-400' : 'bg-night-800 ring-1 ring-white/5 hover:bg-night-700'}`,
+        onclick: () => { selected = p.id; draw(); onSelect(p); },
+      },
+      h('span', { class: `text-sm font-semibold ${on ? 'text-brand-400' : 'text-slate-300'}` }, p.name),
+      h('span', { class: 'text-xl font-semibold tabular-nums text-white' }, money(p.price)),
+      h('span', { class: 'text-xs text-slate-400' }, S.perMonthShort),
+      h('span', { class: 'mt-2 text-xs text-slate-300' }, `${S.inLabel}: ${tok(p.input)}`),
+      h('span', { class: 'text-xs text-slate-300' }, `${S.outLabel}: ${tok(p.output)}`));
+    }));
+    draw();
+    return row;
+  }
+
+  // This month's tokens against the plan limits.
+  function usageCard(plan, tokens) {
+    const S = t('sub');
+    const bar = (label, used, max) => {
+      const pct = Math.min(100, Math.round((used / max) * 100));
+      return h('div', { class: 'flex flex-col gap-1' },
+        h('div', { class: 'flex justify-between gap-2 text-sm' }, h('span', { class: 'text-slate-300' }, label), h('span', { class: 'tabular-nums text-slate-400' }, S.of(tok(used), tok(max)))),
+        h('div', { class: 'h-2 overflow-hidden rounded-full bg-night-700' }, h('div', { class: `h-full rounded-full ${pct >= 90 ? 'bg-rose-400' : 'bg-brand-500'}`, style: `width:${pct}%` })));
+    };
+    return h('div', { class: `${CARD} flex flex-col gap-3` },
+      h('div', { class: 'flex items-center justify-between gap-2' },
+        h('p', { class: 'font-semibold text-white' }, S.usageTitle),
+        h('span', { class: 'rounded-full bg-brand-500/15 px-2.5 py-1 text-xs font-semibold text-brand-400' }, plan.trial ? S.trialTitle : planById(plan.tier).name)),
+      bar(S.usageIn, tokens.input, plan.limits.input),
+      bar(S.usageOut, tokens.output, plan.limits.output));
+  }
+
   function openSubscribe() {
     const root = screen('activity');
     const S = t('sub');
-    const price = N.billing.price || 70000;
     const st = planStatus();
+    const plan = N.user?.plan;
     root.append(titleBar(S.title));
-    root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-onfill shadow-lg shadow-brand-500/30' },
-      h('p', { class: 'text-3xl font-semibold' }, S.price(sum(price))),
-      h('ul', { class: 'flex flex-col gap-2' }, S.includes.map((x) => h('li', { class: 'flex items-start gap-2' }, ico('circle-check', 'icon mt-0.5'), x))),
-      h('p', { class: 'text-sm text-onfill/80' }, S.freeLeft)));
     if (st && st.tone === 'none') {
       const trialSteps = h('div', { class: 'flex flex-col gap-3' });
       const ask = h('button', { type: 'button', class: BTN }, ico('sparkles'), S.trialAsk);
@@ -1226,20 +1299,30 @@
       const tone = { expired: 'bg-rose-500/10 text-rose-100 ring-rose-400/30', ending: 'bg-amber-400/10 text-amber-100 ring-amber-400/30', trial: 'bg-sky-500/10 text-sky-100 ring-sky-400/30', active: 'bg-emerald-500/10 text-emerald-100 ring-emerald-400/30' }[st.tone];
       root.append(h('p', { class: `rounded-2xl p-4 ring-1 ${tone}` }, st.text));
     }
+    if (plan?.active && plan.limits && N.user?.tokens) root.append(usageCard(plan, N.user.tokens));
+    const paid = plan?.active && !plan.trial;
+    let chosen = planById(paid ? plan.tier : 'pro');
     let months = 1;
     const priceBtn = h('button', { type: 'button', class: BTN });
     const monthsRow = h('div', { class: 'grid grid-cols-4 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5' });
     const drawMonths = () => {
       monthsRow.innerHTML = '';
       [1, 3, 6, 12].forEach((m) => monthsRow.append(h('button', { type: 'button', class: `min-h-12 rounded-xl text-[15px] font-medium ${m === months ? 'bg-brand-500 text-onfill' : 'text-slate-300'}`, onclick: () => { months = m; drawMonths(); } }, S.monthLabel(m))));
-      priceBtn.textContent = `${N.user?.plan?.active && !N.user?.plan?.trial ? S.renew : S.order} · ${sum(price * months)}`;
+      priceBtn.textContent = `${paid && chosen.id === plan.tier ? S.renew : S.order} · ${sum(chosen.price * months)}`;
     };
     drawMonths();
+    root.append(h('p', { class: 'font-semibold text-white' }, S.plansTitle),
+      planPicker(chosen.id, (p) => { chosen = p; drawMonths(); }),
+      h('p', { class: 'px-1 text-xs text-slate-400' }, S.tokensHint),
+      h('div', { class: `${CARD} flex flex-col gap-2` },
+        h('p', { class: 'font-semibold text-white' }, S.allPlans),
+        h('ul', { class: 'flex flex-col gap-2 text-slate-200' }, S.includes.map((x) => h('li', { class: 'flex items-start gap-2' }, ico('circle-check', 'icon mt-0.5 text-brand-400'), x))),
+        h('p', { class: 'text-sm text-slate-400' }, S.freeLeft)));
     const steps = h('div', { class: 'flex flex-col gap-3' });
     priceBtn.onclick = async () => {
       priceBtn.disabled = true;
       try {
-        const r = await N.postJson('/api/subscribe', { months });
+        const r = await N.postJson('/api/subscribe', { months, plan: chosen.id });
         if (!r.request) throw new Error(r.code || 'default');
         showSteps(steps, r.request, r.price);
         steps.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1269,7 +1352,7 @@
         h('p', { class: 'text-slate-300' }, `1. ${S.step1(sum(total))}`),
         h('div', { class: 'flex items-center gap-3' }, h('p', { class: 'min-w-0 flex-1 select-all text-xl font-semibold tracking-wider tabular-nums text-white' }, b.card), copyBtn)));
     }
-    const text = trial ? S.trialMessage(request.id, email) : S.message(request.months, request.id, email);
+    const text = trial ? S.trialMessage(request.id, email) : S.message(request.months, request.id, email, planById(request.plan)?.name || '');
     const links = [];
     if (b.telegram) links.push(h('a', { class: BTN, href: `https://t.me/${encodeURIComponent(b.telegram)}?text=${encodeURIComponent(text)}`, target: '_blank', rel: 'noopener' }, ico('send'), S.telegram));
     if (b.phone) links.push(h('a', { class: BTN2, href: `tel:${b.phone.replace(/[^\d+]/g, '')}` }, ico('message-circle'), `${S.call}: ${b.phone}`));
@@ -1293,14 +1376,15 @@
     const msg = h('p', { class: 'text-sm' });
     const email = h('input', { type: 'email', class: INPUT, placeholder: A.emailPh, id: 'adminEmail' });
     const months = h('select', { class: `${INPUT} appearance-none`, id: 'adminMonths' }, [0, 1, 3, 6, 12].map((m) => h('option', { value: m }, m ? t('sub').monthLabel(m) : A.week)));
-    const grant = async (mail, m, requestId) => {
-      const r = await N.postJson('/api/admin/grant', { email: mail, months: m, requestId });
+    const tier = h('select', { class: `${INPUT} appearance-none`, id: 'adminPlan' }, plans().map((p) => h('option', { value: p.id }, `${p.name} · ${sum(p.price)}`)));
+    const grant = async (mail, m, requestId, plan) => {
+      const r = await N.postJson('/api/admin/grant', { email: mail, months: m, requestId, plan });
       if (r.until) { await openAdmin(); $(adminRoot).prepend(h('p', { class: 'rounded-2xl bg-emerald-500/10 p-3 text-emerald-100' }, A.done(r.email, dateStr(r.until)))); }
       else msg.textContent = r.code === 'user_not_found' ? A.notFound : t('errors').default;
     };
     root.append(h('div', { class: `${CARD} flex flex-col gap-2` },
       h('p', { class: 'font-semibold text-white' }, A.manual), email,
-      h('div', { class: 'grid gap-2 sm:grid-cols-2' }, months, h('button', { type: 'button', class: BTN, onclick: () => email.value.trim() && grant(email.value.trim(), Number(months.value)) }, A.enable)),
+      h('div', { class: 'grid gap-2 sm:grid-cols-3' }, months, tier, h('button', { type: 'button', class: BTN, onclick: () => email.value.trim() && grant(email.value.trim(), Number(months.value), null, tier.value) }, A.enable)),
       msg));
     root.append(studentsBlock(A, grant));
     root.append(h('p', { class: 'font-semibold text-white' }, A.pending));
@@ -1316,9 +1400,9 @@
         h('div', { class: 'flex items-center justify-between gap-2' },
           h('p', { class: 'min-w-0 truncate font-semibold text-white' }, `№${q.id} · ${q.email}`),
           h('span', { class: `shrink-0 rounded-full px-2.5 py-1 text-xs ${pending ? 'bg-amber-400/15 text-amber-200' : ['paid', 'granted'].includes(q.status) ? 'bg-emerald-500/15 text-emerald-200' : 'bg-night-700 text-slate-400'}` }, A.status[q.status] || q.status)),
-        h('p', { class: 'text-sm text-slate-400' }, `${Number(q.months) ? `${t('sub').monthLabel(q.months)} · ${sum((N.billing.price || 70000) * q.months)}` : A.week} · ${dateStr(q.created_at)}${q.premium_until ? ` · ${t('sub').active(dateStr(q.premium_until))}` : ''}`),
+        h('p', { class: 'text-sm text-slate-400' }, `${Number(q.months) ? `${planById(q.plan).name} · ${t('sub').monthLabel(q.months)} · ${sum(planById(q.plan).price * q.months)}` : A.week} · ${dateStr(q.created_at)}${q.premium_until ? ` · ${t('sub').active(dateStr(q.premium_until))}` : ''}`),
         pending ? h('div', { class: 'grid grid-cols-2 gap-2' },
-          h('button', { type: 'button', class: BTN, onclick: () => grant(q.email, Number(q.months), q.id) }, A.grant(Number(q.months))),
+          h('button', { type: 'button', class: BTN, onclick: () => grant(q.email, Number(q.months), q.id, q.plan) }, A.grant(Number(q.months))),
           h('button', { type: 'button', class: BTN2, onclick: async () => { await N.postJson('/api/admin/reject', { requestId: q.id }); openAdmin(); } }, A.reject)) : null));
     });
   }
@@ -1337,7 +1421,9 @@
       users.forEach((u) => {
         const active = u.premium_until && new Date(u.premium_until) > new Date();
         const info = h('p', { class: 'text-xs text-slate-400' },
-          `${A.registered(dateStr(u.created_at))} · ${active ? `${u.plan_kind === 'trial' ? A.week : t('sub').open} ${A.until(dateStr(u.premium_until))}` : A.noAccess}${u.google ? ' · Google' : ''}`);
+          `${A.registered(dateStr(u.created_at))} · ${active ? `${u.plan_kind === 'trial' ? A.week : planById(u.plan_tier).name} ${A.until(dateStr(u.premium_until))}` : A.noAccess}${u.google ? ' · Google' : ''}`);
+        // Adding a month keeps the student's current plan.
+        const userPlan = planById(u.plan_tier);
         const out = h('div', { class: 'flex flex-col gap-2' });
         const confirmDelete = h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-rose-500/15 px-3 text-sm text-rose-200 ring-1 ring-rose-400/30' }, A.del);
         confirmDelete.onclick = () => {
@@ -1357,7 +1443,7 @@
           h('p', { class: 'truncate font-semibold text-white' }, u.email), info,
           h('div', { class: 'flex flex-wrap gap-2' },
             h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500 px-3 text-sm font-semibold text-onfill', onclick: () => grant(u.email, 0) }, A.grant(0)),
-            h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500/20 px-3 text-sm text-white ring-1 ring-brand-400/40', onclick: () => grant(u.email, 1) }, A.grant(1)),
+            h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500/20 px-3 text-sm text-white ring-1 ring-brand-400/40', onclick: () => grant(u.email, 1, null, userPlan.id) }, `${A.grant(1)} · ${userPlan.name}`),
             resetBtn, confirmDelete),
           out));
       });
@@ -1417,19 +1503,26 @@
     const S = t('sub');
     // Child and access
     const access = plan.active
-      ? P.accessUntil(plan.trial ? S.trialTitle : S.open, dateStr(plan.until))
+      ? P.accessUntil(plan.trial ? S.trialTitle : `${S.open} ${planById(plan.tier).name}`, dateStr(plan.until))
       : plan.never ? P.noAccessYet : S.expired;
     const subBox = h('div', { class: 'flex flex-col gap-3' });
-    const askBtn = (months, label) => h('button', { type: 'button', class: months ? BTN : BTN2, onclick: async () => {
-      const res = await N.postJson('/api/parent/subscribe', { months });
+    const askBtn = (months, label, getPlan) => h('button', { type: 'button', class: months ? BTN : BTN2, onclick: async () => {
+      const res = await N.postJson('/api/parent/subscribe', { months, plan: getPlan?.().id });
       if (res.request) showSteps(subBox, res.request, res.price, res.email);
     } }, label);
+    const paid = plan.active && !plan.trial;
+    let chosen = planById(paid ? plan.tier : 'pro');
+    const orderBtn = askBtn(1, '', () => chosen);
+    const drawOrder = () => { orderBtn.textContent = `${paid && chosen.id === plan.tier ? S.renew : S.order} · ${sum(chosen.price)}`; };
+    drawOrder();
     root.append(h('div', { class: `${CARD} flex flex-col gap-3` },
       h('p', { class: 'text-sm text-slate-400' }, P.child), h('p', { class: 'break-all text-lg font-semibold text-white' }, r.child.email),
       h('p', { class: `rounded-2xl p-3 text-sm ring-1 ${plan.active ? 'bg-emerald-500/10 text-emerald-100 ring-emerald-400/30' : 'bg-amber-400/10 text-amber-100 ring-amber-400/30'}` }, access),
       plan.never ? askBtn(0, S.trialAsk) : null,
-      askBtn(1, `${plan.active && !plan.trial ? S.renew : S.order} · ${sum(N.billing.price || 70000)}`),
+      planPicker(chosen.id, (p) => { chosen = p; drawOrder(); }),
+      orderBtn,
       subBox));
+    if (plan.active && plan.limits && r.child.tokens) root.append(usageCard(plan, r.child.tokens));
     // Activity
     const daySet = new Set(p.days || []);
     const n = (() => { let k = 0; let d = new Date(); if (!daySet.has(d.toLocaleDateString('en-CA'))) d = new Date(d.getTime() - DAY); while (daySet.has(d.toLocaleDateString('en-CA'))) { k++; d = new Date(d.getTime() - DAY); } return k; })();
@@ -1505,7 +1598,8 @@
         h('p', { class: 'pt-1 text-slate-300' }, x)))));
     root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-onfill' },
       h('p', { class: 'text-sm text-onfill/80' }, W.priceTitle),
-      h('p', { class: 'text-3xl font-semibold' }, t('sub').price(sum(N.billing.price || 70000))),
+      h('div', { class: 'flex flex-col' }, plans().map((p) => h('div', { class: 'flex items-baseline justify-between gap-3 border-b border-onfill/15 py-2 last:border-0' },
+        h('span', { class: 'text-xl font-semibold' }, p.name), h('span', { class: 'text-lg font-semibold tabular-nums' }, t('sub').price(sum(p.price)))))),
       h('p', { class: 'text-sm text-onfill/85' }, W.priceText),
       h('button', { type: 'button', class: 'min-h-12 rounded-2xl bg-onfill font-semibold text-brand-600', onclick: () => N.showAuth('register') }, W.start)));
     root.append(h('div', { class: `${CARD} flex flex-col gap-2` }, h('p', { class: 'font-semibold text-white' }, W.parentTitle), h('p', { class: 'text-sm text-slate-400' }, W.parentText),
@@ -1532,7 +1626,7 @@
       root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-amber-400/10 p-5 ring-1 ring-amber-400/30' },
         h('p', { class: 'text-lg font-semibold text-amber-100' }, none ? S.none : S.expired),
         h('p', { class: 'text-sm text-amber-100/80' }, none ? S.noneText : S.expiredText),
-        h('button', { type: 'button', class: BTN, onclick: openSubscribe }, ico(none ? 'sparkles' : 'star'), none ? S.trialAsk : `${S.order} · ${sum(N.billing.price || 70000)}`)));
+        h('button', { type: 'button', class: BTN, onclick: openSubscribe }, ico(none ? 'sparkles' : 'star'), none ? S.trialAsk : `${S.order} · ${S.from(sum(minPrice()))}`)));
     } else if (st) {
       root.append(h('button', { type: 'button', class: `flex items-center gap-2 rounded-2xl px-4 py-3 text-left text-sm ring-1 ${st.tone === 'ending' ? 'bg-amber-400/10 text-amber-100 ring-amber-400/30' : 'bg-night-900/80 text-slate-300 ring-white/5'}`, onclick: openSubscribe },
         ico('star', 'icon text-amber-300'), h('span', { class: 'min-w-0 flex-1' }, st.text), ico('chevron-right', 'icon text-slate-500')));
