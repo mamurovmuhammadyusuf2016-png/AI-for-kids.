@@ -68,6 +68,7 @@
       thinking: 'Думаю…',
       rateLimited: 'Слишком много запросов, попробуй через минуту',
       dailyLimit: 'На сегодня вопросы закончились (30 из 30). Отдохни и попробуй решить задачи сам — завтра продолжим!',
+      tokensOut: 'Токены твоего тарифа на этот месяц закончились. Выбери тариф побольше: меню ⋮ → «Подписка». Или подожди начала следующего месяца.',
       blocked: 'Давай вернёмся к учёбе. Задай вопрос по школьному предмету.',
       aiError: 'ИИ сейчас занят. Попробуй ещё раз чуть позже.',
       offline: 'Нет связи с сервером. Проверь интернет и попробуй ещё раз.',
@@ -158,6 +159,7 @@
       thinking: "O'ylayapman…",
       rateLimited: "Juda ko'p so'rov, bir daqiqadan keyin urinib ko'r",
       dailyLimit: "Bugungi 30 ta savol tugadi. Dam ol va masalalarni o'zing yechib ko'r — ertaga davom etamiz!",
+      tokensOut: "Tarifingning bu oydagi tokenlari tugadi. Kattaroq tarifni tanla: ⋮ menyu → «Obuna». Yoki keyingi oy boshlanishini kut.",
       blocked: "Keling, o'qishga qaytaylik. Maktab fani bo'yicha savol ber.",
       aiError: "AI hozir band. Birozdan keyin qayta urinib ko'r.",
       offline: "Server bilan aloqa yo'q. Internetni tekshirib, qayta urinib ko'r.",
@@ -776,6 +778,8 @@
       } else if (data.code === 'daily_limit') {
         setRemaining(0);
         fail(t('dailyLimit'));
+      } else if (data.code === 'tokens_out') {
+        fail(t('tokensOut'));
       } else if (data.code === 'rate_limited') {
         fail(t('rateLimited'));
       } else if (data.code === 'blocked') {
@@ -873,7 +877,7 @@
       });
       const data = await r.json().catch(() => ({}));
       if (data.report) box.innerHTML = formatReply(data.report);
-      else box.textContent = data.code === 'rate_limited' ? t('rateLimited') : data.code === 'empty' ? t('reportEmpty') : t('aiError');
+      else box.textContent = data.code === 'rate_limited' ? t('rateLimited') : data.code === 'tokens_out' ? t('tokensOut') : data.code === 'empty' ? t('reportEmpty') : t('aiError');
     } catch {
       box.textContent = t('offline');
     } finally {
