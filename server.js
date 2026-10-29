@@ -87,6 +87,12 @@ async function chargeTokens(user, meter) {
 
 const newMeter = () => ({ input: 0, output: 0 });
 
+// How the AI answers for this account: thinking depth and how long to wait for the main model.
+const aiFor = (user) => PLANS[metered(user) ? auth.plan(user).tier : 'pro'].ai;
+
+// Chat questions per day: by plan for students, DAILY_LIMIT in guest mode.
+const dailyLimit = (user) => (metered(user) ? auth.plan(user).questions : DAILY_LIMIT);
+
 // Adds the model's reported token counts to a meter; thinking counts as output.
 function addUsage(meter, u) {
   if (!meter || !u) return;
@@ -174,7 +180,7 @@ function toContents(messages) {
 }
 
 // Streams the answer piece by piece: onDelta(text) for each piece, returns the whole text.
-async function streamModel(model, systemText, contents, timeoutMs, onDelta, meter) {
+async function streamModel(model, systemText, contents, timeoutMs, onDelta, meter, generationConfig) {
   const ctrl = new AbortController();
   let timer = setTimeout(() => ctrl.abort(), timeoutMs);
   let text = '';
@@ -183,7 +189,7 @@ async function streamModel(model, systemText, contents, timeoutMs, onDelta, mete
     const r = await fetch(`${GEMINI_BASE}/${model}:streamGenerateContent?alt=sse`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-goog-api-key': API_KEY },
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: systemText }] }, contents }),
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: systemText }] }, contents, generationConfig }),
       signal: ctrl.signal,
     });
     if (r.status === 429) throw new AiError('rate_limited', 429);
@@ -230,11 +236,16 @@ async function streamModel(model, systemText, contents, timeoutMs, onDelta, mete
   }
 }
 
-async function generateStream(systemText, messages, onDelta, meter) {
+// ai: the plan's settings ({ thinking, waitMs }); thinking applies to the main model only.
+const thinkingConfig = (ai) => (ai?.thinking ? { thinkingConfig: ai.thinking } : undefined);
+
+async function generateStream(systemText, messages, onDelta, meter, ai) {
   const contents = toContents(messages);
   try {
-    return await streamModel(MODEL, systemText, contents, MODEL_TIMEOUT_MS, onDelta, meter);
+    return await streamModel(MODEL, systemText, contents, ai?.waitMs || MODEL_TIMEOUT_MS, onDelta, meter, thinkingConfig(ai));
   } catch (err) {
+    // A thinking setting the model does not accept: ask again with the model's own default.
+    if (err.status === 400 && ai?.thinking) return generateStream(systemText, messages, onDelta, meter, { ...ai, thinking: null });
     if (!['overloaded', 'rate_limited'].includes(err.code) || !FALLBACK_MODEL) throw err;
     console.log(`Main model ${err.code}, streaming from ${FALLBACK_MODEL}`);
     return streamModel(FALLBACK_MODEL, systemText, contents, FALLBACK_TIMEOUT_MS, onDelta, meter);
@@ -242,14 +253,16 @@ async function generateStream(systemText, messages, onDelta, meter) {
 }
 
 // opts.schema asks Gemini for JSON in that shape; opts.slow allows more time (big exercise sets);
-// opts.meter collects the tokens used.
+// opts.meter collects the tokens used; opts.ai is the plan's AI settings.
 async function generate(systemText, messages, opts = {}) {
   const contents = toContents(messages);
   const config = opts.schema ? { responseMimeType: 'application/json', responseSchema: opts.schema } : undefined;
   const scale = opts.slow ? 2 : 1;
   try {
-    return await callModel(MODEL, systemText, contents, MODEL_TIMEOUT_MS * scale, config, opts.meter);
+    const main = thinkingConfig(opts.ai) ? { ...config, ...thinkingConfig(opts.ai) } : config;
+    return await callModel(MODEL, systemText, contents, (opts.ai?.waitMs || MODEL_TIMEOUT_MS) * scale, main, opts.meter);
   } catch (err) {
+    if (err.status === 400 && opts.ai?.thinking) return generate(systemText, messages, { ...opts, ai: { ...opts.ai, thinking: null } });
     if (!['overloaded', 'rate_limited'].includes(err.code) || !FALLBACK_MODEL) throw err;
     console.log(`Main model ${err.code}, using ${FALLBACK_MODEL}`);
     return callModel(FALLBACK_MODEL, systemText, contents, FALLBACK_TIMEOUT_MS * scale, config, opts.meter);
@@ -283,8 +296,9 @@ async function handleChat(req, res, body, user) {
   }
 
   const day = today();
-  if ((await usedToday(user.id, day)) >= DAILY_LIMIT) {
-    return sendJson(res, 429, { code: 'daily_limit', remaining: 0, limit: DAILY_LIMIT });
+  const limit = dailyLimit(user);
+  if ((await usedToday(user.id, day)) >= limit) {
+    return sendJson(res, 429, { code: 'daily_limit', remaining: 0, limit });
   }
   if (!(await tokensLeft(user))) return sendJson(res, 429, { code: 'tokens_out' });
   const now = Date.now();
@@ -312,8 +326,8 @@ async function handleChat(req, res, body, user) {
   const meter = newMeter();
   try {
     const raw = send
-      ? await generateStream(systemText, messages, (text) => send({ type: 'delta', text }), meter)
-      : await generate(systemText, messages, { meter });
+      ? await generateStream(systemText, messages, (text) => send({ type: 'delta', text }), meter, aiFor(user))
+      : await generate(systemText, messages, { meter, ai: aiFor(user) });
     reply = stripEmoji(raw);
     await chargeTokens(user, meter);
   } catch (err) {
@@ -333,7 +347,7 @@ async function handleChat(req, res, body, user) {
 
   const used = await countQuestion(user.id, day);
   recent.push(now);
-  const result = { reply, remaining: Math.max(0, DAILY_LIMIT - used), limit: DAILY_LIMIT, tooFrequent, corrected: wrong.length > 0 };
+  const result = { reply, remaining: Math.max(0, limit - used), limit, tooFrequent, corrected: wrong.length > 0 };
   if (!send) return sendJson(res, 200, result);
   send({ type: 'done', ...result });
   res.end();
@@ -471,7 +485,7 @@ async function handleLearn(req, res, body, user, kind) {
   let data;
   try {
     const meter = newMeter();
-    const text = await generate(spec.prompt, [{ role: 'user', content: 'Составь материал по инструкции.' }], { schema: spec.schema, slow: true, meter });
+    const text = await generate(spec.prompt, [{ role: 'user', content: 'Составь материал по инструкции.' }], { schema: spec.schema, slow: true, meter, ai: { waitMs: aiFor(user).waitMs } });
     await chargeTokens(user, meter);
     let parsed;
     try {
@@ -520,8 +534,8 @@ async function handleMe(req, res) {
   sendJson(res, 200, {
     user: { ...auth.publicUser(user), admin: isAdmin(user), tokens },
     child: user.role === 'parent' ? (await auth.getChild(user.parent_of))?.email || null : undefined,
-    remaining: Math.max(0, DAILY_LIMIT - used),
-    limit: DAILY_LIMIT,
+    remaining: Math.max(0, dailyLimit(user) - used),
+    limit: dailyLimit(user),
   });
 }
 
@@ -582,7 +596,7 @@ async function handleParent(req, res, body, user, action) {
     return sendJson(res, 200, {
       child: { email: child.email, plan: auth.plan(child), tokens: await auth.tokensThisMonth(child.id, month()) },
       usedToday: await auth.usedToday(child.id, today()),
-      limit: DAILY_LIMIT,
+      limit: dailyLimit(child),
       progress: data.progress || null,
       diary: data.diary || [],
     });
@@ -685,7 +699,7 @@ async function route(req, res) {
         googleClientId: auth.GOOGLE_CLIENT_ID,
         accounts: auth.enabled(),
         billing: {
-          plans: Object.entries(PLANS).map(([id, p]) => ({ id, ...p })),
+          plans: Object.entries(PLANS).map(([id, p]) => ({ id, name: p.name, price: p.price, input: p.input, output: p.output, questions: p.questions })),
           price: PLANS.pro.price,
           trialDays: 7,
           telegram: CONTACT_TELEGRAM,

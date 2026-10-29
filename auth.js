@@ -198,13 +198,15 @@ async function getUser(req) {
 const TRIAL_DAYS = 7;
 
 // never: no free week or subscription was ever given; trial: the current access is the free week.
-// tier: pro/gold/max (the free week counts as Pro); limits are its monthly token limits.
+// tier: pro/gold/max (the free week counts as Pro); limits are its monthly token limits,
+// questions its daily chat questions.
 function plan(u) {
   const tier = u.plan_kind === 'trial' ? DEFAULT_PLAN : planId(u.plan_tier);
   const limits = { input: PLANS[tier].input, output: PLANS[tier].output };
-  if (!u.created_at) return { active: true, trial: false, never: false, until: null, tier, limits };
+  const { questions } = PLANS[tier];
+  if (!u.created_at) return { active: true, trial: false, never: false, until: null, tier, limits, questions };
   const until = u.premium_until ? new Date(u.premium_until).getTime() : 0;
-  return { active: until > Date.now(), trial: u.plan_kind === 'trial', never: !until, until: until ? new Date(until).toISOString() : null, tier, limits };
+  return { active: until > Date.now(), trial: u.plan_kind === 'trial', never: !until, until: until ? new Date(until).toISOString() : null, tier, limits, questions };
 }
 
 function publicUser(u) {

@@ -1,5 +1,5 @@
 (() => {
-  const DAILY_LIMIT = 30;
+  const DEFAULT_LIMIT = 30;
   const SESSION_MS = 25 * 60 * 1000;
   const BREAK_MS = 5 * 60 * 1000;
   const RESTED_MS = 5 * 60 * 1000;
@@ -67,7 +67,7 @@
       greeting: (s, g) => `Привет! Сегодня ${s}, ${g} класс. Напиши задачу или вопрос — разберём вместе. Готовый ответ я не дам, но помогу дойти до него самому.`,
       thinking: 'Думаю…',
       rateLimited: 'Слишком много запросов, попробуй через минуту',
-      dailyLimit: 'На сегодня вопросы закончились (30 из 30). Отдохни и попробуй решить задачи сам — завтра продолжим!',
+      dailyLimit: 'На сегодня вопросы закончились. Отдохни и попробуй решить задачи сам — завтра продолжим!',
       tokensOut: 'Токены твоего тарифа на этот месяц закончились. Выбери тариф побольше: меню ⋮ → «Подписка». Или подожди начала следующего месяца.',
       blocked: 'Давай вернёмся к учёбе. Задай вопрос по школьному предмету.',
       aiError: 'ИИ сейчас занят. Попробуй ещё раз чуть позже.',
@@ -158,7 +158,7 @@
       greeting: (s, g) => `Salom! Bugun ${s}, ${g}-sinf. Masala yoki savolingni yoz — birga hal qilamiz. Tayyor javob bermayman, lekin o'zing topishingga yordam beraman.`,
       thinking: "O'ylayapman…",
       rateLimited: "Juda ko'p so'rov, bir daqiqadan keyin urinib ko'r",
-      dailyLimit: "Bugungi 30 ta savol tugadi. Dam ol va masalalarni o'zing yechib ko'r — ertaga davom etamiz!",
+      dailyLimit: "Bugungi savollar tugadi. Dam ol va masalalarni o'zing yechib ko'r — ertaga davom etamiz!",
       tokensOut: "Tarifingning bu oydagi tokenlari tugadi. Kattaroq tarifni tanla: ⋮ menyu → «Obuna». Yoki keyingi oy boshlanishini kut.",
       blocked: "Keling, o'qishga qaytaylik. Maktab fani bo'yicha savol ber.",
       aiError: "AI hozir band. Birozdan keyin qayta urinib ko'r.",
@@ -261,8 +261,10 @@
   // The server counts questions per account; this is the last number it reported.
   function remaining() {
     const u = store.get('usage', null);
-    return u && u.day === today() ? u.remaining : DAILY_LIMIT;
+    return u && u.day === today() ? u.remaining : dailyLimit();
   }
+  // Questions per day depend on the plan: Pro 30, Gold 40, MAX 50.
+  const dailyLimit = () => user?.plan?.questions || DEFAULT_LIMIT;
   function setRemaining(n) {
     if (typeof n === 'number') store.set('usage', { day: today(), remaining: Math.max(0, n) });
   }
@@ -355,7 +357,7 @@
 
   function renderStatus() {
     if (setup) $('setupChip').textContent = `${subjectName(setup.subject)} · ${setup.grade} ${lang === 'uz' ? 'sinf' : 'кл.'}`;
-    $('limitText').textContent = `${remaining()}/${DAILY_LIMIT}`;
+    $('limitText').textContent = `${remaining()}/${dailyLimit()}`;
   }
 
   const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -858,7 +860,7 @@
     const withMessages = sessions.filter((s) => s.messages.some((m) => m.role === 'user'));
     const subjects = new Set(withMessages.map((s) => s.subject));
     $('reportStats').innerHTML =
-      stat(DAILY_LIMIT - remaining(), t('statQuestions')) +
+      stat(dailyLimit() - remaining(), t('statQuestions')) +
       stat(withMessages.length, t('statSessions')) +
       stat(subjects.size, t('statSubjects'));
     const box = $('reportText');
