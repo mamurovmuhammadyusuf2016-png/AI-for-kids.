@@ -55,7 +55,7 @@
           ['clock', 'Бережёт глаза', 'После 25 минут занятий — перерыв 5 минут.'],
         ],
         insideTitle: 'Что внутри',
-        inside: ['Чат с учителем', 'Фото задачи', 'Голос', 'Тренировки', 'Тесты', 'Экзамены и DTM', 'Олимпиада', 'Чтение', 'Карточки слов', 'Игры на счёт', 'Дневник'],
+        inside: ['Чат с учителем', 'Фото задачи', 'Голос', 'Тренировки', 'Тесты', 'Экзамены и DTM', 'Олимпиада', 'Чтение', 'Карточки слов', 'Битва с монстрами', 'Дневник'],
         howTitle: 'Как начать',
         how: ['Зарегистрируйтесь — это бесплатно. Карточки, игры и дневник открыты сразу.', 'Напишите нам в Telegram — познакомимся и подключим бесплатную неделю.', 'Понравится — оформите подписку.'],
         priceTitle: 'Тарифы',
@@ -75,7 +75,7 @@
         test: ['Тест по теме', '10 вопросов и оценка'],
         cards: ['Карточки слов', 'Английский, русский, узбекский'],
         reading: ['Чтение', 'Текст и вопросы'],
-        games: ['Игры на счёт', 'Умножение, устный счёт'],
+        games: ['Игры', 'Битва с монстрами и счёт'],
         chat: ['Спросить учителя', 'Разберём задачу вместе'],
         exam: ['Экзамены', 'Аттестация и вступительный тест'],
         olympiad: ['Олимпиада', 'Задачи на смекалку'],
@@ -89,7 +89,7 @@
       test: 'Тест по теме',
       reading: 'Чтение',
       cards: 'Карточки слов',
-      games: 'Игры на счёт',
+      games: 'Игры',
       exam: 'Экзамены',
       examFinal: ['Итоговая аттестация', '15 вопросов · 30 минут'],
       examDtm: ['Вступительный тест (DTM)', '15 вопросов · 30 минут'],
@@ -325,7 +325,7 @@
           ['clock', "Ko'zni asraydi", "25 daqiqa mashg'ulotdan keyin — 5 daqiqa tanaffus."],
         ],
         insideTitle: 'Ichida nimalar bor',
-        inside: ["O'qituvchi bilan chat", 'Masala surati', 'Ovoz', 'Mashqlar', 'Testlar', 'Imtihonlar va DTM', 'Olimpiada', "O'qish", "So'z kartochkalari", "Hisob o'yinlari", 'Kundalik'],
+        inside: ["O'qituvchi bilan chat", 'Masala surati', 'Ovoz', 'Mashqlar', 'Testlar', 'Imtihonlar va DTM', 'Olimpiada', "O'qish", "So'z kartochkalari", 'Maxluqlar jangi', 'Kundalik'],
         howTitle: 'Qanday boshlash kerak',
         how: ["Ro'yxatdan o'ting — bu bepul. Kartochkalar, o'yinlar va kundalik darhol ochiladi.", 'Bizga Telegramda yozing — tanishamiz va bepul haftani yoqamiz.', "Yoqsa — obuna rasmiylashtiring."],
         priceTitle: 'Tariflar',
@@ -345,7 +345,7 @@
         test: ['Mavzu bo\'yicha test', '10 ta savol va baho'],
         cards: ["So'z kartochkalari", 'Ingliz, rus, o\'zbek'],
         reading: ["O'qish", 'Matn va savollar'],
-        games: ["Hisob o'yinlari", "Ko'paytirish, og'zaki hisob"],
+        games: ["O'yinlar", 'Maxluqlar jangi va hisob'],
         chat: ["O'qituvchidan so'rash", 'Masalani birga yechamiz'],
         exam: ['Imtihonlar', 'Attestatsiya va kirish testi'],
         olympiad: ['Olimpiada', 'Zukkolik masalalari'],
@@ -359,7 +359,7 @@
       test: "Mavzu bo'yicha test",
       reading: "O'qish",
       cards: "So'z kartochkalari",
-      games: "Hisob o'yinlari",
+      games: "O'yinlar",
       exam: 'Imtihonlar',
       examFinal: ['Yakuniy attestatsiya', '15 ta savol · 30 daqiqa'],
       examDtm: ['Kirish testi (DTM)', '15 ta savol · 30 daqiqa'],
@@ -584,6 +584,7 @@
     progress: { days: [], topics: {}, levels: {}, stats: { tasks: 0, correct: 0, tests: 0, best5: 0, reading: 0, games: {} }, daily: {} },
     diary: [],
     cards: { decks: [] },
+    quest: {},
   });
   let data = blank();
   const saveTimers = {};
@@ -594,6 +595,7 @@
       progress: { ...b.progress, ...(d?.progress || {}), stats: { ...b.progress.stats, ...(d?.progress?.stats || {}) } },
       diary: Array.isArray(d?.diary) ? d.diary : [],
       cards: { decks: Array.isArray(d?.cards?.decks) ? d.cards.decks : [] },
+      quest: d?.quest && typeof d.quest === 'object' && !Array.isArray(d.quest) ? d.quest : {},
     };
   }
 
@@ -637,7 +639,6 @@
   const subjRu = () => N.subjectName(subj(), 'ru');
   const levelKey = () => `${subj()}|${grade()}`;
   const level = () => data.progress.levels[levelKey()] || 2;
-  const topicKey = (topic) => `${subj()}|${grade()}|${topic}`;
 
   // ---------- server calls ----------
   async function gen(kind, body) {
@@ -701,9 +702,13 @@
     return gn !== null && !!lead && Math.abs(Number(lead[0]) - gn) < 1e-9;
   }
   function record(task, ok) {
+    recordAnswer(subj(), task.topic !== 'reading' ? task.topic : '', ok);
+  }
+  // Also used by the monster battle, where math and English come without AI.
+  function recordAnswer(subjectKey, topic, ok) {
     const p = data.progress;
-    if (task.topic && task.topic !== 'reading') {
-      const k = topicKey(task.topic);
+    if (topic) {
+      const k = `${subjectKey}|${grade()}|${topic}`;
       const cur = p.topics[k] || { ok: 0, total: 0 };
       p.topics[k] = { ok: cur.ok + (ok ? 1 : 0), total: cur.total + 1, last: todayStr() };
     }
@@ -795,12 +800,15 @@
   }
 
   // ---------- training ----------
+  async function trainingTasks(topic) {
+    const topics = topic ? [] : await Promise.race([getTopics().catch(() => []), new Promise((r) => setTimeout(() => r([]), 45000))]);
+    return (await gen('training', { level: level(), topic, topics })).tasks;
+  }
   async function startTraining(topic) {
     const root = screen('activity');
     root.append(titleBar(t('training')), loading(t('loadingTasks')));
     try {
-      const topics = topic ? [] : await Promise.race([getTopics().catch(() => []), new Promise((r) => setTimeout(() => r([]), 45000))]);
-      const { tasks } = await gen('training', { level: level(), topic, topics });
+      const tasks = await trainingTasks(topic);
       runTasks(root, tasks, { mode: 'training', title: topic || t('training'), onFinish: (r) => finishTraining(root, r, topic) });
     } catch (e) {
       root.lastChild.replaceWith(errorBox(e.message, () => startTraining(topic)));
@@ -1088,6 +1096,14 @@
     const root = screen('activity');
     const g = data.progress.stats.games;
     root.append(titleBar(t('games')));
+    if (window.NimiQuest) {
+      const [name, desc] = window.NimiQuest.card();
+      root.append(h('button', { type: 'button', class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-left text-onfill shadow-lg shadow-brand-500/30 transition active:scale-[.98]', onclick: window.NimiQuest.open },
+        h('div', { class: 'flex items-center gap-3' },
+          h('span', { class: 'q-emoji q-idle text-5xl', 'aria-hidden': 'true' }, '🐲'),
+          h('div', { class: 'min-w-0' }, h('p', { class: 'text-lg font-semibold' }, name), h('p', { class: 'text-sm text-onfill/85' }, desc))),
+        h('span', { class: 'flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-onfill text-base font-semibold text-brand-600' }, ico('swords'), t('play'))));
+    }
     [['mult', 'timer', t('gameMult'), playMult], ['mental', 'brain', t('gameMental'), playMental], ['mistake', 'sparkles', t('gameMistake'), playMistake]].forEach(([key, ic, [name, desc], fn]) => {
       root.append(h('button', { type: 'button', class: `${CARD} flex items-center gap-4 text-left transition hover:bg-night-800`, onclick: fn },
         h('span', { class: 'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-500/15 text-brand-400' }, ico(ic)),
@@ -1793,5 +1809,12 @@
     else if (name === 'activity' && arg) arg();
   }
 
-  window.NimiLearn = { load, render, markDay, openSubscribe, openAdmin, openSettings, renderParent, renderLanding };
+  // Building blocks for the monster battle (quest.js).
+  const kit = {
+    h, R, ico, CARD, BTN, BTN2, INPUT, screen, titleBar, loading, errorBox, save, markDay, isCorrect, recordAnswer, trainingTasks, openGames, openSubscribe,
+    get data() { return data; },
+    setStop(fn) { stopActive = fn; },
+  };
+
+  window.NimiLearn = { load, render, markDay, openSubscribe, openAdmin, openSettings, renderParent, renderLanding, kit };
 })();

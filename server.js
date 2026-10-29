@@ -19,7 +19,7 @@ const MAX_HISTORY = 20;
 const DAILY_LIMIT = 30;
 // Generated exercise sets (training, tests, reading, cards) per day.
 const LEARN_LIMIT = 20;
-const DATA_KEYS = new Set(['progress', 'diary', 'cards']);
+const DATA_KEYS = new Set(['progress', 'diary', 'cards', 'quest']);
 
 // Subscription: price and how students reach the owner (set on Render).
 const CONTACT_TELEGRAM = (process.env.CONTACT_TELEGRAM || '').replace(/^@/, '');
