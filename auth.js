@@ -500,6 +500,48 @@ async function addTokens(userId, month, used) {
   );
 }
 
+// ---------- one-time move to another database ----------
+// Table order respects foreign keys; users.parent_of is filled in a second pass.
+const MOVE_TABLES = ['users', 'sessions', 'usage', 'learn_usage', 'user_data', 'payment_requests', 'topic_cache', 'token_usage'];
+
+async function exportAll() {
+  const db = requirePool();
+  const out = {};
+  for (const t of MOVE_TABLES) out[t] = (await db.query(`SELECT * FROM ${t}`)).rows;
+  return out;
+}
+
+// Loads an export into an empty database (refuses if it already has users).
+async function importAll(data) {
+  const client = await requirePool().connect();
+  try {
+    await client.query('BEGIN');
+    if ((await client.query('SELECT count(*)::int AS n FROM users')).rows[0].n) throw new AuthError('not_empty', 409);
+    const counts = {};
+    for (const t of MOVE_TABLES) {
+      const rows = Array.isArray(data[t]) ? data[t] : [];
+      for (const row of rows) {
+        const r = t === 'users' ? { ...row, parent_of: null } : row;
+        const cols = Object.keys(r);
+        const vals = cols.map((c) => (r[c] !== null && typeof r[c] === 'object' ? JSON.stringify(r[c]) : r[c]));
+        await client.query(`INSERT INTO ${t} (${cols.join(', ')}) VALUES (${cols.map((_, i) => `$${i + 1}`).join(', ')})`, vals);
+      }
+      counts[t] = rows.length;
+    }
+    for (const u of data.users || []) if (u.parent_of) await client.query('UPDATE users SET parent_of = $2 WHERE id = $1', [u.id, u.parent_of]);
+    for (const t of ['users', 'payment_requests']) {
+      await client.query(`SELECT setval(pg_get_serial_sequence('${t}', 'id'), GREATEST((SELECT COALESCE(MAX(id), 0) FROM ${t}), 1))`);
+    }
+    await client.query('COMMIT');
+    return counts;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 // ---------- learning data ----------
 // Daily counter for generated exercises (separate from chat questions).
 async function countGeneration(userId, day) {
@@ -562,6 +604,8 @@ module.exports = {
   generationsToday,
   tokensThisMonth,
   addTokens,
+  exportAll,
+  importAll,
   getData,
   setData,
   cachedTopics,

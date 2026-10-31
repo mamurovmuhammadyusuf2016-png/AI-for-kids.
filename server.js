@@ -689,9 +689,20 @@ async function handleApiPost(req, res, urlPath) {
   return handler(req, res, body, user);
 }
 
+// ---------- one-time database move: works only while MIGRATION_TOKEN is set on the server ----------
+async function handleMigrate(req, res, action) {
+  const given = Buffer.from(String(req.headers['x-migration-token'] || ''));
+  const token = Buffer.from(process.env.MIGRATION_TOKEN || '');
+  if (token.length < 32 || given.length !== token.length || !require('crypto').timingSafeEqual(given, token)) return sendJson(res, 404, { code: 'not_found' });
+  if (action === 'export') return sendJson(res, 200, await auth.exportAll());
+  if (action === 'import') return sendJson(res, 200, { imported: await auth.importAll(JSON.parse(await readBody(req, 30000000))) });
+  sendJson(res, 404, { code: 'not_found' });
+}
+
 async function route(req, res) {
   const urlPath = req.url.split('?')[0];
   try {
+    if (req.method === 'POST' && urlPath.startsWith('/api/migrate/')) return await handleMigrate(req, res, urlPath.slice('/api/migrate/'.length));
     if (req.method === 'POST' && urlPath.startsWith('/api/')) return await handleApiPost(req, res, urlPath);
     if (req.method === 'GET' && urlPath === '/api/auth/me') return await handleMe(req, res);
     if (req.method === 'GET' && urlPath === '/api/config') {
