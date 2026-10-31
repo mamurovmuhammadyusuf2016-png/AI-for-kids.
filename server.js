@@ -569,7 +569,7 @@ async function handleAdmin(req, res, body, user, action) {
     return sendJson(res, 200, { ok: true });
   }
   // Staff accounts are created only with the admin key (from the chat with Claude).
-  if (action === 'create-admin' && user.apiAdmin) return sendJson(res, 200, await auth.createAdminAccount(cleanText(body.login, 32)));
+  if (action === 'create-admin' && user.apiAdmin) return sendJson(res, 200, await auth.createAdminAccount(cleanText(body.login, 32), cleanText(body.password, 128)));
   sendJson(res, 404, { code: 'not_found' });
 }
 

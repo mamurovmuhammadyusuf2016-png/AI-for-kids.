@@ -317,10 +317,11 @@ async function deleteStudent(email) {
 }
 
 // Creates (or resets the password of) a staff account that only sees the admin panel.
-async function createAdminAccount(login) {
+// password is optional: without it a random one is made.
+async function createAdminAccount(login, chosenPassword) {
   const name = normalizeLogin(login);
   if (name.includes('@')) throw new AuthError('invalid_email');
-  const password = `${readablePassword()}-${readablePassword()}`;
+  const password = chosenPassword ? validatePassword(chosenPassword) : `${readablePassword()}-${readablePassword()}`;
   await requirePool().query(
     `INSERT INTO users (email, password_hash, role) VALUES ($1, $2, 'admin')
      ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = 'admin'`,
