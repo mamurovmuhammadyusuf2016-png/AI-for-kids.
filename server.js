@@ -792,8 +792,27 @@ async function route(req, res) {
   }
 }
 
+// Keep the site awake: Render's free plan puts it to sleep after 15 minutes without visitors, and
+// the next visitor waits about 30 seconds. So the server visits its own /health every 10 minutes
+// (through the public address, which Render counts as a visit). /health does not touch the
+// database, so Neon still sleeps between real visits. RENDER_EXTERNAL_URL is set by Render itself;
+// KEEP_AWAKE=off turns this off, KEEP_AWAKE_MINUTES changes the interval.
+function keepAwake() {
+  const base = (process.env.KEEP_AWAKE_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/+$/, '');
+  const minutes = Number(process.env.KEEP_AWAKE_MINUTES) || 10;
+  if (!base || process.env.KEEP_AWAKE === 'off') return;
+  setInterval(() => {
+    fetch(`${base}/health`, { signal: AbortSignal.timeout(20000) })
+      .catch((err) => console.warn('Keep-awake visit failed', err.name, err.message));
+  }, minutes * 60 * 1000);
+  console.log(`Keep-awake: visiting ${base}/health every ${minutes} min`);
+}
+
 auth.init()
   .catch((err) => console.error('Database init failed', err.message))
   .finally(() => {
-    http.createServer(route).listen(PORT, () => console.log(`Nimi AI listening on port ${PORT}, model ${MODEL}`));
+    http.createServer(route).listen(PORT, () => {
+      console.log(`Nimi AI listening on port ${PORT}, model ${MODEL}`);
+      keepAwake();
+    });
   });
