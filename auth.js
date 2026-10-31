@@ -3,7 +3,7 @@
 const crypto = require('crypto');
 const { promisify } = require('util');
 const { Pool } = require('pg');
-const { PLANS, DEFAULT_PLAN, planId } = require('./plans');
+const { PLANS, DEFAULT_PLAN, planId, FREE_TRIES } = require('./plans');
 
 const scrypt = promisify(crypto.scrypt);
 
@@ -101,6 +101,20 @@ async function init() {
       topics JSONB NOT NULL,
       PRIMARY KEY (subject, grade, lang)
     );
+    -- Free tries of paid sections without a subscription: {"chat": 3, "test": 1, ...}.
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS free_used JSONB NOT NULL DEFAULT '{}'::jsonb;
+    -- Chat history (texts only; photos stay on the device). Seen only by the student.
+    CREATE TABLE IF NOT EXISTS chats (
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      id TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      grade INT NOT NULL,
+      day DATE NOT NULL,
+      messages JSONB NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (user_id, id)
+    );
+    CREATE INDEX IF NOT EXISTS chats_user_updated ON chats (user_id, updated_at DESC);
   `);
   console.log('Accounts database ready');
 }
@@ -185,7 +199,7 @@ async function getUser(req) {
   const token = parseCookies(req)[SESSION_COOKIE];
   if (!token) return null;
   const { rows } = await pool.query(
-    `SELECT u.id, u.email, u.created_at, u.premium_until, u.plan_kind, u.plan_tier, u.role, u.parent_of,
+    `SELECT u.id, u.email, u.created_at, u.premium_until, u.plan_kind, u.plan_tier, u.role, u.parent_of, u.free_used,
             u.password_hash IS NOT NULL AS has_password, u.google_sub IS NOT NULL AS has_google
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = $1 AND s.expires_at > now()`,
@@ -209,8 +223,25 @@ function plan(u) {
   return { active: until > Date.now(), trial: u.plan_kind === 'trial', never: !until, until: until ? new Date(until).toISOString() : null, tier, limits, questions };
 }
 
+// Free tries left per section, e.g. { chat: 5, test: 1, ... }.
+function freeLeft(u) {
+  const used = u.free_used || {};
+  return Object.fromEntries(Object.entries(FREE_TRIES).map(([k, n]) => [k, Math.max(0, n - (Number(used[k]) || 0))]));
+}
+
+// Spends one free try of a section; false when none were left (counted atomically).
+async function useFree(userId, key) {
+  if (!Object.hasOwn(FREE_TRIES, key)) return false;
+  const { rowCount } = await requirePool().query(
+    `UPDATE users SET free_used = jsonb_set(free_used, ARRAY[$2::text], to_jsonb(COALESCE((free_used->>$2)::int, 0) + 1))
+      WHERE id = $1 AND COALESCE((free_used->>$2)::int, 0) < $3`,
+    [userId, key, FREE_TRIES[key]],
+  );
+  return rowCount > 0;
+}
+
 function publicUser(u) {
-  return { email: u.email, google: !!u.has_google, password: !!u.has_password, plan: plan(u), role: u.role || 'student' };
+  return { email: u.email, google: !!u.has_google, password: !!u.has_password, plan: plan(u), role: u.role || 'student', free: freeLeft(u) };
 }
 
 // ---------- parent accounts ----------
@@ -279,7 +310,7 @@ async function resetParentPassword(childId) {
 
 async function getChild(childId) {
   const { rows } = await requirePool().query(
-    `SELECT id, email, created_at, premium_until, plan_kind, plan_tier, role FROM users WHERE id = $1 AND role = 'student'`,
+    `SELECT id, email, created_at, premium_until, plan_kind, plan_tier, role, free_used FROM users WHERE id = $1 AND role = 'student'`,
     [childId],
   );
   return rows[0] || null;
@@ -545,6 +576,62 @@ async function cacheTopics(subject, grade, lang, topics) {
   );
 }
 
+// ---------- chat history ----------
+// A chat as the browser keeps it: { id, date, subject, grade, messages: [{ role, content, ts, photo }] }.
+const CHAT_KEEP = 50;
+const chatOut = (r) => ({
+  id: r.id, subject: r.subject, grade: r.grade, date: r.day instanceof Date ? r.day.toISOString().slice(0, 10) : String(r.day).slice(0, 10),
+  updatedAt: new Date(r.updated_at).toISOString(), messages: r.messages,
+});
+
+// The newest chats with their messages (to merge into the device after sign-in).
+async function recentChats(userId, limit) {
+  const { rows } = await requirePool().query(
+    `SELECT id, subject, grade, to_char(day, 'YYYY-MM-DD') AS day, messages, updated_at FROM chats WHERE user_id = $1 ORDER BY updated_at DESC LIMIT $2`,
+    [userId, limit],
+  );
+  return rows.map(chatOut);
+}
+
+// History list without the messages: the first question is the title.
+async function listChats(userId) {
+  const { rows } = await requirePool().query(
+    `SELECT id, subject, grade, to_char(day, 'YYYY-MM-DD') AS day, updated_at, jsonb_array_length(messages) AS count,
+            (SELECT left(m->>'content', 140) FROM jsonb_array_elements(messages) m WHERE m->>'role' = 'user' LIMIT 1) AS title
+       FROM chats WHERE user_id = $1 ORDER BY updated_at DESC LIMIT ${CHAT_KEEP}`,
+    [userId],
+  );
+  return rows.map((r) => ({ ...chatOut({ ...r, messages: undefined }), count: Number(r.count) || 0, title: r.title || '' }));
+}
+
+async function getChat(userId, id) {
+  const { rows } = await requirePool().query(
+    `SELECT id, subject, grade, to_char(day, 'YYYY-MM-DD') AS day, messages, updated_at FROM chats WHERE user_id = $1 AND id = $2`,
+    [userId, id],
+  );
+  return rows[0] ? chatOut(rows[0]) : null;
+}
+
+// Saves a chat; an older copy with fewer messages (from another device) never replaces a longer one.
+// Only the newest CHAT_KEEP chats are kept.
+async function saveChat(userId, chat) {
+  const db = requirePool();
+  await db.query(
+    `INSERT INTO chats (user_id, id, subject, grade, day, messages, updated_at) VALUES ($1, $2, $3, $4, $5, $6, now())
+     ON CONFLICT (user_id, id) DO UPDATE SET subject = EXCLUDED.subject, grade = EXCLUDED.grade, messages = EXCLUDED.messages, updated_at = now()
+     WHERE jsonb_array_length(EXCLUDED.messages) >= jsonb_array_length(chats.messages)`,
+    [userId, chat.id, chat.subject, chat.grade, chat.date, JSON.stringify(chat.messages)],
+  );
+  await db.query(
+    `DELETE FROM chats WHERE user_id = $1 AND id NOT IN (SELECT id FROM chats WHERE user_id = $1 ORDER BY updated_at DESC LIMIT ${CHAT_KEEP})`,
+    [userId],
+  );
+}
+
+async function deleteChat(userId, id) {
+  await requirePool().query('DELETE FROM chats WHERE user_id = $1 AND id = $2', [userId, id]);
+}
+
 // ---------- admin dashboard: all numbers in one request ----------
 // day is today's date in Tashkent (YYYY-MM-DD), month is YYYY-MM. Only students are counted.
 const TIER_SQL = `CASE WHEN plan_tier IN ('gold', 'max') THEN plan_tier ELSE 'pro' END`;
@@ -578,7 +665,8 @@ async function adminStats(day, month) {
          count(*) FILTER (WHERE ${student} AND premium_until > now() AND ${PAID_SQL} AND ${TIER_SQL} = 'max') AS max,
          count(*) FILTER (WHERE ${student} AND premium_until > now() AND premium_until < now() + interval '7 days') AS expiring,
          count(*) FILTER (WHERE ${student} AND premium_until <= now()) AS expired,
-         count(*) FILTER (WHERE ${student} AND premium_until IS NULL) AS never
+         count(*) FILTER (WHERE ${student} AND premium_until IS NULL) AS never,
+         count(*) FILTER (WHERE ${student} AND free_used <> '{}'::jsonb) AS tried_free
        FROM users`, [day]),
     q(`SELECT status, plan, months, COALESCE(resolved_at > now() - interval '30 days', false) AS recent FROM payment_requests`),
     q(`WITH a AS (${ACTIVITY_SQL})
@@ -620,7 +708,7 @@ async function adminStats(day, month) {
     month,
     users: {
       students: num(u.students), parents: num(u.parents), admins: num(u.admins), google: num(u.google),
-      newToday: num(u.new_today), new7d: num(u.new_7d), new30d: num(u.new_30d),
+      newToday: num(u.new_today), new7d: num(u.new_7d), new30d: num(u.new_30d), triedFree: num(u.tried_free),
     },
     subscriptions: {
       active: num(u.active), trial: num(u.trial), ...subs,
@@ -686,6 +774,13 @@ async function revokeAllExcept(keep, apply) {
 
 module.exports = {
   plan,
+  freeLeft,
+  useFree,
+  recentChats,
+  listChats,
+  getChat,
+  saveChat,
+  deleteChat,
   ensureParent,
   resetParentPassword,
   getChild,

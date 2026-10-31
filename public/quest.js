@@ -854,7 +854,7 @@
     root.append(h('div', { class: `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm ring-1 ${chestOpen ? 'bg-night-900/80 text-slate-400 ring-white/5' : 'bg-amber-400/10 text-amber-100 ring-amber-400/30'}` },
       E(chestOpen ? '📭' : '🎁', 'text-2xl'), h('span', { class: 'min-w-0 flex-1' }, chestOpen ? t('chestDone') : t('chestTodo'))));
 
-    const locked = !N.hasAccess();
+    const locked = !N.canUse('training');
     const worldCard = (wid, stateKey, desc, onclick, extra) => {
       const W = WORLDS[wid];
       const ws = worldState(stateKey);
@@ -870,7 +870,7 @@
     };
     root.append(worldCard('math', 'math', t('worldDesc').math(N.gradeLabel(N.setup.grade)), () => openWorld('math')));
     root.append(worldCard('english', 'english', t('worldDesc').english(), () => openWorld('english')));
-    root.append(worldCard('subject', subjWid(), t('worldDesc').subject(N.subjectName(N.setup.subject)), () => (locked ? K().openSubscribe() : openWorld('subject'))));
+    root.append(worldCard('subject', subjWid(), t('worldDesc').subject(N.subjectName(N.setup.subject)), () => (locked ? K().openSubscribe('training') : openWorld('subject'))));
     const nMist = q.mistakes.length;
     root.append(h('button', { type: 'button', class: `${CARD} flex items-center gap-4 bg-gradient-to-br ${WORLDS.cave.tint} to-transparent text-left transition hover:bg-night-800 active:scale-[.99] disabled:opacity-60`, disabled: !nMist, onclick: startCave },
       E(WORLDS.cave.emoji, 'text-5xl'),

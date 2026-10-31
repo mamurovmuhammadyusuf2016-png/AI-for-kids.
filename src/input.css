@@ -85,3 +85,19 @@
 @media (prefers-reduced-motion: reduce) {
   .q-idle, .q-shake, .q-lunge-r, .q-lunge-l, .q-pop { animation: none; }
 }
+
+/* Landing: gentle entrance. Blocks fade up when they scroll into view (learn-ui.js adds .shown),
+   the sample chat shows its messages one by one. Off when the phone asks for less motion. */
+@keyframes fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.fade-up { animation: fade-up .7s cubic-bezier(.2, .7, .2, 1) both; }
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease-out, transform .7s cubic-bezier(.2, .7, .2, 1); }
+.reveal.shown { opacity: 1; transform: none; }
+.demo-msg { opacity: 0; transform: translateY(8px); transition: opacity .45s ease-out, transform .45s ease-out; }
+.demo-msg.shown { opacity: 1; transform: none; }
+details > summary::-webkit-details-marker { display: none; }
+@keyframes float-soft { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.float-soft { animation: float-soft 4.5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .fade-up, .float-soft { animation: none; }
+  .reveal, .demo-msg { opacity: 1; transform: none; transition: none; }
+}

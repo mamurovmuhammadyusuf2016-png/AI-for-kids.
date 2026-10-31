@@ -34,7 +34,8 @@
         noTopics: 'Ребёнок ещё не решал задания. Темы появятся после первой тренировки.',
         homework: 'Домашние задания',
         noHomework: 'Невыполненных заданий нет.',
-        reportNeedsSub: 'Отчёт ИИ доступен с бесплатной неделей или подпиской.',
+        reportNeedsSub: 'Бесплатный отчёт уже использован. Отчёт ИИ доступен с бесплатной неделей или подпиской.',
+        reportFree: 'Один отчёт ИИ можно получить бесплатно.',
         childPw: 'Пароль ребёнка',
         childPwText: 'Если ребёнок забыл пароль — задайте новый (минимум 8 символов, буквы и цифра).',
         newChildPwPh: 'Новый пароль ребёнка',
@@ -43,26 +44,82 @@
         childPwBad: 'Пароль слишком простой: минимум 8 символов, буквы и хотя бы одна цифра.',
       },
       landing: {
-        title: 'Nimi AI — репетитор, который учит думать',
-        lead: 'Помогает школьникам 1–11 класса понять тему, а не списать ответ. На русском и узбекском.',
-        start: 'Начать',
-        login: 'У меня уже есть аккаунт',
-        whyTitle: 'Почему родителям нравится Nimi',
-        why: [
-          ['lightbulb', 'Не даёт списывать', 'Ведёт вопросами и подсказками — ребёнок доходит до ответа сам.'],
-          ['shield-check', 'Безопасно для детей', 'Только учёба. Не спрашивает имя, адрес, школу и телефон.'],
-          ['users', 'Отчёты для родителей', 'Свой кабинет: прогресс, темы, домашние задания.'],
-          ['clock', 'Бережёт глаза', 'После 25 минут занятий — перерыв 5 минут.'],
+        badge: 'ИИ-репетитор для 1–11 класса',
+        title: 'Репетитор, который учит думать',
+        lead: 'Nimi не даёт списать ответ: он задаёт наводящие вопросы, и ребёнок решает сам. На русском и узбекском, по школьной программе.',
+        start: 'Попробовать бесплатно',
+        login: 'Войти',
+        freeNote: 'Каждый раздел можно попробовать бесплатно. Карта не нужна.',
+        demoTitle: 'Как Nimi объясняет',
+        demoLabel: 'Пример из чата · Математика, 6 класс',
+        demo: [
+          ['user', 'Сколько будет $\\frac{3}{4} + \\frac{1}{8}$? Просто скажи ответ.'],
+          ['ai', 'Давай решим вместе. У этих дробей одинаковые знаменатели?'],
+          ['user', 'Нет. Надо привести к 8?'],
+          ['ai', 'Верно! Сколько восьмых в $\\frac{3}{4}$?'],
+          ['user', '$\\frac{6}{8}$. Значит, $\\frac{6}{8} + \\frac{1}{8} = \\frac{7}{8}$'],
+          ['ai', 'Отлично, ты решил сам! Теперь попробуй: $\\frac{2}{3} + \\frac{1}{6}$.'],
         ],
-        insideTitle: 'Что внутри',
-        inside: ['Чат с учителем', 'Фото задачи', 'Голос', 'Тренировки', 'Тесты', 'Экзамены и DTM', 'Олимпиада', 'Чтение', 'Карточки слов', 'Битва с монстрами', 'Дневник'],
-        howTitle: 'Как начать',
-        how: ['Зарегистрируйтесь — это бесплатно. Карточки, игры и дневник открыты сразу.', 'Напишите нам в Telegram — познакомимся и подключим бесплатную неделю.', 'Понравится — оформите подписку.'],
-        priceTitle: 'Тарифы',
-        priceText: 'Во всех тарифах всё включено: чат, фото задачи, голос, тренировки, экзамены, отчёты для родителей. Отличаются скорость ответов, вопросы в день и токены.',
-        parentTitle: 'Вы родитель?',
-        parentText: 'Логин и пароль родителя ребёнок найдёт у себя в Nimi: меню ⋮ → «Настройки».',
+        stepsTitle: 'Как начать',
+        steps: [
+          ['Зарегистрируйтесь', 'Через почту или Google — за минуту.'],
+          ['Попробуйте всё бесплатно', (c) => `Чат — ${c.chat} вопросов, остальные разделы — по одному разу.`],
+          ['Выберите тариф', 'Понравится — оформите подписку. Можно попросить бесплатную неделю.'],
+        ],
+        featuresTitle: 'Что умеет Nimi',
+        features: [
+          ['message-circle', 'Чат с учителем', 'Разбирает задачу шаг за шагом'],
+          ['camera', 'Фото задачи', 'Сфотографируй задачу из учебника'],
+          ['mic', 'Голос', 'Спроси голосом и послушай ответ'],
+          ['dumbbell', 'Тренировки', 'Каждый день новые задания по уровню'],
+          ['clipboard-check', 'Тесты', '10 вопросов по теме и оценка'],
+          ['graduation-cap', 'Экзамены и DTM', 'Пробная аттестация и вступительный тест'],
+          ['puzzle', 'Олимпиада', 'Задачи на смекалку'],
+          ['book-open', 'Чтение', 'Текст и вопросы на понимание'],
+          ['layers', 'Карточки слов', 'Английский, русский, узбекский'],
+          ['gamepad-2', 'Игры', 'Битва с монстрами и устный счёт'],
+          ['notebook-pen', 'Дневник', 'Домашние задания'],
+          ['chart-no-axes-column', 'Прогресс', 'Темы, серии и награды'],
+        ],
+        parentsTitle: 'Для родителей',
+        parents: [
+          ['users', 'Кабинет родителя', 'Регулярность занятий, темы, домашние задания и отчёт ИИ.'],
+          ['shield-check', 'Только учёба', 'Nimi не отвечает на посторонние темы и не спрашивает личные данные.'],
+          ['clock', 'Бережёт глаза', 'После 25 минут занятий — перерыв 5 минут.'],
+          ['lightbulb', 'Без списывания', 'Не пишет сочинения за ребёнка и не даёт готовый ответ сразу.'],
+        ],
+        parentLoginText: 'Логин и пароль родителя ребёнок найдёт в Nimi: меню ⋮ → «Настройки».',
         parentLogin: 'Войти как родитель',
+        priceTitle: 'Тарифы',
+        priceLead: 'Во всех тарифах все разделы. Чем выше тариф, тем глубже Nimi думает над ответом и тем больше вопросов в день.',
+        choose: 'Выбрать',
+        allSections: 'Все разделы',
+        aboutTitle: 'Кто мы',
+        about: [
+          'Nimi AI делает небольшая команда из Узбекистана. Мы хотим, чтобы ИИ учил детей думать, а не списывать.',
+          'Поэтому Nimi сначала задаёт вопросы и подсказывает, а полное решение показывает только после попыток самого ребёнка. Задания составляются по школьной программе Узбекистана, на русском и узбекском.',
+          'Есть вопрос или идея — напишите нам, ответим лично.',
+        ],
+        faqTitle: 'Вопросы и ответы',
+        faq: [
+          ['Это бесплатно?', (c) => `Регистрация бесплатная. Карточки слов, игры и дневник бесплатны всегда. Каждый платный раздел можно один раз попробовать бесплатно, чат — ${c.chat} вопросов. Дальше — подписка от ${c.from} в месяц. Бесплатную неделю можно попросить у нас в Telegram.`],
+          ['Nimi просто даёт готовые ответы?', 'Нет. Сначала Nimi спрашивает, что дано и что ребёнок уже попробовал, и даёт подсказки по шагам. Полное решение — только после трёх попыток ребёнка и с объяснением каждого шага. Сочинения и доклады за ребёнка не пишет: помогает составить план и находит ошибки.'],
+          ['Для какого класса и каких предметов?', '1–11 класс. 12 предметов: математика, русский, узбекский и английский языки, литература, окружающий мир, физика, химия, биология, история, география и информатика. Объяснения подстраиваются под класс.'],
+          ['Это по школьной программе?', 'Да. Тренировки, тесты и экзамены составляются по школьной программе Узбекистана. Есть пробная итоговая аттестация и вступительный тест в стиле DTM.'],
+          ['На каком языке занимается ребёнок?', 'На русском или узбекском. Nimi отвечает на том языке, на котором пишет ребёнок.'],
+          ['Это безопасно для ребёнка?', 'Nimi говорит только об учёбе: на посторонние и взрослые темы вежливо отказывает. Не спрашивает имя, адрес, школу и телефон, а если ребёнок напишет их сам — напомнит, что делиться ими не нужно. После 25 минут занятий Nimi просит сделать перерыв на 5 минут.'],
+          ['Как родителю следить за учёбой?', 'Вместе с аккаунтом ребёнка создаётся аккаунт родителя. Логин и пароль ребёнок найдёт в меню ⋮ → «Настройки». В кабинете родителя видно, как регулярно ребёнок занимается, какие темы получаются, домашние задания и отчёт ИИ. Переписку в чате родитель не видит.'],
+          ['Какие данные вы храните?', 'Почту, пароль (в зашифрованном виде), прогресс, дневник и историю чатов без фотографий. Историю чатов видит только сам ученик. Чтобы получить ответ, текст вопроса отправляется ИИ-сервису. Подробно — на странице «Правила и конфиденциальность».'],
+          ['Чем отличаются тарифы?', (c) => `Во всех тарифах все разделы. Отличаются глубина ответов и вопросы в день: ${c.levels}.`],
+          ['Как оплатить?', 'Выберите тариф в Nimi (меню ⋮ → «Подписка») и создайте заявку. Потом напишите нам в Telegram или позвоните — подскажем, как оплатить, и включим подписку после проверки оплаты.'],
+          ['Работает на телефоне?', 'Да. Nimi открывается в браузере на телефоне, планшете и компьютере, его можно добавить на главный экран как приложение. Нужен интернет.'],
+          ['Ребёнок забыл пароль. Что делать?', 'Родитель может поставить новый пароль в своём кабинете. Или напишите нам — сбросим пароль и пришлём новый.'],
+        ],
+        contactTitle: 'Остались вопросы?',
+        contactText: 'Напишите или позвоните — поможем выбрать тариф и подключим бесплатную неделю.',
+        telegram: 'Написать в Telegram',
+        call: 'Позвонить',
+        footer: 'Nimi AI · ИИ-репетитор для школьников',
       },
       todayIs: (s) => `Сегодня: ${s}`,
       streak: (n) => (n ? `${n} ${plural(n, 'день', 'дня', 'дней')} подряд` : 'Начни серию сегодня'),
@@ -100,6 +157,16 @@
       olympiadIntro: '5 нестандартных задач. Не торопись: здесь важна догадка.',
       noAnswer: '(нет ответа)',
       listen: 'Послушать',
+      history: {
+        title: 'История чатов',
+        note: 'Чаты сохраняются в твоём аккаунте: их видно на любом устройстве. Родитель их не видит.',
+        empty: 'Здесь появятся твои разговоры с Nimi.',
+        count: (n) => `${n} ${plural(n, 'сообщение', 'сообщения', 'сообщений')}`,
+        cont: 'Продолжить этот чат',
+        del: 'Удалить чат',
+        delSure: 'Точно удалить? Это нельзя отменить.',
+        photo: 'Фото задачи',
+      },
       sub: {
         title: 'Подписка Nimi',
         price: (p) => `${p} в месяц`,
@@ -110,8 +177,8 @@
         ending: (n) => `Подписка закончится через ${n} ${plural(n, 'день', 'дня', 'дней')} — не забудь продлить`,
         expired: 'Подписка закончилась',
         expiredText: 'Карточки, игры и дневник по-прежнему открыты. Чтобы снова пользоваться чатом и заданиями, продли подписку.',
-        none: 'Открой все разделы',
-        noneText: 'Напиши нам — подключим бесплатную неделю. Карточки, игры и дневник уже открыты.',
+        none: 'Попробуй всё бесплатно',
+        noneText: (n) => `Чат — ${n} вопросов, остальные разделы — по одному разу. Понравится — оформи подписку или попроси бесплатную неделю.`,
         trialAsk: 'Получить бесплатную неделю',
         trialTitle: 'Бесплатная неделя',
         trialText: 'Напиши или позвони нам — мы познакомимся и включим тебе 7 дней со всеми разделами бесплатно.',
@@ -135,12 +202,25 @@
         message: (m, id, email, plan) => `Здравствуйте! Хочу подписку Nimi ${plan} на ${m} мес. Заявка №${id}, аккаунт: ${email}`,
         plansTitle: 'Выбери тариф',
         perDay: (n) => `${n} вопросов в день`,
-        speed: { pro: 'Чуть быстрее', gold: 'Быстрые ответы', max: 'Самые быстрые' },
+        level: { pro: 'Умная', gold: 'Очень умная', max: 'Сверхумная' },
+        levelText: { pro: 'Понятно объясняет школьные темы', gold: 'Глубже разбирает трудные задачи', max: 'Самый глубокий разбор: олимпиады и DTM' },
+        popular: 'Рекомендуем',
+        perDayPrice: (p) => `≈ ${p} в день`,
+        limitsTitle: 'Лимиты на месяц (токены)',
+        freeTitle: 'Бесплатные попытки',
+        freeLead: 'Без подписки каждый раздел можно попробовать бесплатно.',
+        freeLeftN: (n) => `осталось ${n}`,
+        freeUsedWord: 'использовано',
+        features: { chat: 'Чат с учителем', photo: 'Фото задачи', training: 'Тренировка', test: 'Тест по теме', exam: 'Экзамен', olympiad: 'Олимпиада', reading: 'Чтение', report: 'Отчёт для родителей' },
+        freeUsed: (name) => `Бесплатная попытка «${name}» уже использована. Чтобы продолжить, выбери тариф или попроси бесплатную неделю.`,
+        tileFree: 'Бесплатно',
+        allUsed: 'Бесплатные попытки закончились',
+        allUsedText: 'Карточки, игры и дневник остаются открытыми. Чтобы продолжить, оформи подписку или попроси бесплатную неделю.',
         perMonthShort: 'сум/мес',
         inLabel: 'Вход',
         outLabel: 'Выход',
         allPlans: 'Во всех тарифах',
-        tokensHint: 'Токены — это кусочки текста. Вход — твои вопросы и фото, выход — ответы Nimi. Чем больше тариф, тем больше можно спрашивать за месяц.',
+        tokensHint: 'Токены — это кусочки текста: вход — твои вопросы и фото, выход — ответы Nimi. Обычно лимита хватает на весь месяц.',
         usageTitle: 'Токены в этом месяце',
         usageIn: 'Вход (твои вопросы)',
         usageOut: 'Выход (ответы Nimi)',
@@ -212,6 +292,7 @@
           expiring: 'Закончатся за 7 дней',
           expired: 'Закончились',
           never: 'Ни разу не было',
+          triedFree: 'Пробовали бесплатно',
           money: 'Деньги',
           monthly: 'Платные подписки сейчас, в месяц',
           paid30: 'Оплачено за 30 дней',
@@ -370,7 +451,8 @@
         noTopics: "Farzandingiz hali topshiriq yechmagan. Mavzular birinchi mashqdan keyin paydo bo'ladi.",
         homework: 'Uy vazifalari',
         noHomework: "Bajarilmagan vazifalar yo'q.",
-        reportNeedsSub: 'AI hisoboti bepul hafta yoki obuna bilan ochiladi.',
+        reportNeedsSub: "Bepul hisobot ishlatib bo'lingan. AI hisoboti bepul hafta yoki obuna bilan ochiladi.",
+        reportFree: 'Bitta AI hisobotini bepul olish mumkin.',
         childPw: 'Farzand paroli',
         childPwText: "Agar farzandingiz parolni unutgan bo'lsa — yangisini qo'ying (kamida 8 ta belgi, harflar va raqam).",
         newChildPwPh: 'Farzandning yangi paroli',
@@ -379,26 +461,82 @@
         childPwBad: 'Parol juda oddiy: kamida 8 ta belgi, harflar va kamida bitta raqam.',
       },
       landing: {
-        title: "Nimi AI — o'ylashni o'rgatadigan repetitor",
-        lead: "1–11-sinf o'quvchilariga javobni ko'chirishga emas, mavzuni tushunishga yordam beradi. Rus va o'zbek tillarida.",
-        start: 'Boshlash',
-        login: 'Menda akkaunt bor',
-        whyTitle: "Nega ota-onalarga Nimi yoqadi",
-        why: [
-          ['lightbulb', "Ko'chirishga yo'l qo'ymaydi", "Savol va maslahatlar bilan yo'naltiradi — bola javobni o'zi topadi."],
-          ['shield-check', 'Bolalar uchun xavfsiz', "Faqat o'qish. Ism, manzil, maktab va telefonni so'ramaydi."],
-          ['users', 'Ota-onalar uchun hisobot', "Alohida kabinet: natijalar, mavzular, uy vazifalari."],
-          ['clock', "Ko'zni asraydi", "25 daqiqa mashg'ulotdan keyin — 5 daqiqa tanaffus."],
+        badge: '1–11-sinflar uchun AI-repetitor',
+        title: "O'ylashni o'rgatadigan repetitor",
+        lead: "Nimi javobni ko'chirishga yo'l qo'ymaydi: u yo'naltiruvchi savollar beradi, bola esa masalani o'zi yechadi. Rus va o'zbek tillarida, maktab dasturi bo'yicha.",
+        start: "Bepul sinab ko'rish",
+        login: 'Kirish',
+        freeNote: "Har bir bo'limni bepul sinab ko'rish mumkin. Karta kerak emas.",
+        demoTitle: 'Nimi qanday tushuntiradi',
+        demoLabel: 'Chatdan namuna · Matematika, 6-sinf',
+        demo: [
+          ['user', "$\\frac{3}{4} + \\frac{1}{8}$ nechaga teng? Shunchaki javobini ayt."],
+          ['ai', 'Keling, birga yechamiz. Bu kasrlarning maxrajlari bir xilmi?'],
+          ['user', "Yo'q. 8 ga keltirish kerakmi?"],
+          ['ai', "To'g'ri! $\\frac{3}{4}$ da nechta sakkizdan bir bor?"],
+          ['user', '$\\frac{6}{8}$. Demak, $\\frac{6}{8} + \\frac{1}{8} = \\frac{7}{8}$'],
+          ['ai', "Barakalla, o'zing yechding! Endi buni sinab ko'r: $\\frac{2}{3} + \\frac{1}{6}$."],
         ],
-        insideTitle: 'Ichida nimalar bor',
-        inside: ["O'qituvchi bilan chat", 'Masala surati', 'Ovoz', 'Mashqlar', 'Testlar', 'Imtihonlar va DTM', 'Olimpiada', "O'qish", "So'z kartochkalari", 'Maxluqlar jangi', 'Kundalik'],
-        howTitle: 'Qanday boshlash kerak',
-        how: ["Ro'yxatdan o'ting — bu bepul. Kartochkalar, o'yinlar va kundalik darhol ochiladi.", 'Bizga Telegramda yozing — tanishamiz va bepul haftani yoqamiz.', "Yoqsa — obuna rasmiylashtiring."],
-        priceTitle: 'Tariflar',
-        priceText: "Barcha tariflarda hammasi bor: chat, masala surati, ovoz, mashqlar, imtihonlar, ota-onalar uchun hisobot. Javob tezligi, kunlik savollar va tokenlar farq qiladi.",
-        parentTitle: 'Siz ota-onamisiz?',
-        parentText: "Ota-ona login va parolini farzandingiz Nimi'da topadi: ⋮ menyu → «Sozlamalar».",
+        stepsTitle: 'Qanday boshlash kerak',
+        steps: [
+          ["Ro'yxatdan o'ting", 'Pochta yoki Google orqali — bir daqiqada.'],
+          ["Hammasini bepul sinab ko'ring", (c) => `Chat — ${c.chat} ta savol, qolgan bo'limlar — bir martadan.`],
+          ['Tarifni tanlang', "Yoqsa — obuna rasmiylashtiring. Bepul haftani ham so'rashingiz mumkin."],
+        ],
+        featuresTitle: 'Nimi nimalarni qila oladi',
+        features: [
+          ['message-circle', "O'qituvchi bilan chat", 'Masalani qadamma-qadam tahlil qiladi'],
+          ['camera', 'Masala surati', 'Darslikdagi masalani suratga ol'],
+          ['mic', 'Ovoz', "Ovoz bilan so'ra va javobni tingla"],
+          ['dumbbell', 'Mashqlar', 'Har kuni darajaga mos yangi topshiriqlar'],
+          ['clipboard-check', 'Testlar', "Mavzu bo'yicha 10 ta savol va baho"],
+          ['graduation-cap', 'Imtihonlar va DTM', 'Sinov attestatsiyasi va kirish testi'],
+          ['puzzle', 'Olimpiada', 'Zukkolik masalalari'],
+          ['book-open', "O'qish", 'Matn va tushunish uchun savollar'],
+          ['layers', "So'z kartochkalari", "Ingliz, rus, o'zbek tillari"],
+          ['gamepad-2', "O'yinlar", "Maxluqlar jangi va og'zaki hisob"],
+          ['notebook-pen', 'Kundalik', 'Uy vazifalari'],
+          ['chart-no-axes-column', 'Natijalar', 'Mavzular, seriyalar va mukofotlar'],
+        ],
+        parentsTitle: 'Ota-onalar uchun',
+        parents: [
+          ['users', 'Ota-ona kabineti', "Mashg'ulotlar muntazamligi, mavzular, uy vazifalari va AI hisoboti."],
+          ['shield-check', "Faqat o'qish", "Nimi begona mavzularga javob bermaydi va shaxsiy ma'lumotlarni so'ramaydi."],
+          ['clock', "Ko'zni asraydi", "25 daqiqa mashg'ulotdan keyin — 5 daqiqa tanaffus."],
+          ['lightbulb', "Ko'chirishsiz", 'Bola uchun insho yozmaydi va darhol tayyor javob bermaydi.'],
+        ],
+        parentLoginText: "Ota-ona login va parolini farzandingiz Nimi'da topadi: ⋮ menyu → «Sozlamalar».",
         parentLogin: 'Ota-ona sifatida kirish',
+        priceTitle: 'Tariflar',
+        priceLead: "Barcha tariflarda hamma bo'limlar bor. Tarif qanchalik yuqori bo'lsa, Nimi javob ustida shunchalik chuqur o'ylaydi va kuniga ko'proq savol berish mumkin.",
+        choose: 'Tanlash',
+        allSections: "Barcha bo'limlar",
+        aboutTitle: 'Biz kimmiz',
+        about: [
+          "Nimi AI'ni O'zbekistondagi kichik jamoa yaratmoqda. Biz AI bolalarga ko'chirishni emas, o'ylashni o'rgatishini istaymiz.",
+          "Shuning uchun Nimi avval savollar beradi va maslahat beradi, to'liq yechimni esa faqat bolaning o'z urinishlaridan keyin ko'rsatadi. Topshiriqlar O'zbekiston maktab dasturi bo'yicha, rus va o'zbek tillarida tuziladi.",
+          "Savolingiz yoki taklifingiz bo'lsa — yozing, shaxsan javob beramiz.",
+        ],
+        faqTitle: 'Savol va javoblar',
+        faq: [
+          ['Bu bepulmi?', (c) => `Ro'yxatdan o'tish bepul. So'z kartochkalari, o'yinlar va kundalik doim bepul. Har bir pullik bo'limni bir marta bepul sinab ko'rish mumkin, chat — ${c.chat} ta savol. Keyin — oyiga ${c.from}dan obuna. Bepul haftani Telegramda bizdan so'rashingiz mumkin.`],
+          ['Nimi shunchaki tayyor javob beradimi?', "Yo'q. Avval Nimi nima berilganini va bola nimani sinab ko'rganini so'raydi, qadamma-qadam maslahat beradi. To'liq yechim — faqat bolaning uchta urinishidan keyin va har bir qadam tushuntirilgan holda. Bola uchun insho va ma'ruza yozmaydi: reja tuzishga yordam beradi va xatolarni topadi."],
+          ['Qaysi sinf va qaysi fanlar uchun?', "1–11-sinflar. 12 ta fan: matematika, rus, o'zbek va ingliz tillari, adabiyot, tabiatshunoslik, fizika, kimyo, biologiya, tarix, geografiya va informatika. Tushuntirishlar sinfga moslashadi."],
+          ["Bu maktab dasturi bo'yichami?", "Ha. Mashqlar, testlar va imtihonlar O'zbekiston maktab dasturi bo'yicha tuziladi. Sinov yakuniy attestatsiyasi va DTM uslubidagi kirish testi bor."],
+          ["Bola qaysi tilda shug'ullanadi?", "Rus yoki o'zbek tilida. Nimi bola qaysi tilda yozsa, o'sha tilda javob beradi."],
+          ['Bu bola uchun xavfsizmi?', "Nimi faqat o'qish haqida gapiradi: begona va kattalar mavzularini muloyimlik bilan rad etadi. Ism, manzil, maktab va telefonni so'ramaydi, agar bola o'zi yozsa — ularni ulashish kerak emasligini eslatadi. 25 daqiqa mashg'ulotdan keyin Nimi 5 daqiqa tanaffus qilishni so'raydi."],
+          ["Ota-ona o'qishni qanday kuzatadi?", "Farzand akkaunti bilan birga ota-ona akkaunti yaratiladi. Login va parolni farzandingiz ⋮ menyu → «Sozlamalar»da topadi. Ota-ona kabinetida bola qanchalik muntazam shug'ullanayotgani, qaysi mavzular yaxshi chiqayotgani, uy vazifalari va AI hisoboti ko'rinadi. Chatdagi yozishmalarni ota-ona ko'rmaydi."],
+          ["Qanday ma'lumotlarni saqlaysiz?", "Pochta, parol (shifrlangan holda), natijalar, kundalik va suratlarsiz chat tarixi. Chat tarixini faqat o'quvchining o'zi ko'radi. Javob olish uchun savol matni AI-xizmatga yuboriladi. Batafsil — «Qoidalar va maxfiylik» sahifasida."],
+          ['Tariflar nimasi bilan farq qiladi?', (c) => `Barcha tariflarda hamma bo'limlar bor. Javoblar chuqurligi va kunlik savollar farq qiladi: ${c.levels}.`],
+          ["Qanday to'lash mumkin?", "Nimi'da tarifni tanlang (⋮ menyu → «Obuna») va ariza yarating. Keyin bizga Telegramda yozing yoki qo'ng'iroq qiling — qanday to'lashni aytamiz va to'lov tekshirilgach obunani yoqamiz."],
+          ['Telefonda ishlaydimi?', "Ha. Nimi telefon, planshet va kompyuterdagi brauzerda ochiladi, uni ilova kabi bosh ekranga qo'shish mumkin. Internet kerak."],
+          ['Bola parolni unutdi. Nima qilish kerak?', "Ota-ona o'z kabinetida yangi parol qo'yishi mumkin. Yoki bizga yozing — parolni tiklab, yangisini yuboramiz."],
+        ],
+        contactTitle: 'Savollaringiz qoldimi?',
+        contactText: "Yozing yoki qo'ng'iroq qiling — tarif tanlashga yordam beramiz va bepul haftani yoqib beramiz.",
+        telegram: 'Telegramda yozish',
+        call: "Qo'ng'iroq qilish",
+        footer: "Nimi AI · maktab o'quvchilari uchun AI-repetitor",
       },
       todayIs: (s) => `Bugun: ${s}`,
       streak: (n) => (n ? `${n} kun ketma-ket` : 'Bugun seriyani boshla'),
@@ -436,6 +574,16 @@
       olympiadIntro: "5 ta nostandart masala. Shoshilma: bu yerda topqirlik muhim.",
       noAnswer: "(javob yo'q)",
       listen: 'Tinglash',
+      history: {
+        title: 'Chatlar tarixi',
+        note: "Chatlar akkauntingda saqlanadi: ularni istalgan qurilmada ko'rish mumkin. Ota-ona ularni ko'rmaydi.",
+        empty: "Bu yerda Nimi bilan suhbatlaring paydo bo'ladi.",
+        count: (n) => `${n} ta xabar`,
+        cont: 'Shu chatni davom ettirish',
+        del: "Chatni o'chirish",
+        delSure: "Rostdan o'chirilsinmi? Buni qaytarib bo'lmaydi.",
+        photo: 'Masala surati',
+      },
       sub: {
         title: 'Nimi obunasi',
         price: (p) => `oyiga ${p}`,
@@ -446,8 +594,8 @@
         ending: (n) => `Obuna ${n} kundan keyin tugaydi — uzaytirishni unutma`,
         expired: 'Obuna tugadi',
         expiredText: "Kartochkalar, o'yinlar va kundalik ochiq. Chat va topshiriqlardan yana foydalanish uchun obunani uzaytir.",
-        none: "Barcha bo'limlarni och",
-        noneText: "Bizga yoz — bepul haftani yoqib beramiz. Kartochkalar, o'yinlar va kundalik allaqachon ochiq.",
+        none: "Hammasini bepul sinab ko'r",
+        noneText: (n) => `Chat — ${n} ta savol, qolgan bo'limlar — bir martadan. Yoqsa — obuna rasmiylashtir yoki bepul haftani so'ra.`,
         trialAsk: 'Bepul hafta olish',
         trialTitle: 'Bepul hafta',
         trialText: "Bizga yoz yoki qo'ng'iroq qil — tanishamiz va barcha bo'limlarni 7 kunga bepul yoqib beramiz.",
@@ -471,12 +619,25 @@
         message: (m, id, email, plan) => `Assalomu alaykum! Nimi ${plan} obunasini ${m} oyga olmoqchiman. Ariza №${id}, akkaunt: ${email}`,
         plansTitle: 'Tarifni tanla',
         perDay: (n) => `kuniga ${n} ta savol`,
-        speed: { pro: 'Biroz tezroq', gold: 'Tez javoblar', max: 'Eng tez' },
+        level: { pro: 'Aqlli', gold: 'Juda aqlli', max: "O'ta aqlli" },
+        levelText: { pro: 'Maktab mavzularini tushunarli tushuntiradi', gold: 'Qiyin masalalarni chuqurroq tahlil qiladi', max: 'Eng chuqur tahlil: olimpiada va DTM' },
+        popular: 'Tavsiya qilamiz',
+        perDayPrice: (p) => `kuniga ≈ ${p}`,
+        limitsTitle: 'Oylik limitlar (tokenlar)',
+        freeTitle: 'Bepul urinishlar',
+        freeLead: "Obunasiz har bir bo'limni bepul sinab ko'rish mumkin.",
+        freeLeftN: (n) => `${n} ta qoldi`,
+        freeUsedWord: 'ishlatildi',
+        features: { chat: "O'qituvchi bilan chat", photo: 'Masala surati', training: 'Mashq', test: "Mavzu bo'yicha test", exam: 'Imtihon', olympiad: 'Olimpiada', reading: "O'qish", report: 'Ota-onalar uchun hisobot' },
+        freeUsed: (name) => `«${name}» bepul urinishi ishlatib bo'lingan. Davom etish uchun tarifni tanla yoki bepul haftani so'ra.`,
+        tileFree: 'Bepul',
+        allUsed: 'Bepul urinishlar tugadi',
+        allUsedText: "Kartochkalar, o'yinlar va kundalik ochiq qoladi. Davom etish uchun obuna rasmiylashtir yoki bepul haftani so'ra.",
         perMonthShort: "so'm/oy",
         inLabel: 'Kirish',
         outLabel: 'Chiqish',
         allPlans: 'Barcha tariflarda',
-        tokensHint: "Tokenlar — matn bo'laklari. Kirish — sening savollaring va suratlaring, chiqish — Nimi javoblari. Tarif qanchalik katta bo'lsa, oyiga shuncha ko'p so'rash mumkin.",
+        tokensHint: "Tokenlar — matn bo'laklari: kirish — sening savollaring va suratlaring, chiqish — Nimi javoblari. Odatda limit butun oyga yetadi.",
         usageTitle: 'Bu oydagi tokenlar',
         usageIn: 'Kirish (sening savollaring)',
         usageOut: 'Chiqish (Nimi javoblari)',
@@ -548,6 +709,7 @@
           expiring: '7 kunda tugaydi',
           expired: 'Tugagan',
           never: "Hech qachon bo'lmagan",
+          triedFree: "Bepul sinab ko'rganlar",
           money: 'Pul',
           monthly: "Hozirgi pullik obunalar, oyiga",
           paid30: "30 kunda to'langan",
@@ -780,8 +942,9 @@
     } catch {
       throw new Error('default');
     }
-    if (res.code === 'premium_required') { await N.refreshUser(); openSubscribe(); throw new Error('premium_required'); }
+    if (res.code === 'premium_required') { await N.refreshUser(); openSubscribe(res.feature); throw new Error('premium_required'); }
     if (res.code) throw new Error(res.code);
+    if (res.freeLeft !== undefined) N.setFreeLeft(kind, res.freeLeft);
     return res;
   }
   const topicCache = {};
@@ -812,6 +975,10 @@
     return h('div', { class: `${CARD} flex flex-col items-center gap-4 py-10 text-center text-slate-300` },
       h('div', { class: 'h-10 w-10 animate-spin rounded-full border-4 border-night-600 border-t-brand-400' }),
       h('p', {}, text));
+  }
+  // A section could not start: show the error, unless the subscription page took its place.
+  function failed(root, e, retry) {
+    if (e.message !== 'premium_required') root.lastChild.replaceWith(errorBox(e.message, retry));
   }
   function errorBox(code, retry) {
     const msg = t('errors')[code] || t('errors').default;
@@ -943,7 +1110,7 @@
       const tasks = await trainingTasks(topic);
       runTasks(root, tasks, { mode: 'training', title: topic || t('training'), onFinish: (r) => finishTraining(root, r, topic) });
     } catch (e) {
-      root.lastChild.replaceWith(errorBox(e.message, () => startTraining(topic)));
+      failed(root, e, () => startTraining(topic));
     }
   }
   function finishTraining(root, results, topic) {
@@ -991,7 +1158,7 @@
       const { tasks } = await gen('test', { topic });
       runTasks(root, tasks, { mode: 'test', title: topic, onFinish: (r) => finishTest(root, r, topic) });
     } catch (e) {
-      root.lastChild.replaceWith(errorBox(e.message, () => startTest(topic)));
+      failed(root, e, () => startTest(topic));
     }
   }
   function finishTest(root, results, topic, { onBack = openTestPicker, again = () => startTest(topic), note } = {}) {
@@ -1044,7 +1211,7 @@
         onFinish: (r) => finishTest(root, r, name, { onBack: openExams, again: () => startExam(examType, name), note: r.some((x) => x.timeout) ? t('timeOver') : null }),
       });
     } catch (e) {
-      root.lastChild.replaceWith(errorBox(e.message, () => startExam(examType, name)));
+      failed(root, e, () => startExam(examType, name));
     }
   }
 
@@ -1068,7 +1235,7 @@
         },
       });
     } catch (e) {
-      root.lastChild.replaceWith(errorBox(e.message, startOlympiad));
+      failed(root, e, startOlympiad);
     }
   }
 
@@ -1094,7 +1261,7 @@
         },
       });
     } catch (e) {
-      root.lastChild.replaceWith(errorBox(e.message, startReading));
+      failed(root, e, startReading);
     }
   }
 
@@ -1144,7 +1311,7 @@
       save('cards');
       review(deck.words.map((w) => ({ w, d: deck })));
     } catch (e) {
-      root.lastChild.replaceWith(errorBox(e.message, () => newDeck(topic)));
+      failed(root, e, () => newDeck(topic));
     }
   }
   function review(queue) {
@@ -1390,27 +1557,58 @@
   }
 
   // Three plan cards side by side; onSelect(plan) runs when another one is chosen.
+  // Plans are named by how deeply the AI thinks: Умная / Очень умная / Сверхумная.
+  const RECOMMENDED = 'gold';
+  const perDay = (price) => sum(Math.round(price / 30 / 100) * 100);
   function planPicker(selected, onSelect) {
     const S = t('sub');
     const row = h('div', { class: 'grid grid-cols-3 gap-2' });
-    const draw = () => row.replaceChildren(...plans().map((p) => {
-      const on = p.id === selected;
-      return h('button', {
-        type: 'button',
-        'aria-pressed': String(on),
-        class: `flex flex-col items-start gap-0.5 rounded-2xl p-3 text-left transition active:scale-95 ${on ? 'bg-brand-500/15 ring-2 ring-brand-400' : 'bg-night-800 ring-1 ring-white/5 hover:bg-night-700'}`,
-        onclick: () => { selected = p.id; draw(); onSelect(p); },
-      },
-      h('span', { class: `text-sm font-semibold ${on ? 'text-brand-400' : 'text-slate-300'}` }, p.name),
-      h('span', { class: 'text-xl font-semibold tabular-nums text-white' }, money(p.price)),
-      h('span', { class: 'text-xs text-slate-400' }, S.perMonthShort),
-      h('span', { class: 'mt-2 flex items-center gap-1 text-xs font-medium text-brand-400' }, ico('zap', 'h-3.5 w-3.5 shrink-0'), S.speed[p.id] || ''),
-      h('span', { class: 'text-xs text-slate-300' }, S.perDay(p.questions)),
-      h('span', { class: 'text-xs text-slate-300' }, `${S.inLabel}: ${tok(p.input)}`),
-      h('span', { class: 'text-xs text-slate-300' }, `${S.outLabel}: ${tok(p.output)}`));
-    }));
+    const note = h('p', { class: 'flex items-start gap-2 px-1 text-sm text-slate-300' });
+    const draw = () => {
+      row.replaceChildren(...plans().map((p) => {
+        const on = p.id === selected;
+        return h('button', {
+          type: 'button',
+          'aria-pressed': String(on),
+          class: `relative flex flex-col items-start gap-0.5 rounded-2xl p-3 pt-4 text-left transition active:scale-95 ${on ? 'bg-brand-500/15 ring-2 ring-brand-400' : 'bg-night-800 ring-1 ring-white/5 hover:bg-night-700'}`,
+          onclick: () => { selected = p.id; draw(); onSelect(p); },
+        },
+        p.id === RECOMMENDED ? h('span', { class: 'absolute -top-2 left-3 rounded-full bg-brand-500 px-2 py-0.5 text-[10px] font-semibold text-onfill' }, S.popular) : null,
+        h('span', { class: `flex items-center gap-1 text-sm font-semibold ${on ? 'text-brand-400' : 'text-white'}` }, S.level[p.id] || p.name),
+        h('span', { class: 'text-[11px] text-slate-500' }, p.name),
+        h('span', { class: 'mt-1 text-xl font-semibold tabular-nums text-white' }, money(p.price)),
+        h('span', { class: 'text-xs text-slate-400' }, S.perMonthShort),
+        h('span', { class: 'mt-1 text-xs text-slate-400' }, S.perDayPrice(perDay(p.price))),
+        h('span', { class: 'mt-1 text-xs text-slate-300' }, S.perDay(p.questions)));
+      }));
+      note.replaceChildren(ico('brain', 'icon mt-0.5 text-brand-400'), h('span', {}, S.levelText[selected] || ''));
+    };
     draw();
-    return row;
+    return h('div', { class: 'flex flex-col gap-3 pt-2' }, row, note);
+  }
+
+  // Monthly token limits of every plan, folded (most parents never need them).
+  function limitsDetails() {
+    const S = t('sub');
+    return h('details', { class: 'group rounded-2xl bg-night-900/60 px-4 py-3 ring-1 ring-white/5' },
+      h('summary', { class: 'flex cursor-pointer list-none items-center justify-between gap-2 text-sm text-slate-300' }, S.limitsTitle, ico('chevron-down', 'icon text-slate-500 transition group-open:rotate-180')),
+      h('div', { class: 'mt-3 flex flex-col gap-1.5 text-sm text-slate-400' },
+        plans().map((p) => h('p', { class: 'flex justify-between gap-3' }, h('span', {}, `${S.level[p.id] || p.name} (${p.name})`), h('span', { class: 'tabular-nums' }, `${S.inLabel} ${tok(p.input)} · ${S.outLabel} ${tok(p.output)}`))),
+        h('p', { class: 'mt-1 text-xs text-slate-500' }, S.tokensHint)));
+  }
+
+  // What is still free without a subscription: { chat: 5, test: 0, ... } from the server.
+  function freeCard() {
+    const S = t('sub');
+    const free = N.user?.free || {};
+    const keys = Object.keys(S.features).filter((k) => free[k] !== undefined);
+    if (!keys.length) return null;
+    return h('div', { class: `${CARD} flex flex-col gap-2` },
+      h('p', { class: 'flex items-center gap-2 font-semibold text-white' }, ico('gift', 'icon text-brand-400'), S.freeTitle),
+      h('p', { class: 'text-sm text-slate-400' }, S.freeLead),
+      h('div', { class: 'grid grid-cols-1 gap-1.5 sm:grid-cols-2' }, keys.map((k) => h('div', { class: 'flex items-center justify-between gap-2 rounded-xl bg-night-800 px-3 py-2 text-sm' },
+        h('span', { class: free[k] ? 'text-slate-100' : 'text-slate-500 line-through' }, S.features[k]),
+        h('span', { class: `shrink-0 text-xs ${free[k] ? 'text-emerald-300' : 'text-slate-500'}` }, free[k] ? S.freeLeftN(free[k]) : S.freeUsedWord)))));
   }
 
   // This month's tokens against the plan limits.
@@ -1430,12 +1628,18 @@
       bar(S.usageOut, tokens.output, plan.limits.output));
   }
 
-  function openSubscribe() {
+  // feature: the section the student tried to open (its free try is used up), if any.
+  function openSubscribe(feature) {
+    if (typeof feature !== 'string') feature = null;
     const root = screen('activity');
     const S = t('sub');
     const st = planStatus();
     const plan = N.user?.plan;
     root.append(titleBar(S.title));
+    if (feature && S.features[feature] && !N.hasAccess()) {
+      root.append(h('p', { class: 'flex items-start gap-2 rounded-2xl bg-amber-400/10 p-4 text-amber-100 ring-1 ring-amber-400/30' }, ico('lock', 'icon mt-0.5'), S.freeUsed(S.features[feature])));
+    }
+    if (N.accounts && !N.hasAccess()) { const fc = freeCard(); if (fc) root.append(fc); }
     if (st && st.tone === 'none') {
       const trialSteps = h('div', { class: 'flex flex-col gap-3' });
       const ask = h('button', { type: 'button', class: BTN }, ico('sparkles'), S.trialAsk);
@@ -1455,7 +1659,7 @@
     }
     if (plan?.active && plan.limits && N.user?.tokens) root.append(usageCard(plan, N.user.tokens));
     const paid = plan?.active && !plan.trial;
-    let chosen = planById(paid ? plan.tier : 'pro');
+    let chosen = planById(paid ? plan.tier : RECOMMENDED);
     let months = 1;
     const priceBtn = h('button', { type: 'button', class: BTN });
     const monthsRow = h('div', { class: 'grid grid-cols-4 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5' });
@@ -1467,11 +1671,11 @@
     drawMonths();
     root.append(h('p', { class: 'font-semibold text-white' }, S.plansTitle),
       planPicker(chosen.id, (p) => { chosen = p; drawMonths(); }),
-      h('p', { class: 'px-1 text-xs text-slate-400' }, S.tokensHint),
       h('div', { class: `${CARD} flex flex-col gap-2` },
         h('p', { class: 'font-semibold text-white' }, S.allPlans),
         h('ul', { class: 'flex flex-col gap-2 text-slate-200' }, S.includes.map((x) => h('li', { class: 'flex items-start gap-2' }, ico('circle-check', 'icon mt-0.5 text-brand-400'), x))),
-        h('p', { class: 'text-sm text-slate-400' }, S.freeLeft)));
+        h('p', { class: 'text-sm text-slate-400' }, S.freeLeft)),
+      limitsDetails());
     const steps = h('div', { class: 'flex flex-col gap-3' });
     priceBtn.onclick = async () => {
       priceBtn.disabled = true;
@@ -1677,7 +1881,7 @@
         tile(D.learnToday, n(Ac.learn_today)), tile(D.pending, n(M.pending)))),
       section(D.students, tiles(
         tile(D.total, n(U.students)), tile(D.d7, `+${n(U.new7d)}`), tile(D.d30, `+${n(U.new30d)}`),
-        tile(D.google, n(U.google)), tile(D.parents, n(U.parents)), tile(D.admins, n(U.admins)))),
+        tile(D.google, n(U.google)), tile(D.parents, n(U.parents)), tile(D.admins, n(U.admins)), tile(D.triedFree, n(U.triedFree)))),
       section(D.subs, tiles(
         tile(D.active, n(S.active)), tile(D.trial, n(S.trial)), tile('Pro', n(S.pro)), tile('Gold', n(S.gold)), tile('MAX', n(S.max)),
         tile(D.expiring, n(S.expiring)), tile(D.expired, n(S.expired)), tile(D.never, n(S.never)))),
@@ -1807,7 +2011,7 @@
       if (res.request) showSteps(subBox, res.request, res.price, res.email);
     } }, label);
     const paid = plan.active && !plan.trial;
-    let chosen = planById(paid ? plan.tier : 'pro');
+    let chosen = planById(paid ? plan.tier : RECOMMENDED);
     const orderBtn = askBtn(1, '', () => chosen);
     const drawOrder = () => { orderBtn.textContent = `${paid && chosen.id === plan.tier ? S.renew : S.order} · ${sum(chosen.price)}`; };
     drawOrder();
@@ -1854,9 +2058,11 @@
       reportBox.replaceChildren(loading(t('loadingTasks')));
       const res = await N.postJson('/api/parent/report', { lang: N.lang });
       reportBox.innerHTML = res.report ? N.formatReply(res.report) : '';
+      if (res.report && reportFree) reportFree.remove();
       if (!res.report) reportBox.textContent = res.code === 'premium_required' ? P.reportNeedsSub : t('errors')[res.code] || t('errors').default;
     };
-    root.append(h('div', { class: `${CARD} flex flex-col gap-3` }, reportBtn, reportBox));
+    const reportFree = !plan.active && r.child.free?.report ? h('p', { class: 'text-sm text-emerald-300' }, P.reportFree) : null;
+    root.append(h('div', { class: `${CARD} flex flex-col gap-3` }, reportBtn, reportFree, reportBox));
     // Child's password
     const newPw = h('input', { type: 'text', class: INPUT, placeholder: P.newChildPwPh, id: 'childPw', autocomplete: 'off' });
     const pwMsg = h('p', { class: 'text-sm' });
@@ -1870,37 +2076,130 @@
   }
 
   // ---------- landing for parents (not signed in) ----------
+  // Minimal page with gentle animations: blocks fade in when they scroll into view,
+  // the sample chat types itself once. With "reduce motion" everything is shown at once.
+  let landingObserver = null;
   function renderLanding() {
     const root = screen('landing');
     const W = t('landing');
-    const langToggle = h('div', { class: 'flex justify-end' }, h('div', { class: 'flex rounded-2xl bg-night-800 p-1 ring-1 ring-white/5' },
-      ['uz', 'ru'].map((l) => h('button', { type: 'button', class: `min-h-11 min-w-12 rounded-xl px-3 text-[15px] font-medium ${N.lang === l ? 'bg-brand-500 text-onfill' : 'text-slate-300'}`, onclick: () => document.querySelector(`.lang-btn[data-lang="${l}"]`).click() }, l.toUpperCase()))));
-    root.append(langToggle,
-      h('div', { class: 'flex flex-col items-center gap-4 rounded-3xl bg-night-900/80 p-6 text-center ring-1 ring-white/5' },
-        h('img', { src: '/img/welcome.webp', alt: '', class: 'h-32 w-32 rounded-3xl object-cover' }),
-        h('h2', { class: 'text-3xl font-semibold leading-tight text-white' }, W.title),
-        h('p', { class: 'max-w-md text-slate-300' }, W.lead),
-        h('button', { type: 'button', class: BTN, onclick: () => N.showAuth('register') }, ico('sparkles'), W.start),
-        h('button', { type: 'button', class: BTN2, onclick: () => N.showAuth('login') }, W.login)));
-    root.append(h('h3', { class: 'mt-2 text-xl font-semibold text-white' }, W.whyTitle),
-      h('div', { class: 'grid gap-3 sm:grid-cols-2' }, W.why.map(([icon, title, text]) => h('div', { class: `${CARD} flex gap-3` },
-        h('span', { class: 'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-500/15 text-brand-400' }, ico(icon)),
-        h('div', { class: 'min-w-0' }, h('p', { class: 'font-semibold text-white' }, title), h('p', { class: 'text-sm text-slate-400' }, text))))));
-    root.append(h('h3', { class: 'mt-2 text-xl font-semibold text-white' }, W.insideTitle),
-      h('div', { class: 'flex flex-wrap gap-2' }, W.inside.map((x) => h('span', { class: 'rounded-full bg-night-800 px-3 py-2 text-sm text-slate-200 ring-1 ring-white/10' }, x))));
-    root.append(h('h3', { class: 'mt-2 text-xl font-semibold text-white' }, W.howTitle),
-      h('div', { class: 'flex flex-col gap-2' }, W.how.map((x, i) => h('div', { class: 'flex items-start gap-3' },
-        h('span', { class: 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-onfill' }, String(i + 1)),
-        h('p', { class: 'pt-1 text-slate-300' }, x)))));
-    root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-onfill' },
-      h('p', { class: 'text-sm text-onfill/80' }, W.priceTitle),
-      h('div', { class: 'flex flex-col' }, plans().map((p) => h('div', { class: 'flex items-baseline justify-between gap-3 border-b border-onfill/15 py-2 last:border-0' },
-        h('span', { class: 'text-xl font-semibold' }, p.name), h('span', { class: 'text-lg font-semibold tabular-nums' }, t('sub').price(sum(p.price)))))),
-      h('p', { class: 'text-sm text-onfill/85' }, W.priceText),
-      h('button', { type: 'button', class: 'min-h-12 rounded-2xl bg-onfill font-semibold text-brand-600', onclick: () => N.showAuth('register') }, W.start)));
-    root.append(h('div', { class: `${CARD} flex flex-col gap-2` }, h('p', { class: 'font-semibold text-white' }, W.parentTitle), h('p', { class: 'text-sm text-slate-400' }, W.parentText),
-      h('button', { type: 'button', class: BTN2, onclick: () => N.showAuth('login') }, ico('users'), W.parentLogin)));
-    root.append(h('a', { href: '/privacy.html', target: '_blank', class: 'self-center text-sm text-slate-400 underline' }, t('privacyTitle')));
+    const S = t('sub');
+    const b = N.billing;
+    const ctx = {
+      chat: b.freeTries?.chat || 5,
+      from: plans().length ? sum(minPrice()) : '',
+      levels: plans().map((p) => `«${S.level[p.id] || p.name}» — ${S.perDay(p.questions)}`).join(', '),
+    };
+    const txt = (v) => (typeof v === 'function' ? v(ctx) : v);
+    const register = () => N.showAuth('register');
+    const reveal = (el) => { el.classList.add('reveal'); return el; };
+    const heading = (text) => h('h3', { class: 'text-2xl font-semibold tracking-tight text-white' }, text);
+    const block = (title, ...kids) => reveal(h('section', { class: 'flex flex-col gap-4 pt-12' }, heading(title), ...kids));
+    const contacts = (cls) => [
+      b.telegram ? h('a', { class: `${BTN} ${cls || ''}`, href: `https://t.me/${encodeURIComponent(b.telegram)}`, target: '_blank', rel: 'noopener' }, ico('send'), W.telegram) : null,
+      b.phone ? h('a', { class: BTN2, href: `tel:${b.phone.replace(/[^\d+]/g, '')}` }, ico('phone'), `${W.call}: ${b.phone}`) : null,
+    ];
+
+    root.append(h('div', { class: 'flex justify-end' }, h('div', { class: 'flex rounded-2xl bg-night-800 p-1 ring-1 ring-white/5' },
+      ['uz', 'ru'].map((l) => h('button', { type: 'button', class: `min-h-10 min-w-11 rounded-xl px-3 text-sm font-medium ${N.lang === l ? 'bg-brand-500 text-onfill' : 'text-slate-300'}`, onclick: () => document.querySelector(`.lang-btn[data-lang="${l}"]`).click() }, l.toUpperCase())))));
+
+    // Hero
+    root.append(h('section', { class: 'flex flex-col items-center gap-5 pt-2 text-center' },
+      h('div', { class: 'fade-up' }, h('img', { src: '/img/logo-mark.png', alt: 'Nimi AI', class: 'float-soft h-28 w-28 object-contain sm:h-32 sm:w-32' })),
+      h('span', { class: 'fade-up rounded-full bg-brand-500/10 px-3 py-1 text-xs font-medium text-brand-400 ring-1 ring-brand-400/25' }, W.badge),
+      h('h2', { class: 'fade-up max-w-xl text-4xl font-semibold leading-[1.1] tracking-tight text-white sm:text-5xl', style: 'animation-delay:80ms' }, W.title),
+      h('p', { class: 'fade-up max-w-md text-[17px] leading-relaxed text-slate-400', style: 'animation-delay:160ms' }, W.lead),
+      h('div', { class: 'fade-up flex w-full max-w-sm flex-col gap-1', style: 'animation-delay:240ms' },
+        h('button', { type: 'button', class: BTN, onclick: register }, W.start, ico('chevron-right')),
+        h('button', { type: 'button', class: 'min-h-12 rounded-2xl text-[15px] font-medium text-slate-300 hover:text-white', onclick: () => N.showAuth('login') }, W.login)),
+      h('p', { class: 'fade-up max-w-xs text-xs leading-relaxed text-slate-500', style: 'animation-delay:320ms' }, h('span', { class: 'mr-1 inline-block align-[-3px]' }, ico('gift', 'h-4 w-4')), W.freeNote)));
+
+    // Sample chat: the messages appear one by one, like a real conversation.
+    const demo = h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-night-900/80 p-4 ring-1 ring-white/5 sm:p-5' },
+      h('p', { class: 'text-xs text-slate-500' }, W.demoLabel),
+      W.demo.map(([role, text]) => (role === 'user'
+        ? h('div', { class: 'demo-msg flex justify-end pl-10' }, R('div', { class: 'bubble max-w-[85%] rounded-3xl rounded-br-md bg-brand-500 px-4 py-2.5 text-[15px] leading-relaxed text-onfill' }, text))
+        : h('div', { class: 'demo-msg flex items-start gap-2.5 pr-6' },
+          h('img', { src: '/img/avatar.webp', alt: '', class: 'mt-0.5 h-8 w-8 shrink-0 object-contain' }),
+          R('div', { class: 'bubble max-w-[85%] rounded-3xl rounded-tl-md bg-night-800 px-4 py-2.5 text-[15px] leading-relaxed text-slate-100 ring-1 ring-white/5' }, text)))));
+    demo.dataset.demo = '1';
+    root.append(block(W.demoTitle, demo));
+
+    // How to start
+    root.append(block(W.stepsTitle, h('div', { class: 'grid gap-3 sm:grid-cols-3' }, W.steps.map(([title, text], i) => h('div', { class: 'flex gap-3 sm:flex-col' },
+      h('span', { class: 'flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500/15 text-sm font-semibold text-brand-400' }, String(i + 1)),
+      h('div', { class: 'min-w-0' }, h('p', { class: 'font-semibold text-white' }, title), h('p', { class: 'text-sm text-slate-400' }, txt(text))))))));
+
+    // Features
+    root.append(block(W.featuresTitle, h('div', { class: 'grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3' }, W.features.map(([icon, title, text]) => h('div', { class: 'flex flex-col gap-1.5' },
+      h('span', { class: 'text-brand-400' }, ico(icon)),
+      h('p', { class: 'font-medium text-white' }, title),
+      h('p', { class: 'text-sm leading-snug text-slate-400' }, text))))));
+
+    // Parents
+    root.append(block(W.parentsTitle,
+      h('div', { class: 'grid gap-3 sm:grid-cols-2' }, W.parents.map(([icon, title, text]) => h('div', { class: `${CARD} flex gap-3` },
+        h('span', { class: 'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-500/10 text-brand-400' }, ico(icon)),
+        h('div', { class: 'min-w-0' }, h('p', { class: 'font-semibold text-white' }, title), h('p', { class: 'text-sm text-slate-400' }, text))))),
+      h('div', { class: 'flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between' },
+        h('p', { class: 'text-sm text-slate-400' }, W.parentLoginText),
+        h('button', { type: 'button', class: `${BTN2} sm:w-auto sm:shrink-0`, onclick: () => N.showAuth('login') }, ico('users'), W.parentLogin))));
+
+    // Plans
+    root.append(block(W.priceTitle,
+      h('p', { class: '-mt-2 text-slate-400' }, W.priceLead),
+      h('div', { class: 'grid gap-3 sm:grid-cols-3' }, plans().map((p) => {
+        const rec = p.id === RECOMMENDED;
+        const li = (text) => h('li', { class: 'flex items-start gap-2' }, ico('check', 'h-4 w-4 mt-0.5 shrink-0 text-brand-400'), text);
+        return h('div', { class: `relative flex flex-col gap-3 rounded-3xl p-5 ring-1 ${rec ? 'bg-brand-500/10 ring-brand-400/60' : 'bg-night-900/80 ring-white/5'}` },
+          rec ? h('span', { class: 'absolute -top-3 left-5 rounded-full bg-brand-500 px-2.5 py-1 text-[11px] font-semibold text-onfill shadow-lg shadow-brand-500/30' }, S.popular) : null,
+          h('div', {}, h('p', { class: 'text-lg font-semibold text-white' }, S.level[p.id] || p.name), h('p', { class: 'text-xs text-slate-500' }, p.name)),
+          h('p', { class: 'flex items-baseline gap-1' }, h('span', { class: 'text-3xl font-semibold tabular-nums text-white' }, money(p.price)), h('span', { class: 'text-sm text-slate-400' }, S.perMonthShort)),
+          h('p', { class: '-mt-2 text-sm text-slate-500' }, S.perDayPrice(perDay(p.price))),
+          h('ul', { class: 'flex flex-1 flex-col gap-1.5 text-sm text-slate-300' }, li(S.levelText[p.id] || ''), li(S.perDay(p.questions)), li(W.allSections)),
+          h('button', { type: 'button', class: rec ? BTN : BTN2, onclick: register }, W.choose));
+      })),
+      h('p', { class: 'text-center text-sm text-slate-400' }, h('span', { class: 'mr-1.5 inline-block align-[-3px] text-brand-400' }, ico('gift', 'h-4 w-4')), W.freeNote)));
+
+    // About us
+    root.append(block(W.aboutTitle, h('div', { class: 'flex flex-col gap-3 text-[15px] leading-relaxed text-slate-300' }, W.about.map((x) => h('p', {}, x)))));
+
+    // Questions and answers
+    root.append(block(W.faqTitle, h('div', { class: 'flex flex-col divide-y divide-white/5 rounded-3xl bg-night-900/80 px-4 ring-1 ring-white/5' },
+      W.faq.map(([q, a]) => h('details', { class: 'group py-1' },
+        h('summary', { class: 'flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 py-2 text-left font-medium text-white' }, q, ico('chevron-down', 'icon shrink-0 text-slate-500 transition group-open:rotate-180')),
+        h('p', { class: 'pb-4 text-[15px] leading-relaxed text-slate-400' }, txt(a)))))));
+
+    // Contacts
+    const links = contacts().filter(Boolean);
+    root.append(reveal(h('section', { class: 'mt-12 flex flex-col items-center gap-3 rounded-3xl bg-night-900/80 p-6 text-center ring-1 ring-white/5' },
+      h('p', { class: 'text-xl font-semibold text-white' }, W.contactTitle),
+      h('p', { class: 'max-w-sm text-sm text-slate-400' }, W.contactText),
+      links.length ? h('div', { class: 'flex w-full max-w-sm flex-col gap-2' }, links) : null,
+      h('button', { type: 'button', class: 'min-h-11 text-[15px] font-medium text-brand-400 hover:text-white', onclick: register }, W.start))));
+
+    root.append(h('footer', { class: 'mt-8 flex flex-col items-center gap-2 pb-2 text-center text-xs text-slate-500' },
+      h('img', { src: '/img/logo-mark.png', alt: '', class: 'h-10 w-10 object-contain opacity-90' }),
+      h('p', {}, W.footer),
+      h('a', { href: '/privacy.html', target: '_blank', class: 'underline hover:text-white' }, t('privacyTitle')),
+      h('p', {}, `© ${new Date().getFullYear()} Nimi AI`)));
+
+    // Blocks appear as they scroll into view; the sample chat plays once when seen.
+    if (landingObserver) landingObserver.disconnect();
+    const items = root.querySelectorAll('.reveal');
+    const playDemo = () => demo.querySelectorAll('.demo-msg').forEach((m, i) => setTimeout(() => m.classList.add('shown'), 250 + i * 750));
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm || !('IntersectionObserver' in window)) {
+      items.forEach((el) => el.classList.add('shown'));
+      demo.querySelectorAll('.demo-msg').forEach((m) => m.classList.add('shown'));
+      return;
+    }
+    landingObserver = new IntersectionObserver((entries) => entries.forEach((e) => {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('shown');
+      landingObserver.unobserve(e.target);
+      if (e.target.contains(demo)) playDemo();
+    }), { threshold: 0.15 });
+    items.forEach((el) => landingObserver.observe(el));
   }
 
   // ---------- home ----------
@@ -1917,30 +2216,36 @@
 
     const st = planStatus();
     const S = t('sub');
+    const locked = !N.hasAccess();
+    const can = (key) => !locked || N.freeLeft(key) > 0;
+    const guard = (fn, key) => (can(key) ? fn : () => openSubscribe(key));
+    const anyFree = Object.values(N.user?.free || {}).some((n) => n > 0);
     if (st && (st.tone === 'expired' || st.tone === 'none')) {
       const none = st.tone === 'none';
-      root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-amber-400/10 p-5 ring-1 ring-amber-400/30' },
-        h('p', { class: 'text-lg font-semibold text-amber-100' }, none ? S.none : S.expired),
-        h('p', { class: 'text-sm text-amber-100/80' }, none ? S.noneText : S.expiredText),
-        h('button', { type: 'button', class: BTN, onclick: openSubscribe }, ico(none ? 'sparkles' : 'star'), none ? S.trialAsk : `${S.order} · ${S.from(sum(minPrice()))}`)));
+      const trying = none && anyFree;
+      root.append(h('div', { class: `flex flex-col gap-3 rounded-3xl p-5 ring-1 ${trying ? 'bg-brand-500/10 ring-brand-400/30' : 'bg-amber-400/10 ring-amber-400/30'}` },
+        h('p', { class: `flex items-center gap-2 text-lg font-semibold ${trying ? 'text-white' : 'text-amber-100'}` }, trying ? ico('gift', 'icon text-brand-400') : null, trying ? S.none : none ? S.allUsed : S.expired),
+        h('p', { class: `text-sm ${trying ? 'text-slate-300' : 'text-amber-100/80'}` }, trying ? S.noneText(N.user?.free?.chat ?? 0) : none ? S.allUsedText : S.expiredText),
+        h('button', { type: 'button', class: trying ? BTN2 : BTN, onclick: () => openSubscribe() }, ico(none ? 'sparkles' : 'star'), none ? S.trialAsk : `${S.order} · ${S.from(sum(minPrice()))}`)));
     } else if (st) {
       root.append(h('button', { type: 'button', class: `flex items-center gap-2 rounded-2xl px-4 py-3 text-left text-sm ring-1 ${st.tone === 'ending' ? 'bg-amber-400/10 text-amber-100 ring-amber-400/30' : 'bg-night-900/80 text-slate-300 ring-white/5'}`, onclick: openSubscribe },
         ico('star', 'icon text-amber-300'), h('span', { class: 'min-w-0 flex-1' }, st.text), ico('chevron-right', 'icon text-slate-500')));
     }
-    const locked = !N.hasAccess();
-    const guard = (fn) => (locked ? openSubscribe : fn);
 
     root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-onfill shadow-lg shadow-brand-500/30' },
       h('div', { class: 'flex items-center gap-3' },
-        h('span', { class: 'flex h-12 w-12 items-center justify-center rounded-2xl bg-onfill/15' }, ico(locked ? 'lock' : 'dumbbell')),
+        h('span', { class: 'flex h-12 w-12 items-center justify-center rounded-2xl bg-onfill/15' }, ico(can('training') ? 'dumbbell' : 'lock')),
         h('div', { class: 'min-w-0' }, h('p', { class: 'text-lg font-semibold' }, t('dailyTitle')), h('p', { class: 'text-sm text-onfill/80' }, daily ? t('dailyDone')(daily.score) : t('dailyDesc')(level())))),
-      h('button', { type: 'button', class: 'flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-onfill text-base font-semibold text-brand-600 transition hover:bg-onfill/90 active:scale-[.98]', onclick: guard(() => startTraining()) }, daily ? ico('repeat') : ico('chevron-right'), locked ? S.open : daily ? t('again') : t('start'))));
+      h('button', { type: 'button', class: 'flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-onfill text-base font-semibold text-brand-600 transition hover:bg-onfill/90 active:scale-[.98]', onclick: guard(() => startTraining(), 'training') }, daily ? ico('repeat') : ico('chevron-right'), !can('training') ? S.open : locked ? `${t('start')} · ${S.tileFree}` : daily ? t('again') : t('start'))));
 
     const tiles = t('tiles');
-    // paid: part of the subscription (shows a lock after the free week).
-    const tile = (key, icon, onclick, extra, paid = true) => h('button', { type: 'button', class: `${CARD} relative flex min-h-32 flex-col items-start gap-3 text-left transition hover:bg-night-800 active:scale-[.98]`, onclick: paid ? guard(onclick) : onclick },
+    // paid: part of the subscription. Without one it shows "free" while its free try is left, then a lock.
+    const badge = (key) => (can(key)
+      ? h('span', { class: 'absolute right-3 top-3 rounded-full bg-emerald-500/15 px-2 py-1 text-[11px] font-semibold text-emerald-300' }, S.tileFree)
+      : h('span', { class: 'absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-amber-400/15 text-amber-200', title: S.locked, 'aria-label': S.locked }, ico('lock', 'h-4 w-4')));
+    const tile = (key, icon, onclick, extra, paid = true) => h('button', { type: 'button', class: `${CARD} relative flex min-h-32 flex-col items-start gap-3 text-left transition hover:bg-night-800 active:scale-[.98]`, onclick: paid ? guard(onclick, key) : onclick },
       h('span', { class: 'flex h-11 w-11 items-center justify-center rounded-2xl bg-night-700 text-brand-400' }, ico(icon)),
-      paid && locked ? h('span', { class: 'absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-amber-400/15 text-amber-200', title: S.locked, 'aria-label': S.locked }, ico('lock', 'h-4 w-4')) : null,
+      paid && locked ? badge(key) : null,
       h('span', { class: 'min-w-0' }, h('span', { class: 'block font-semibold text-white' }, tiles[key][0]), h('span', { class: 'block text-xs text-slate-400' }, extra || tiles[key][1])));
     // Older students get exams; younger ones keep the chat tile. Always 8 tiles.
     root.append(h('div', { class: 'grid grid-cols-2 gap-3' },
@@ -2074,6 +2379,45 @@
     if (done.length) root.append(h('p', { class: 'font-semibold text-slate-400' }, t('doneList')(done.length)), ...done.map(row));
   }
 
+  // ---------- chat history (saved in the account) ----------
+  async function openHistory() {
+    const H = t('history');
+    const root = screen('activity');
+    root.append(titleBar(H.title), h('p', { class: 'text-sm text-slate-400' }, H.note), loading(t('loadingTopics')));
+    const r = await N.postJson('/api/chats/list', {}).catch(() => ({}));
+    root.lastChild.remove();
+    if (!Array.isArray(r.chats)) { root.append(errorBox(r.code || 'default', openHistory)); return; }
+    if (!r.chats.length) { root.append(h('p', { class: `${CARD} text-slate-300` }, H.empty)); return; }
+    r.chats.forEach((c) => root.append(h('button', { type: 'button', class: `${CARD} flex flex-col items-start gap-1 text-left transition hover:bg-night-800 active:scale-[.99]`, onclick: () => openChat(c.id) },
+      h('span', { class: 'text-xs text-slate-400' }, `${N.subjectName(c.subject)} · ${N.gradeLabel(c.grade)} · ${fmtDate(c.date)}`),
+      h('span', { class: 'line-clamp-2 break-words text-[15px] text-white' }, c.title || '…'),
+      h('span', { class: 'text-xs text-slate-500' }, H.count(c.count)))));
+  }
+
+  async function openChat(id) {
+    const H = t('history');
+    const root = screen('activity');
+    root.append(titleBar(H.title, openHistory), loading(t('loadingTopics')));
+    const r = await N.postJson('/api/chats/get', { id }).catch(() => ({}));
+    root.lastChild.remove();
+    const c = r.chat;
+    if (!c) { root.append(errorBox(r.code || 'default', () => openChat(id))); return; }
+    root.append(h('p', { class: 'text-sm text-slate-400' }, `${N.subjectName(c.subject)} · ${N.gradeLabel(c.grade)} · ${fmtDate(c.date)}`));
+    const photo = () => h('span', { class: 'mb-1 flex items-center gap-1.5 text-xs opacity-80' }, ico('camera', 'h-4 w-4'), H.photo);
+    root.append(h('div', { class: 'flex flex-col gap-3' }, c.messages.map((m) => (m.role === 'user'
+      ? h('div', { class: 'flex justify-end pl-10' }, h('div', { class: 'max-w-[85%] rounded-3xl rounded-br-md bg-brand-500 px-4 py-3 text-onfill' }, m.photo ? photo() : null, R('div', { class: 'bubble whitespace-pre-wrap break-words' }, m.content)))
+      : h('div', { class: 'flex pr-6' }, R('div', { class: 'bubble max-w-[85%] whitespace-pre-wrap break-words rounded-3xl rounded-tl-md bg-night-800 px-4 py-3 text-slate-100 ring-1 ring-white/5' }, m.content))))));
+    const del = h('button', { type: 'button', class: `${BTN2} text-rose-300` }, ico('trash-2'), H.del);
+    del.onclick = async () => {
+      if (!del.dataset.sure) { del.dataset.sure = '1'; del.lastChild.textContent = H.delSure; return; }
+      del.disabled = true;
+      await N.postJson('/api/chats/delete', { id }).catch(() => ({}));
+      N.forgetChat(id);
+      openHistory();
+    };
+    root.append(h('button', { type: 'button', class: BTN, onclick: () => N.continueChat(c) }, ico('message-circle'), H.cont), del);
+  }
+
   // ---------- entry points used by app.js ----------
   function render(name, arg) {
     if (!N.setup) return;
@@ -2085,10 +2429,10 @@
 
   // Building blocks for the monster battle (quest.js).
   const kit = {
-    h, R, ico, CARD, BTN, BTN2, INPUT, screen, titleBar, loading, errorBox, save, markDay, isCorrect, recordAnswer, trainingTasks, openGames, openSubscribe,
+    h, R, ico, CARD, BTN, BTN2, INPUT, screen, titleBar, loading, errorBox, failed, save, markDay, isCorrect, recordAnswer, trainingTasks, openGames, openSubscribe,
     get data() { return data; },
     setStop(fn) { stopActive = fn; },
   };
 
-  window.NimiLearn = { load, render, markDay, openSubscribe, openAdmin, openSettings, renderParent, renderLanding, kit };
+  window.NimiLearn = { load, render, markDay, openSubscribe, openAdmin, openSettings, renderParent, renderLanding, openHistory, kit };
 })();

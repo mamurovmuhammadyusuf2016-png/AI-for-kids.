@@ -27,6 +27,8 @@
   .muted { color: var(--muted); font-size: 14px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; margin: 12px 0; }
   .lang { display: flex; gap: 8px; margin: 16px 0 8px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--fg); text-decoration: none; font-weight: 600; font-size: 18px; }
+  .brand img { width: 40px; height: 40px; object-fit: contain; }
   .lang a { color: var(--fg); text-decoration: none; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; }
   a { color: var(--accent); }
   ul { padding-left: 20px; }
@@ -35,7 +37,7 @@
 </head>
 <body>
 <main>
-  <p><a href="/">← Nimi AI</a></p>
+  <p><a class="brand" href="/"><img src="/img/logo-mark.png" alt="">Nimi AI</a></p>
   <div class="lang"><a href="#ru">Русский</a><a href="#uz">O'zbekcha</a></div>
 
   <section id="ru">
@@ -54,7 +56,8 @@
     <h2>Что мы не собираем</h2>
     <div class="card"><ul>
       <li>Мы <b>не спрашиваем</b> имя, адрес, школу и телефон ребёнка. Если ребёнок сам напишет их в чат, Nimi попросит больше так не делать.</li>
-      <li><b>Сообщения в чате и фото задач</b> не сохраняются на нашем сервере. Они отправляются ИИ-сервису (сейчас Google Gemini), чтобы получить ответ, а история чата хранится только на устройстве ученика.</li>
+      <li><b>История чатов</b> — тексты вопросов и ответов сохраняются в аккаунте ученика (последние 50 чатов), чтобы они были видны на любом устройстве. Их видит только сам ученик; ученик может удалить любой чат в «Истории чатов». <b>Фото задач</b> на нашем сервере не сохраняются — миниатюра остаётся только на устройстве ученика.</li>
+      <li>Чтобы получить ответ, текст вопроса и фото задачи отправляются ИИ-сервису (сейчас Google Gemini).</li>
       <li>Мы не показываем рекламу и не продаём данные.</li>
     </ul></div>
 
@@ -98,7 +101,8 @@
     <h2>Biz nimalarni yig'maymiz</h2>
     <div class="card"><ul>
       <li>Biz bolaning ismi, manzili, maktabi va telefonini <b>so'ramaymiz</b>. Agar bola o'zi chatga yozsa, Nimi buni boshqa qilmaslikni so'raydi.</li>
-      <li><b>Chatdagi xabarlar va masala suratlari</b> serverimizda saqlanmaydi. Ular javob olish uchun AI-xizmatga (hozir Google Gemini) yuboriladi, chat tarixi esa faqat o'quvchining qurilmasida saqlanadi.</li>
+      <li><b>Chat tarixi</b> — savol va javoblar matni o'quvchi akkauntida saqlanadi (oxirgi 50 ta chat), ular istalgan qurilmada ko'rinishi uchun. Ularni faqat o'quvchining o'zi ko'radi; o'quvchi istalgan chatni «Chatlar tarixi»da o'chirishi mumkin. <b>Masala suratlari</b> serverimizda saqlanmaydi — kichik nusxasi faqat o'quvchining qurilmasida qoladi.</li>
+      <li>Javob olish uchun savol matni va masala surati AI-xizmatga (hozir Google Gemini) yuboriladi.</li>
       <li>Biz reklama ko'rsatmaymiz va ma'lumotlarni sotmaymiz.</li>
     </ul></div>
 

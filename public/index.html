@@ -14,7 +14,23 @@
     document.querySelector('meta[name="theme-color"]').content = t === 'light' ? '#ffffff' : '#000000';
   })();
 </script>
-<meta name="description" content="Nimi AI — ИИ-репетитор для школьников: помогает решать задачи самому, без готовых ответов.">
+<meta name="description" content="Nimi AI — ИИ-репетитор для школьников 1–11 класса. Не даёт списать: задаёт наводящие вопросы, и ребёнок решает сам. На русском и узбекском.">
+<!-- Link preview in Telegram, WhatsApp, Instagram and search -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Nimi AI">
+<meta property="og:title" content="Nimi AI — репетитор, который учит думать">
+<meta property="og:description" content="ИИ-репетитор для школьников 1–11 класса на русском и узбекском. Каждый раздел можно попробовать бесплатно.">
+<meta property="og:url" content="https://nimi-ai.onrender.com/">
+<meta property="og:image" content="https://nimi-ai.onrender.com/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="uz_UZ">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Nimi AI — репетитор, который учит думать">
+<meta name="twitter:description" content="ИИ-репетитор для школьников 1–11 класса на русском и узбекском.">
+<meta name="twitter:image" content="https://nimi-ai.onrender.com/img/og.png">
+<link rel="canonical" href="https://nimi-ai.onrender.com/">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/img/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -34,7 +50,7 @@
 
   <!-- Header -->
   <header class="flex items-center gap-3">
-    <img src="/img/avatar.webp" data-img="avatar" alt="" class="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white/10">
+    <img src="/img/logo-mark.png" data-img="logo" alt="Nimi AI" class="h-11 w-11 shrink-0 object-contain">
     <div class="min-w-0 flex-1">
       <h1 class="truncate text-lg font-semibold leading-tight text-white" data-i18n="title"></h1>
       <button id="changeSetup" type="button" class="hidden max-w-full items-center gap-1 truncate text-[13px] text-slate-400 hover:text-white">
@@ -61,6 +77,7 @@
         <button type="button" data-action="settings" class="menu-item student-only flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="circle-user"></span><span data-i18n="settings"></span></button>
         <button type="button" data-action="subscribe" class="menu-item student-only flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-amber-200 hover:bg-white/5"><span data-icon="star"></span><span data-i18n="subscription"></span></button>
         <button type="button" data-action="admin" class="menu-item hidden w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="shield-check"></span><span data-i18n="adminPanel"></span></button>
+        <button type="button" data-action="history" class="menu-item student-only flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="history"></span><span data-i18n="historyMenu"></span></button>
         <button type="button" data-action="report" class="menu-item student-only flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="file-text"></span><span data-i18n="reportBtn"></span></button>
         <button type="button" data-action="share" class="menu-item student-only flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="share-2"></span><span data-i18n="share"></span></button>
         <a href="/privacy.html" target="_blank" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-300 hover:bg-white/5"><span data-icon="shield-check"></span><span data-i18n="privacyLink"></span></a>
@@ -75,7 +92,7 @@
   <!-- Auth screen: email + password or Google -->
   <main id="auth" class="mt-4 hidden flex-1 overflow-y-auto pb-2">
     <div class="flex items-center gap-4 rounded-3xl bg-night-900/80 p-4 ring-1 ring-white/5">
-      <img src="/img/welcome.webp" data-img="welcome" alt="" class="h-20 w-20 shrink-0 rounded-2xl object-cover">
+      <img src="/img/logo-mark.png" data-img="logo" alt="" class="h-20 w-20 shrink-0 object-contain">
       <div class="min-w-0 flex-1">
         <p class="text-lg font-semibold text-white" data-i18n="welcomeTitle"></p>
         <p class="mt-1 text-sm text-slate-400" data-i18n="welcomeText"></p>
@@ -124,7 +141,7 @@
   <!-- Setup screen: subject + grade -->
   <main id="setup" class="mt-4 hidden flex-1 overflow-y-auto pb-2">
     <div class="flex items-center gap-4 rounded-3xl bg-night-900/80 p-4 ring-1 ring-white/5">
-      <img src="/img/welcome.webp" data-img="welcome" alt="" class="h-20 w-20 shrink-0 rounded-2xl object-cover">
+      <img src="/img/logo-mark.png" data-img="logo" alt="" class="h-20 w-20 shrink-0 object-contain">
       <div class="min-w-0 flex-1">
         <p class="text-lg font-semibold text-white" data-i18n="welcomeTitle"></p>
         <p class="mt-1 text-sm text-slate-400" data-i18n="welcomeText"></p>
@@ -169,6 +186,7 @@
           <div id="plusMenu" class="absolute bottom-14 left-0 z-30 hidden w-60 overflow-hidden rounded-2xl bg-night-800 py-1 shadow-2xl ring-1 ring-white/10">
             <button id="photoAction" type="button" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="camera"></span><span data-i18n="photoTask"></span></button>
             <button id="newChatAction" type="button" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="rotate-ccw"></span><span data-i18n="menuNew"></span></button>
+            <button id="historyAction" type="button" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><span data-icon="history"></span><span data-i18n="historyMenu"></span></button>
           </div>
         </div>
         <div class="flex min-h-14 min-w-0 flex-1 items-end rounded-[28px] bg-night-900 p-1.5 pl-4 ring-1 ring-white/10 focus-within:ring-brand-400/60">

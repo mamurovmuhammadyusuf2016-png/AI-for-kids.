@@ -5,7 +5,7 @@ const { buildSystemPrompt, REPORT_PROMPT } = require('./prompt');
 const { verifyStudentMessages, findWrongClaims, fmt } = require('./math');
 const auth = require('./auth');
 const learn = require('./learn');
-const { PLANS, planId } = require('./plans');
+const { PLANS, planId, FREE_TRIES } = require('./plans');
 
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.AI_API_KEY;
@@ -30,6 +30,20 @@ const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 const ADMIN_EMAILS = new Set((process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean));
 // Free without a subscription: word cards (and the topic list), games and diary run in the browser.
 const FREE_PATHS = new Set(['/api/learn/cards', '/api/learn/topics', '/api/data', '/api/subscribe']);
+// Paid sections that can be tried for free once (plans.js FREE_TRIES): the key of each request.
+const TRY_KINDS = new Set(['training', 'test', 'exam', 'olympiad', 'reading']);
+function tryKey(urlPath, body) {
+  if (urlPath === '/api/chat') return body.image ? 'photo' : 'chat';
+  if (urlPath === '/api/report') return 'report';
+  const kind = urlPath.startsWith('/api/learn/') ? urlPath.slice('/api/learn/'.length) : '';
+  return TRY_KINDS.has(kind) ? kind : null;
+}
+// After a free try worked: spend it and say how many of this kind are left.
+async function spendFreeTry(user) {
+  if (!user.freeTry) return undefined;
+  await auth.useFree(user.id, user.freeTry);
+  return Math.max(0, (auth.freeLeft(user)[user.freeTry] || 0) - 1);
+}
 const MAX_DATA_BYTES = 300000;
 const FREQUENT_WINDOW_MS = 3 * 60 * 1000;
 const FREQUENT_COUNT = 5;
@@ -45,6 +59,8 @@ const MIME = {
   '.webp': 'image/webp',
   '.webmanifest': 'application/manifest+json',
   '.woff2': 'font/woff2',
+  '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
 };
 
 // userId -> [timestamps of recent questions], for the "asking too often" nudge.
@@ -347,7 +363,8 @@ async function handleChat(req, res, body, user) {
 
   const used = await countQuestion(user.id, day);
   recent.push(now);
-  const result = { reply, remaining: Math.max(0, limit - used), limit, tooFrequent, corrected: wrong.length > 0 };
+  const freeLeft = await spendFreeTry(user);
+  const result = { reply, remaining: Math.max(0, limit - used), limit, tooFrequent, corrected: wrong.length > 0, freeLeft };
   if (!send) return sendJson(res, 200, result);
   send({ type: 'done', ...result });
   res.end();
@@ -375,7 +392,7 @@ async function handleReport(req, res, body, user) {
       { role: 'user', content: `Переписка ученика с репетитором:\n\n${transcript}` },
     ], { meter });
     await chargeTokens(user, meter);
-    sendJson(res, 200, { report: stripEmoji(report) });
+    sendJson(res, 200, { report: stripEmoji(report), freeLeft: await spendFreeTry(user) });
   } catch (err) {
     aiErrorResponse(res, err);
   }
@@ -503,7 +520,7 @@ async function handleLearn(req, res, body, user, kind) {
   if (empty) return sendJson(res, 502, { code: 'ai_error' });
   if (kind === 'topics') await auth.cacheTopics(params.subject, params.grade, params.lang, data.topics);
   else await countGeneration(user.id, day);
-  sendJson(res, 200, data);
+  sendJson(res, 200, { ...data, freeLeft: await spendFreeTry(user) });
 }
 
 // ---------- learning: saved progress, diary and cards ----------
@@ -587,6 +604,47 @@ async function handleAccount(req, res, body, user, action) {
   sendJson(res, 404, { code: 'not_found' });
 }
 
+// ---------- chat history (saved for the student; open without a subscription) ----------
+const CHAT_ID_RE = /^[A-Za-z0-9_-]{6,40}$/;
+const MAX_CHAT_BYTES = 300000;
+
+// A chat from the browser: texts only (a photo is kept as a mark, the picture stays on the device).
+function cleanChat(c) {
+  if (!c || typeof c !== 'object' || !CHAT_ID_RE.test(String(c.id || ''))) return null;
+  const messages = (Array.isArray(c.messages) ? c.messages : []).slice(-200)
+    .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+    .map((m) => ({ role: m.role, content: m.content.slice(0, 8000), ts: Number(m.ts) || 0, ...(m.photo || m.img ? { photo: true } : {}) }));
+  if (!messages.length) return null;
+  return {
+    id: String(c.id),
+    date: /^\d{4}-\d{2}-\d{2}$/.test(c.date) ? c.date : today(),
+    subject: /^[a-z]{2,20}$/.test(c.subject) ? c.subject : 'math',
+    grade: Math.min(11, Math.max(1, parseInt(c.grade, 10) || 5)),
+    messages,
+  };
+}
+
+async function handleChats(req, res, body, user, action) {
+  if (!auth.enabled()) return sendJson(res, 503, { code: 'auth_unavailable' });
+  if (action === 'list') return sendJson(res, 200, { chats: await auth.listChats(user.id) });
+  if (action === 'recent') return sendJson(res, 200, { chats: await auth.recentChats(user.id, 10) });
+  const id = String(body.id || body.chat?.id || '');
+  if (!CHAT_ID_RE.test(id)) return sendJson(res, 400, { code: 'bad_request' });
+  if (action === 'get') return sendJson(res, 200, { chat: await auth.getChat(user.id, id) });
+  if (action === 'delete') {
+    await auth.deleteChat(user.id, id);
+    return sendJson(res, 200, { ok: true });
+  }
+  if (action === 'save') {
+    const chat = cleanChat(body.chat);
+    if (!chat) return sendJson(res, 400, { code: 'bad_request' });
+    if (JSON.stringify(chat).length > MAX_CHAT_BYTES) return sendJson(res, 413, { code: 'too_large' });
+    await auth.saveChat(user.id, chat);
+    return sendJson(res, 200, { ok: true });
+  }
+  sendJson(res, 404, { code: 'not_found' });
+}
+
 // ---------- parent account: the child's progress, diary, subscription ----------
 const PARENT_REPORT_PROMPT = `Ты помогаешь родителям понять, как учится их ребёнок в Nimi AI (ИИ-репетитор для школьников).
 По статистике составь короткий отчёт для родителей на языке: {LANG}. Обычный текст, короткие пункты, без таблиц, без эмодзи.
@@ -601,7 +659,7 @@ async function handleParent(req, res, body, user, action) {
   if (action === 'overview') {
     const data = await auth.getData(child.id);
     return sendJson(res, 200, {
-      child: { email: child.email, plan: auth.plan(child), tokens: await auth.tokensThisMonth(child.id, month()) },
+      child: { email: child.email, plan: auth.plan(child), free: auth.freeLeft(child), tokens: await auth.tokensThisMonth(child.id, month()) },
       usedToday: await auth.usedToday(child.id, today()),
       limit: dailyLimit(child),
       progress: data.progress || null,
@@ -618,7 +676,9 @@ async function handleParent(req, res, body, user, action) {
     return sendJson(res, 200, { request: { id: request.id, months: request.months, plan: request.plan }, price: PLANS[request.plan].price * request.months, email: child.email });
   }
   if (action === 'report') {
-    if (!auth.plan(child).active) return sendJson(res, 402, { code: 'premium_required' });
+    // Without a subscription the AI report can be tried once (the child's free try).
+    const trying = !auth.plan(child).active;
+    if (trying && !auth.freeLeft(child).report) return sendJson(res, 402, { code: 'premium_required', feature: 'report' });
     if (!(await tokensLeft(child))) return sendJson(res, 429, { code: 'tokens_out' });
     const data = await auth.getData(child.id);
     const stats = JSON.stringify({ progress: data.progress || {}, diary: (data.diary || []).slice(-30) }).slice(0, 20000);
@@ -627,6 +687,7 @@ async function handleParent(req, res, body, user, action) {
       const meter = newMeter();
       const report = await generate(PARENT_REPORT_PROMPT.replace('{LANG}', lang), [{ role: 'user', content: `Статистика ребёнка (JSON): ${stats}` }], { meter });
       await chargeTokens(child, meter);
+      if (trying) await auth.useFree(child.id, 'report');
       return sendJson(res, 200, { report: stripEmoji(report) });
     } catch (err) {
       return aiErrorResponse(res, err);
@@ -636,7 +697,7 @@ async function handleParent(req, res, body, user, action) {
 }
 
 // API areas with a sub-action in the path: /api/<area>/<action>.
-const AREA_HANDLERS = { admin: handleAdmin, parent: handleParent, account: handleAccount };
+const AREA_HANDLERS = { admin: handleAdmin, parent: handleParent, account: handleAccount, chats: handleChats };
 
 // Account actions: each returns { user, cookie }.
 const AUTH_ACTIONS = { '/api/auth/register': auth.register, '/api/auth/login': auth.login, '/api/auth/google': auth.google };
@@ -690,9 +751,14 @@ async function handleApiPost(req, res, urlPath) {
   if (area === 'parent' && role !== 'parent') return sendJson(res, 403, { code: 'forbidden' });
   if (area === 'student' && role !== 'student') return sendJson(res, 403, { code: 'forbidden' });
   if (areaName === 'account' && !auth.enabled()) return sendJson(res, 503, { code: 'auth_unavailable' });
-  // Without access (no free week or subscription) only cards, games and the diary stay open.
-  const locked = area === 'student' && auth.enabled() && !FREE_PATHS.has(urlPath) && areaName !== 'account' && !isAdmin(user) && !auth.plan(user).active;
-  if (locked) return sendJson(res, 402, { code: 'premium_required' });
+  // Without access (no free week or subscription) cards, games, the diary and chat history stay open,
+  // and every paid section can be tried for free (plans.js FREE_TRIES).
+  const locked = area === 'student' && auth.enabled() && !FREE_PATHS.has(urlPath) && !['account', 'chats'].includes(areaName) && !isAdmin(user) && !auth.plan(user).active;
+  if (locked) {
+    const key = tryKey(urlPath, body);
+    if (!key || !auth.freeLeft(user)[key]) return sendJson(res, 402, { code: 'premium_required', feature: key });
+    user.freeTry = key;
+  }
   return handler(req, res, body, user);
 }
 
@@ -708,6 +774,7 @@ async function route(req, res) {
         billing: {
           plans: Object.entries(PLANS).map(([id, p]) => ({ id, name: p.name, price: p.price, input: p.input, output: p.output, questions: p.questions })),
           price: PLANS.pro.price,
+          freeTries: FREE_TRIES,
           trialDays: 7,
           telegram: CONTACT_TELEGRAM,
           phone: CONTACT_PHONE,

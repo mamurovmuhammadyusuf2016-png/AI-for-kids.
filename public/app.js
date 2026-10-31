@@ -6,7 +6,9 @@
   const MAX_SESSIONS = 10;
 
   // Illustrations; swap a path here to change the picture everywhere.
+  // logo: the Nimi mascot with its rays (header, sign-in); avatar: the mascot's face in the chat.
   const IMAGES = {
+    logo: '/img/logo-mark.png',
     avatar: '/img/avatar.webp',
     welcome: '/img/welcome.webp',
     break: '/img/break.webp',
@@ -43,7 +45,11 @@
       menuNew: 'Новый чат',
       subscription: 'Подписка',
       adminPanel: 'Админка',
-      premiumRequired: 'Этот раздел открывается с бесплатной неделей или подпиской.',
+      premiumRequired: 'Бесплатная попытка уже использована. Дальше этот раздел открывается с бесплатной неделей или подпиской.',
+      chatFreeLeft: (n) => `Бесплатных вопросов осталось: ${n}`,
+      chatFreeOver: 'Бесплатные вопросы закончились. Чтобы продолжить, оформи подписку или попроси бесплатную неделю: меню ⋮ → «Подписка».',
+      historyMenu: 'История чатов',
+      photoMark: 'Фото задачи',
       photoTask: 'Фото задачи',
       photoReady: 'Фото задачи прикреплено. Можешь дописать вопрос.',
       photoDefault: 'Помоги разобраться с задачей на фото.',
@@ -134,7 +140,11 @@
       menuNew: 'Yangi chat',
       subscription: 'Obuna',
       adminPanel: 'Admin panel',
-      premiumRequired: "Bu bo'lim bepul hafta yoki obuna bilan ochiladi.",
+      premiumRequired: "Bepul urinish ishlatib bo'lingan. Endi bu bo'lim bepul hafta yoki obuna bilan ochiladi.",
+      chatFreeLeft: (n) => `Qolgan bepul savollar: ${n}`,
+      chatFreeOver: "Bepul savollar tugadi. Davom etish uchun obuna rasmiylashtir yoki bepul haftani so'ra: ⋮ menyu → «Obuna».",
+      historyMenu: 'Chatlar tarixi',
+      photoMark: 'Masala surati',
       photoTask: 'Masala surati',
       photoReady: "Masala surati biriktirildi. Savolingni ham yozishing mumkin.",
       photoDefault: 'Suratdagi masalani tushunishga yordam ber.',
@@ -276,9 +286,70 @@
     sessions = sessions.slice(-MAX_SESSIONS);
     store.set('sessions', sessions);
   }
+  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   function newSession() {
-    sessions.push({ date: today(), subject: setup.subject, grade: setup.grade, messages: [] });
+    sessions.push({ id: newId(), created: Date.now(), date: today(), subject: setup.subject, grade: setup.grade, messages: [] });
     saveSessions();
+  }
+
+  // ---------- chat history in the account (texts only; photos stay on this device) ----------
+  const chatUploads = {};
+  const isStudent = () => !!user?.email && (user.role || 'student') === 'student';
+  function uploadChat(s) {
+    if (!config.accounts || !isStudent() || !s?.id || !s.messages.length) return;
+    clearTimeout(chatUploads[s.id]);
+    chatUploads[s.id] = setTimeout(() => {
+      const chat = {
+        id: s.id, date: s.date, subject: s.subject, grade: s.grade,
+        messages: s.messages.map((m) => ({ role: m.role, content: m.content, ts: m.ts, ...(m.img || m.photo ? { photo: true } : {}) })),
+      };
+      postJson('/api/chats/save', { chat }).catch(() => {});
+    }, 400);
+  }
+  // When the chat was last used: its newest message, else when it was started.
+  const lastUsed = (s) => Math.max(0, ...s.messages.map((m) => m.ts || 0)) || s.created || Date.parse(s.date) || 0;
+  // After sign-in: chats from other devices come here; chats only on this device go to the account.
+  async function syncChats() {
+    if (!config.accounts || !isStudent()) return;
+    let remote;
+    try { remote = (await postJson('/api/chats/recent', {})).chats; } catch { return; }
+    if (!Array.isArray(remote)) return;
+    const local = new Map(sessions.map((x) => [x.id, x]));
+    const remoteCount = new Map(remote.map((r) => [r.id, r.messages.length]));
+    for (const r of remote) {
+      const mine = local.get(r.id);
+      if (!mine) { sessions.push({ ...r }); continue; }
+      if (r.messages.length > mine.messages.length) {
+        const imgs = new Map(mine.messages.filter((m) => m.img).map((m) => [m.ts, m.img]));
+        mine.messages = r.messages.map((m) => (imgs.has(m.ts) ? { ...m, img: imgs.get(m.ts) } : m));
+      }
+    }
+    sessions.forEach((x) => { if (x.messages.length > (remoteCount.get(x.id) ?? 0)) uploadChat(x); });
+    sessions.sort((a, b) => lastUsed(a) - lastUsed(b));
+    saveSessions();
+    const cur = currentSession();
+    if (setup && (!cur || cur.date !== today() || cur.subject !== setup.subject || cur.grade !== setup.grade)) newSession();
+  }
+  // Opens a chat from the history and continues it (its subject and class become the current ones).
+  function continueChat(chat) {
+    let s = sessions.find((x) => x.id === chat.id);
+    if (!s) s = { ...chat };
+    else if (chat.messages.length > s.messages.length) s.messages = chat.messages;
+    s.date = today();
+    sessions = sessions.filter((x) => x !== s && (x.messages.length || x !== currentSession()));
+    sessions.push(s);
+    setup = { subject: s.subject, grade: s.grade };
+    store.set('setup', setup);
+    saveSessions();
+    renderStatus();
+    if (!canUse('chat')) return window.NimiLearn?.openSubscribe('chat');
+    showScreen('chat');
+  }
+  function forgetChat(id) {
+    const wasCurrent = currentSession()?.id === id;
+    sessions = sessions.filter((x) => x.id !== id);
+    if (wasCurrent && setup) newSession();
+    else saveSessions();
   }
 
   // ---------- rendering ----------
@@ -421,7 +492,7 @@
 
   const timeLabel = (ts) => (ts ? new Date(ts).toLocaleTimeString(lang === 'uz' ? 'uz-UZ' : 'ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false }) : '');
 
-  function addBubble(role, text, { ts, extra = '', img } = {}) {
+  function addBubble(role, text, { ts, extra = '', img, photo } = {}) {
     const row = document.createElement('div');
     const bubble = document.createElement('div');
     const meta = document.createElement('div');
@@ -430,12 +501,19 @@
       row.className = 'flex justify-end pl-10';
       bubble.className = 'bubble max-w-[85%] whitespace-pre-wrap break-words rounded-3xl rounded-br-md bg-brand-500 px-4 pb-2 pt-3 text-base leading-relaxed text-onfill shadow-lg shadow-brand-500/20 ' + extra;
       if (img) bubble.appendChild(Object.assign(document.createElement('img'), { src: img, alt: '', className: 'mb-2 max-h-48 rounded-2xl object-cover' }));
+      else if (photo) {
+        const mark = document.createElement('span');
+        mark.className = 'mb-1 flex items-center gap-1.5 text-xs text-onfill/80';
+        mark.innerHTML = icon('camera', 'h-4 w-4');
+        mark.appendChild(document.createTextNode(t('photoMark')));
+        bubble.appendChild(mark);
+      }
       bubble.appendChild(document.createTextNode(text));
       meta.className += ' text-onfill/70';
       if (ts) meta.innerHTML = `<span>${timeLabel(ts)}</span>${icon('check-check', 'h-4 w-4')}`;
     } else {
       row.className = 'flex items-start gap-3 pr-6';
-      row.innerHTML = `<img src="${IMAGES.avatar}" alt="" class="mt-1 h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-white/10">`;
+      row.innerHTML = `<img src="${IMAGES.avatar}" alt="" class="mt-1 h-10 w-10 shrink-0 object-contain">`;
       bubble.className = 'bubble max-w-[85%] whitespace-pre-wrap break-words rounded-3xl rounded-tl-md bg-night-800 px-4 pb-2 pt-3 text-base leading-relaxed text-slate-100 ring-1 ring-white/5 ' + extra;
       bubble.innerHTML = formatReply(text);
       meta.className += ' text-slate-400';
@@ -470,7 +548,7 @@
     $('chat').innerHTML = '';
     const s = currentSession();
     addBubble('assistant', t('greeting')(subjectName(setup.subject), setup.grade));
-    s.messages.forEach((m) => addBubble(m.role, m.content, { ts: m.ts, img: m.img }));
+    s.messages.forEach((m) => addBubble(m.role, m.content, { ts: m.ts, img: m.img, photo: m.photo }));
   }
 
   function showNotice(text, ms = 6000) {
@@ -551,8 +629,14 @@
   $('backBtn').onclick = () => setup && showScreen('home');
   // The chat is part of the subscription: after the free week it opens the subscription page.
   const hasAccess = () => !config.accounts || !!user?.admin || !!user?.plan?.active;
+  // Without a subscription each paid section has free tries (the server counts them).
+  const freeLeft = (key) => Number(user?.free?.[key]) || 0;
+  const canUse = (key) => hasAccess() || freeLeft(key) > 0;
+  function setFreeLeft(key, n) {
+    if (user?.free && typeof n === 'number') user.free[key] = Math.max(0, n);
+  }
   document.querySelectorAll('.tab-btn').forEach((b) => {
-    b.onclick = () => (b.dataset.tab === 'chat' && !hasAccess() ? window.NimiLearn?.openSubscribe() : showScreen(b.dataset.tab));
+    b.onclick = () => (b.dataset.tab === 'chat' && !canUse('chat') ? window.NimiLearn?.openSubscribe('chat') : showScreen(b.dataset.tab));
   });
   function startNewChat() {
     if (busy || !currentSession().messages.length) return;
@@ -566,7 +650,7 @@
       store.set('lang', lang);
       applyLang();
       if (onChat()) renderChat();
-      else if (TAB_OF[currentScreen]) showScreen(currentScreen);
+      else if (TAB_OF[currentScreen] || ['landing', 'parent'].includes(currentScreen)) showScreen(currentScreen);
     };
   });
 
@@ -595,6 +679,7 @@
       else if (action === 'settings') window.NimiLearn?.openSettings();
       else if (action === 'admin') window.NimiLearn?.openAdmin();
       else if (action === 'report') openReport();
+      else if (action === 'history') window.NimiLearn?.openHistory();
       else if (action === 'share') share();
       else if (action === 'change') openSetup();
       else if (action === 'new' && setup) {
@@ -619,6 +704,7 @@
   $('plusBtn').onclick = (e) => { e.stopPropagation(); plusMenu.classList.toggle('hidden'); };
   document.addEventListener('click', () => plusMenu.classList.add('hidden'));
   $('newChatAction').onclick = () => { plusMenu.classList.add('hidden'); startNewChat(); };
+  $('historyAction').onclick = () => { plusMenu.classList.add('hidden'); window.NimiLearn?.openHistory(); };
   $('photoAction').onclick = () => { plusMenu.classList.add('hidden'); $('photoInput').click(); };
   function shrinkImage(img, maxSide, quality) {
     const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
@@ -710,6 +796,8 @@
     if (!text) return;
     if (remaining() <= 0) { showNotice(t('dailyLimit'), 0); return; }
     if (timerState().breakUntil > Date.now()) return;
+    const tryKey = photo ? 'photo' : 'chat';
+    if (!canUse(tryKey)) { window.NimiLearn?.openSubscribe(tryKey); return; }
     if (recognizer) recognizer.stop();
 
     const s = currentSession();
@@ -765,10 +853,15 @@
         const botMsg = { role: 'assistant', content: data.reply, ts: Date.now() };
         s.messages.push(botMsg);
         saveSessions();
+        uploadChat(s);
         addBubble('assistant', data.reply, { ts: botMsg.ts });
         setRemaining(data.remaining);
         window.NimiLearn?.markDay();
         if (data.tooFrequent) showNotice(t('tooFrequent'));
+        if (typeof data.freeLeft === 'number') {
+          setFreeLeft(tryKey, data.freeLeft);
+          if (tryKey === 'chat') showNotice(data.freeLeft ? t('chatFreeLeft')(data.freeLeft) : t('chatFreeOver'), data.freeLeft ? 4000 : 0);
+        }
       } else if (data.code === 'unauthorized') {
         s.messages.pop();
         saveSessions();
@@ -776,7 +869,7 @@
       } else if (data.code === 'premium_required') {
         fail(t('premiumRequired'));
         await refreshUser();
-        window.NimiLearn?.openSubscribe();
+        window.NimiLearn?.openSubscribe(data.feature || tryKey);
       } else if (data.code === 'daily_limit') {
         setRemaining(0);
         fail(t('dailyLimit'));
@@ -854,7 +947,7 @@
   }
 
   async function openReport() {
-    if (!hasAccess()) return window.NimiLearn?.openSubscribe();
+    if (!canUse('report')) return window.NimiLearn?.openSubscribe('report');
     $('reportModal').classList.remove('hidden');
     $('reportModal').classList.add('flex');
     const withMessages = sessions.filter((s) => s.messages.some((m) => m.role === 'user'));
@@ -878,6 +971,8 @@
         }),
       });
       const data = await r.json().catch(() => ({}));
+      if (typeof data.freeLeft === 'number') setFreeLeft('report', data.freeLeft);
+      if (data.code === 'premium_required') { closeReport(); window.NimiLearn?.openSubscribe('report'); return; }
       if (data.report) box.innerHTML = formatReply(data.report);
       else box.textContent = data.code === 'rate_limited' ? t('rateLimited') : data.code === 'tokens_out' ? t('tokensOut') : data.code === 'empty' ? t('reportEmpty') : t('aiError');
     } catch {
@@ -957,13 +1052,14 @@
     if (u.role === 'parent' || u.role === 'admin') return showScreen(u.role);
     setup = store.get('setup', null);
     sessions = store.get('sessions', []);
+    sessions.forEach((x) => { if (!x.id) x.id = newId(); });
     pendingSubject = setup && setup.subject;
     pendingGrade = setup && setup.grade;
     setRemaining(left);
     if (setup && (!currentSession() || currentSession().date !== today())) newSession();
     renderSetupOptions();
     renderStatus();
-    Promise.resolve(window.NimiLearn?.load()).finally(() => showScreen(setup && currentSession() ? 'home' : 'setup'));
+    Promise.allSettled([window.NimiLearn?.load(), syncChats()]).finally(() => showScreen(setup && currentSession() ? 'home' : 'setup'));
   }
 
   function signedOut() {
@@ -1109,6 +1205,11 @@
     get accounts() { return !!config.accounts; },
     get billing() { return config.billing || {}; },
     hasAccess,
+    canUse,
+    freeLeft,
+    setFreeLeft,
+    continueChat,
+    forgetChat,
     refreshUser,
     showAuth,
     get child() { return childEmail; },
