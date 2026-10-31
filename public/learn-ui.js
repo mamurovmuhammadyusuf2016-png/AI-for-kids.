@@ -176,6 +176,72 @@
         delConfirm: (email) => `Удалить ${email} вместе с прогрессом и аккаунтом родителя? Это нельзя отменить.`,
         delYes: 'Да, удалить',
         cancel: 'Отмена',
+        tabs: { dash: 'Показатели', manage: 'Ученики и заявки' },
+        one: 'Снять подписку',
+        oneConfirm: (email) => `Снять подписку у ${email}? Доступ закончится сразу.`,
+        oneYes: 'Да, снять',
+        revoke: 'Снять подписки у всех, кроме…',
+        revokeHint: 'Подписка закончится сразу у всех учеников с активным доступом, кроме почт ниже. Почты — по одной в строке или через запятую.',
+        keepPh: 'Почты, которым подписку оставить',
+        preview: 'Показать, у кого снимется',
+        willRevoke: (n) => `Подписка снимется у ${n}:`,
+        keeping: (list) => `Останется у: ${list}`,
+        keepNone: 'Исключений нет: подписка снимется у всех.',
+        nobody: 'Снимать не у кого: кроме оставленных, активных подписок нет.',
+        confirm: (n) => `Да, снять у ${n}`,
+        revoked: (n) => `Готово: подписка снята у ${n}.`,
+        dash: {
+          updated: (time) => `Обновлено в ${time}`,
+          refresh: 'Обновить',
+          today: 'Сегодня',
+          newToday: 'Новых учеников',
+          activeToday: 'Занимались',
+          chatToday: 'Вопросов в чат',
+          learnToday: 'Наборов заданий',
+          pending: 'Заявок ждут',
+          students: 'Ученики',
+          total: 'Всего',
+          d7: 'За 7 дней',
+          d30: 'За 30 дней',
+          google: 'Через Google',
+          parents: 'Родителей',
+          admins: 'Админов',
+          subs: 'Подписки',
+          active: 'Активных',
+          trial: 'Бесплатная неделя',
+          expiring: 'Закончатся за 7 дней',
+          expired: 'Закончились',
+          never: 'Ни разу не было',
+          money: 'Деньги',
+          monthly: 'Платные подписки сейчас, в месяц',
+          paid30: 'Оплачено за 30 дней',
+          paidAll: 'Оплачено за всё время',
+          paidNote: (n) => `Оплаты считаются по закрытым заявкам (${n}). Подписки, включённые без заявки, сюда не входят.`,
+          activity: 'Активность учеников',
+          activeUsers: 'Занимались',
+          chat: 'Вопросов в чат',
+          learn: 'Наборов заданий',
+          charts: 'По дням, последние 30 дней',
+          chartReg: 'Новые ученики',
+          chartUsers: 'Занимались',
+          chartChat: 'Вопросы в чат',
+          sumAll: (n) => `Всего за 30 дней: ${n}`,
+          avg: (n) => `В среднем ${n} в день`,
+          peak: (n) => `макс. ${n} в день`,
+          sections: 'Пользуются разделами',
+          progress: 'Прогресс',
+          diary: 'Дневник',
+          cards: 'Карточки',
+          quest: 'Битва с монстрами',
+          tokens: (m) => `Токены ИИ за ${m}`,
+          input: 'ИИ прочитал (входящие)',
+          output: 'ИИ написал (исходящие)',
+          tokenUsers: 'Учеников с расходом',
+          top: 'Больше всех тратят в этом месяце',
+          share: (n) => `${n}% лимита`,
+          noTier: 'без доступа',
+          noTop: 'В этом месяце ещё никто не тратил токены.',
+        },
       },
       loadingTasks: 'Готовлю задания… Это займёт до 30 секунд.',
       loadingText: 'Подбираю текст… Это займёт до 30 секунд.',
@@ -446,6 +512,72 @@
         delConfirm: (email) => `${email} natijalari va ota-ona akkaunti bilan birga o'chirilsinmi? Buni qaytarib bo'lmaydi.`,
         delYes: "Ha, o'chirish",
         cancel: 'Bekor qilish',
+        tabs: { dash: "Ko'rsatkichlar", manage: "O'quvchilar va arizalar" },
+        one: 'Obunani bekor qilish',
+        oneConfirm: (email) => `${email} obunasi bekor qilinsinmi? Ruxsat darhol tugaydi.`,
+        oneYes: 'Ha, bekor qilish',
+        revoke: 'Obunani hammadan olish, bulardan tashqari…',
+        revokeHint: "Faol obunasi bor barcha o'quvchilarda obuna darhol tugaydi, pastdagi pochtalardan tashqari. Pochtalar — har biri yangi qatorda yoki vergul bilan.",
+        keepPh: 'Obunasi qoladigan pochtalar',
+        preview: "Kimdan olinishini ko'rsatish",
+        willRevoke: (n) => `Obuna ${n} ta o'quvchidan olinadi:`,
+        keeping: (list) => `Qoladi: ${list}`,
+        keepNone: 'Istisno yo\'q: obuna hammadan olinadi.',
+        nobody: "Oladigan hech kim yo'q: qoldirilganlardan boshqa faol obuna yo'q.",
+        confirm: (n) => `Ha, ${n} tadan olish`,
+        revoked: (n) => `Tayyor: obuna ${n} ta o'quvchidan olindi.`,
+        dash: {
+          updated: (time) => `${time} da yangilandi`,
+          refresh: 'Yangilash',
+          today: 'Bugun',
+          newToday: "Yangi o'quvchilar",
+          activeToday: "Shug'ullandi",
+          chatToday: 'Chatga savollar',
+          learnToday: "Topshiriqlar to'plami",
+          pending: 'Kutayotgan arizalar',
+          students: "O'quvchilar",
+          total: 'Jami',
+          d7: '7 kunda',
+          d30: '30 kunda',
+          google: 'Google orqali',
+          parents: 'Ota-onalar',
+          admins: 'Adminlar',
+          subs: 'Obunalar',
+          active: 'Faol',
+          trial: 'Bepul hafta',
+          expiring: '7 kunda tugaydi',
+          expired: 'Tugagan',
+          never: "Hech qachon bo'lmagan",
+          money: 'Pul',
+          monthly: "Hozirgi pullik obunalar, oyiga",
+          paid30: "30 kunda to'langan",
+          paidAll: "Hammasi bo'lib to'langan",
+          paidNote: (n) => `To'lovlar yopilgan arizalar bo'yicha hisoblanadi (${n}). Arizasiz yoqilgan obunalar bu yerga kirmaydi.`,
+          activity: "O'quvchilar faolligi",
+          activeUsers: "Shug'ullandi",
+          chat: 'Chatga savollar',
+          learn: "Topshiriqlar to'plami",
+          charts: "Kunlar bo'yicha, oxirgi 30 kun",
+          chartReg: "Yangi o'quvchilar",
+          chartUsers: "Shug'ullandi",
+          chartChat: 'Chatga savollar',
+          sumAll: (n) => `30 kunda jami: ${n}`,
+          avg: (n) => `Kuniga o'rtacha ${n}`,
+          peak: (n) => `kuniga eng ko'pi ${n}`,
+          sections: "Bo'limlardan foydalanadi",
+          progress: 'Natijalar',
+          diary: 'Kundalik',
+          cards: 'Kartochkalar',
+          quest: 'Monstrlar jangi',
+          tokens: (m) => `${m} uchun AI tokenlari`,
+          input: "AI o'qidi (kiruvchi)",
+          output: 'AI yozdi (chiquvchi)',
+          tokenUsers: "Sarflagan o'quvchilar",
+          top: "Bu oy eng ko'p sarflaganlar",
+          share: (n) => `limitning ${n}%`,
+          noTier: 'ruxsatsiz',
+          noTop: "Bu oy hali hech kim token sarflamagan.",
+        },
       },
       loadingTasks: 'Topshiriqlar tayyorlanmoqda… 30 soniyagacha.',
       loadingText: 'Matn tanlanmoqda… 30 soniyagacha.',
@@ -1389,12 +1521,22 @@
 
   // ---------- admin: subscription requests ----------
   let adminRoot = 'activity';
+  let adminTab = 'dash';
   // rootId: 'activity' (from a student admin's menu) or 'adminHome' (the staff account's only screen).
-  async function openAdmin(rootId = adminRoot) {
+  // tab: 'dash' (numbers) or 'manage' (grant access, students, requests).
+  async function openAdmin(rootId = adminRoot, tab = adminTab) {
     adminRoot = rootId;
+    adminTab = tab;
     const root = screen(rootId);
     const A = t('admin');
     root.append(rootId === 'activity' ? titleBar(A.title) : h('h2', { class: 'text-2xl font-semibold text-white' }, A.title));
+    root.append(h('div', { class: 'grid grid-cols-2 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5', role: 'tablist' },
+      ['dash', 'manage'].map((id) => h('button', {
+        type: 'button', role: 'tab', 'aria-selected': String(adminTab === id),
+        class: `min-h-11 rounded-xl px-3 text-sm font-semibold ${adminTab === id ? 'bg-brand-500 text-onfill' : 'text-slate-300 hover:bg-night-700'}`,
+        onclick: () => openAdmin(adminRoot, id),
+      }, A.tabs[id]))));
+    if (adminTab === 'dash') return renderDashboard(root, A);
     const msg = h('p', { class: 'text-sm' });
     const email = h('input', { type: 'email', class: INPUT, placeholder: A.emailPh, id: 'adminEmail' });
     const months = h('select', { class: `${INPUT} appearance-none`, id: 'adminMonths' }, [0, 1, 3, 6, 12].map((m) => h('option', { value: m }, m ? t('sub').monthLabel(m) : A.week)));
@@ -1409,6 +1551,7 @@
       h('div', { class: 'grid gap-2 sm:grid-cols-3' }, months, tier, h('button', { type: 'button', class: BTN, onclick: () => email.value.trim() && grant(email.value.trim(), Number(months.value), null, tier.value) }, A.enable)),
       msg));
     root.append(studentsBlock(A, grant));
+    root.append(revokeBlock(A));
     root.append(h('p', { class: 'font-semibold text-white' }, A.pending));
     const list = h('div', { class: 'flex flex-col gap-2' }, loading(t('loadingTopics')));
     root.append(list);
@@ -1427,6 +1570,130 @@
           h('button', { type: 'button', class: BTN, onclick: () => grant(q.email, Number(q.months), q.id, q.plan) }, A.grant(Number(q.months))),
           h('button', { type: 'button', class: BTN2, onclick: async () => { await N.postJson('/api/admin/reject', { requestId: q.id }); openAdmin(); } }, A.reject)) : null));
     });
+  }
+
+  // Admin: take access away from every student except the listed emails. First it shows who
+  // would lose access; only that exact list is changed after the admin confirms.
+  function revokeBlock(A) {
+    const keep = h('textarea', { class: `${INPUT} min-h-24 py-3`, rows: 3, placeholder: A.keepPh, id: 'adminKeep' });
+    const out = h('div', { class: 'flex flex-col gap-2' });
+    const parse = () => [...new Set(keep.value.split(/[\s,;]+/).map((v) => v.trim().toLowerCase()).filter(Boolean))];
+    const preview = async () => {
+      const kept = parse();
+      out.replaceChildren(loading(t('loadingTopics')));
+      const r = await N.postJson('/api/admin/revoke-except', { keep: kept }).catch(() => ({}));
+      if (!r.users) { out.replaceChildren(h('p', { class: 'text-sm text-rose-200' }, t('errors').default)); return; }
+      if (!r.users.length) { out.replaceChildren(h('p', { class: 'text-sm text-slate-400' }, A.nobody)); return; }
+      const emails = r.users.map((u) => u.email);
+      const yes = h('button', { type: 'button', class: 'min-h-12 rounded-2xl bg-rose-500 px-3 text-sm font-semibold text-onfill disabled:opacity-50' }, A.confirm(emails.length));
+      yes.onclick = async () => {
+        yes.disabled = true;
+        const res = await N.postJson('/api/admin/revoke-except', { keep: kept, apply: emails }).catch(() => ({}));
+        out.replaceChildren(res.revoked
+          ? h('p', { class: 'rounded-xl bg-emerald-500/10 p-3 text-sm text-emerald-100' }, A.revoked(res.revoked.length))
+          : h('p', { class: 'text-sm text-rose-200' }, t('errors').default));
+      };
+      out.replaceChildren(
+        h('p', { class: 'text-sm font-semibold text-rose-200' }, A.willRevoke(emails.length)),
+        h('ul', { class: 'flex max-h-64 flex-col gap-1 overflow-y-auto rounded-xl bg-night-800 p-3 text-sm text-slate-200' },
+          r.users.map((u) => h('li', { class: 'flex items-baseline justify-between gap-2' },
+            h('span', { class: 'min-w-0 truncate' }, u.email),
+            h('span', { class: 'shrink-0 text-xs text-slate-400' }, `${u.plan_kind === 'trial' ? A.week : planById(u.plan_tier).name} ${A.until(dateStr(u.premium_until))}`)))),
+        h('p', { class: `text-xs ${kept.length ? 'text-slate-400' : 'text-amber-200'}` }, kept.length ? A.keeping(kept.join(', ')) : A.keepNone),
+        h('div', { class: 'grid grid-cols-2 gap-2' }, yes,
+          h('button', { type: 'button', class: 'min-h-12 rounded-2xl bg-night-700 px-3 text-sm text-white', onclick: () => out.replaceChildren() }, A.cancel)));
+    };
+    return h('div', { class: `${CARD} flex flex-col gap-2` },
+      h('p', { class: 'font-semibold text-white' }, A.revoke),
+      h('p', { class: 'text-sm text-slate-400' }, A.revokeHint),
+      keep, h('button', { type: 'button', class: BTN2, onclick: preview }, A.preview), out);
+  }
+
+  // ---------- admin dashboard ----------
+  const shortDay = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}`;
+  const tile = (label, value, note) => h('div', { class: 'flex min-w-0 flex-col gap-1 rounded-2xl bg-night-800 p-3 ring-1 ring-white/5' },
+    h('p', { class: 'text-xs leading-tight text-slate-400' }, label),
+    h('p', { class: 'truncate text-2xl font-semibold tabular-nums text-white' }, value),
+    note ? h('p', { class: 'text-xs text-slate-500' }, note) : null);
+  const tiles = (...kids) => h('div', { class: 'grid grid-cols-2 gap-2 sm:grid-cols-3' }, ...kids);
+  const section = (title, ...kids) => h('div', { class: `${CARD} flex flex-col gap-3` }, h('p', { class: 'font-semibold text-white' }, title), ...kids);
+
+  // One series per chart, bars from a shared baseline; hover or tap a day to read its value.
+  // avg: the caption shows the daily average instead of the 30-day total (for counts of people).
+  function dayBars(title, points, key, D, avg = false) {
+    const values = points.map((p) => p[key]);
+    const max = Math.max(0, ...values);
+    const total = values.reduce((a, b) => a + b, 0);
+    const caption = () => (avg ? D.avg(money(Math.round(total / points.length))) : D.sumAll(money(total)));
+    const readout = h('p', { class: 'min-h-4 text-xs tabular-nums text-slate-400', 'aria-live': 'polite' }, caption());
+    const show = (p) => { readout.textContent = `${shortDay(p.day)}: ${money(p[key])}`; };
+    const bars = h('div', { class: 'flex h-28 items-end gap-[2px] border-b border-white/15' },
+      points.map((p) => h('button', {
+        type: 'button', class: 'group flex h-full min-w-0 flex-1 items-end', title: `${shortDay(p.day)}: ${p[key]}`,
+        'aria-label': `${shortDay(p.day)}: ${p[key]}`, onmouseenter: () => show(p), onfocus: () => show(p), onclick: () => show(p),
+      }, h('span', { class: 'block w-full rounded-t-[4px] bg-brand-500 group-hover:bg-brand-400', style: `height:${p[key] ? Math.max((p[key] / (max || 1)) * 100, 3) : 0}%` }))));
+    bars.addEventListener('mouseleave', () => { readout.textContent = caption(); });
+    return h('div', { class: 'flex flex-col gap-1' },
+      h('div', { class: 'flex items-baseline justify-between gap-2' },
+        h('p', { class: 'text-sm font-medium text-slate-200' }, title),
+        h('p', { class: 'text-xs text-slate-500' }, D.peak(money(max)))),
+      readout, bars,
+      h('div', { class: 'flex justify-between text-[11px] text-slate-500' },
+        h('span', {}, shortDay(points[0].day)), h('span', {}, shortDay(points[points.length - 1].day))));
+  }
+
+  async function renderDashboard(root, A) {
+    const D = A.dash;
+    const body = h('div', { class: 'flex flex-col gap-4' }, loading(t('loadingTopics')));
+    root.append(body);
+    const s = await N.postJson('/api/admin/stats', {}).catch(() => ({}));
+    if (!s.users) {
+      body.replaceChildren(h('div', { class: `${CARD} flex flex-col gap-3` },
+        h('p', { class: 'text-rose-200' }, t('errors').default),
+        h('button', { type: 'button', class: BTN2, onclick: () => openAdmin() }, ico('repeat'), t('retry'))));
+      return;
+    }
+    const n = (v) => money(v || 0);
+    const { users: U, subscriptions: S, money: M, activity: Ac, tokens: T, features: F } = s;
+    const tierName = (id) => (id === 'trial' ? A.week : id ? planById(id).name : D.noTier);
+    const time = new Date().toLocaleTimeString(N.lang === 'uz' ? 'uz-UZ' : 'ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+    const topList = T.top.length
+      ? h('div', { class: 'flex flex-col gap-2' }, T.top.map((r) => h('div', { class: 'flex flex-col gap-1.5 rounded-2xl bg-night-800 p-3 ring-1 ring-white/5' },
+          h('div', { class: 'flex items-baseline justify-between gap-2' },
+            h('p', { class: 'min-w-0 truncate text-sm font-semibold text-white' }, r.email),
+            h('p', { class: 'shrink-0 text-xs text-slate-400' }, tierName(r.tier))),
+          h('p', { class: 'text-xs tabular-nums text-slate-400' }, `${tok(r.input)} / ${tok(r.output)} · ${D.share(r.share)}`),
+          h('div', { class: 'h-1.5 overflow-hidden rounded-full bg-night-700' },
+            h('div', { class: 'h-full rounded-full bg-brand-500', style: `width:${Math.min(100, r.share)}%` })))))
+      : h('p', { class: 'text-sm text-slate-400' }, D.noTop);
+
+    body.replaceChildren(
+      h('div', { class: 'flex items-center justify-between gap-2' },
+        h('p', { class: 'text-sm text-slate-400' }, D.updated(time)),
+        h('button', { type: 'button', class: 'flex min-h-10 items-center gap-2 rounded-xl bg-night-800 px-3 text-sm text-slate-100 ring-1 ring-white/10 hover:bg-night-700', onclick: () => openAdmin() }, ico('repeat'), D.refresh)),
+      section(D.today, tiles(
+        tile(D.newToday, n(U.newToday)), tile(D.activeToday, n(Ac.dau)), tile(D.chatToday, n(Ac.chat_today)),
+        tile(D.learnToday, n(Ac.learn_today)), tile(D.pending, n(M.pending)))),
+      section(D.students, tiles(
+        tile(D.total, n(U.students)), tile(D.d7, `+${n(U.new7d)}`), tile(D.d30, `+${n(U.new30d)}`),
+        tile(D.google, n(U.google)), tile(D.parents, n(U.parents)), tile(D.admins, n(U.admins)))),
+      section(D.subs, tiles(
+        tile(D.active, n(S.active)), tile(D.trial, n(S.trial)), tile('Pro', n(S.pro)), tile('Gold', n(S.gold)), tile('MAX', n(S.max)),
+        tile(D.expiring, n(S.expiring)), tile(D.expired, n(S.expired)), tile(D.never, n(S.never)))),
+      section(D.money,
+        tiles(tile(D.monthly, sum(M.monthly)), tile(D.paid30, sum(M.paid30d)), tile(D.paidAll, sum(M.paidAll))),
+        h('p', { class: 'text-xs text-slate-500' }, D.paidNote(M.paidCount))),
+      section(D.activity, tiles(
+        tile(D.activeUsers, n(Ac.dau), D.today), tile(D.activeUsers, n(Ac.wau), D.d7), tile(D.activeUsers, n(Ac.mau), D.d30),
+        tile(D.chat, n(Ac.chat_7d), D.d7), tile(D.chat, n(Ac.chat_30d), D.d30), tile(D.learn, n(Ac.learn_30d), D.d30))),
+      section(D.charts,
+        dayBars(D.chartReg, s.series, 'reg', D), dayBars(D.chartUsers, s.series, 'users', D, true), dayBars(D.chartChat, s.series, 'chat', D)),
+      section(D.sections, tiles(
+        tile(D.progress, n(F.progress)), tile(D.diary, n(F.diary)), tile(D.cards, n(F.cards)), tile(D.quest, n(F.quest)))),
+      section(D.tokens(s.month),
+        tiles(tile(D.input, tok(T.input)), tile(D.output, tok(T.output)), tile(D.tokenUsers, n(T.users))),
+        h('p', { class: 'text-sm font-medium text-slate-200' }, D.top), topList));
   }
 
   // Admin: find a student, give access, reset the password or delete the account.
@@ -1454,6 +1721,13 @@
               h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-rose-500 px-3 text-sm font-semibold text-onfill', onclick: async () => { await N.postJson('/api/admin/delete-user', { email: u.email }); load(); } }, A.delYes),
               h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-night-700 px-3 text-sm text-white', onclick: () => out.replaceChildren() }, A.cancel)));
         };
+        const revokeBtn = active ? h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-amber-400/15 px-3 text-sm text-amber-200 ring-1 ring-amber-300/30' }, A.one) : null;
+        if (revokeBtn) revokeBtn.onclick = () => {
+          out.replaceChildren(h('p', { class: 'text-sm text-amber-200' }, A.oneConfirm(u.email)),
+            h('div', { class: 'grid grid-cols-2 gap-2' },
+              h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-rose-500 px-3 text-sm font-semibold text-onfill', onclick: async () => { await N.postJson('/api/admin/revoke', { email: u.email }).catch(() => ({})); load(); } }, A.oneYes),
+              h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-night-700 px-3 text-sm text-white', onclick: () => out.replaceChildren() }, A.cancel)));
+        };
         const resetBtn = h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-night-700 px-3 text-sm text-white' }, A.resetPw);
         resetBtn.onclick = async () => {
           const res = await N.postJson('/api/admin/reset-password', { email: u.email });
@@ -1466,7 +1740,7 @@
           h('div', { class: 'flex flex-wrap gap-2' },
             h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500 px-3 text-sm font-semibold text-onfill', onclick: () => grant(u.email, 0) }, A.grant(0)),
             h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500/20 px-3 text-sm text-white ring-1 ring-brand-400/40', onclick: () => grant(u.email, 1, null, userPlan.id) }, `${A.grant(1)} · ${userPlan.name}`),
-            resetBtn, confirmDelete),
+            revokeBtn, resetBtn, confirmDelete),
           out));
       });
     };

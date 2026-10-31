@@ -545,6 +545,145 @@ async function cacheTopics(subject, grade, lang, topics) {
   );
 }
 
+// ---------- admin dashboard: all numbers in one request ----------
+// day is today's date in Tashkent (YYYY-MM-DD), month is YYYY-MM. Only students are counted.
+const TIER_SQL = `CASE WHEN plan_tier IN ('gold', 'max') THEN plan_tier ELSE 'pro' END`;
+const PAID_SQL = `COALESCE(plan_kind, 'paid') <> 'trial'`;
+const ACTIVITY_SQL = `
+  SELECT x.user_id, x.day, x.chat, x.learn FROM (
+    SELECT user_id, day, count AS chat, 0 AS learn FROM usage WHERE day > $1::date - 30
+    UNION ALL SELECT user_id, day, 0, count FROM learn_usage WHERE day > $1::date - 30) x
+  JOIN users u ON u.id = x.user_id AND u.role = 'student'`;
+
+async function adminStats(day, month) {
+  const db = requirePool();
+  const q = (sql, params = []) => db.query(sql, params).then((r) => r.rows);
+  const num = (v) => Number(v) || 0;
+  const student = `role = 'student'`;
+  const localDay = `(created_at AT TIME ZONE 'Asia/Tashkent')::date`;
+
+  const [[u], payments, [act], series, [tok], top, features] = await Promise.all([
+    q(`SELECT
+         count(*) FILTER (WHERE ${student}) AS students,
+         count(*) FILTER (WHERE role = 'parent') AS parents,
+         count(*) FILTER (WHERE role = 'admin') AS admins,
+         count(*) FILTER (WHERE ${student} AND google_sub IS NOT NULL) AS google,
+         count(*) FILTER (WHERE ${student} AND ${localDay} = $1::date) AS new_today,
+         count(*) FILTER (WHERE ${student} AND ${localDay} > $1::date - 7) AS new_7d,
+         count(*) FILTER (WHERE ${student} AND ${localDay} > $1::date - 30) AS new_30d,
+         count(*) FILTER (WHERE ${student} AND premium_until > now()) AS active,
+         count(*) FILTER (WHERE ${student} AND premium_until > now() AND NOT (${PAID_SQL})) AS trial,
+         count(*) FILTER (WHERE ${student} AND premium_until > now() AND ${PAID_SQL} AND ${TIER_SQL} = 'pro') AS pro,
+         count(*) FILTER (WHERE ${student} AND premium_until > now() AND ${PAID_SQL} AND ${TIER_SQL} = 'gold') AS gold,
+         count(*) FILTER (WHERE ${student} AND premium_until > now() AND ${PAID_SQL} AND ${TIER_SQL} = 'max') AS max,
+         count(*) FILTER (WHERE ${student} AND premium_until > now() AND premium_until < now() + interval '7 days') AS expiring,
+         count(*) FILTER (WHERE ${student} AND premium_until <= now()) AS expired,
+         count(*) FILTER (WHERE ${student} AND premium_until IS NULL) AS never
+       FROM users`, [day]),
+    q(`SELECT status, plan, months, COALESCE(resolved_at > now() - interval '30 days', false) AS recent FROM payment_requests`),
+    q(`WITH a AS (${ACTIVITY_SQL})
+       SELECT
+         count(DISTINCT user_id) FILTER (WHERE day = $1::date) AS dau,
+         count(DISTINCT user_id) FILTER (WHERE day > $1::date - 7) AS wau,
+         count(DISTINCT user_id) AS mau,
+         COALESCE(sum(chat) FILTER (WHERE day = $1::date), 0) AS chat_today,
+         COALESCE(sum(chat) FILTER (WHERE day > $1::date - 7), 0) AS chat_7d,
+         COALESCE(sum(chat), 0) AS chat_30d,
+         COALESCE(sum(learn) FILTER (WHERE day = $1::date), 0) AS learn_today,
+         COALESCE(sum(learn) FILTER (WHERE day > $1::date - 7), 0) AS learn_7d,
+         COALESCE(sum(learn), 0) AS learn_30d
+       FROM a`, [day]),
+    q(`WITH d AS (SELECT generate_series($1::date - 29, $1::date, interval '1 day')::date AS day),
+       reg AS (SELECT ${localDay} AS day, count(*) AS n FROM users
+                WHERE ${student} AND created_at > now() - interval '32 days' GROUP BY 1),
+       act AS (SELECT day, count(DISTINCT user_id) AS users, sum(chat) AS chat, sum(learn) AS learn
+                 FROM (${ACTIVITY_SQL}) a GROUP BY day)
+       SELECT to_char(d.day, 'YYYY-MM-DD') AS day, COALESCE(reg.n, 0) AS reg, COALESCE(act.users, 0) AS users,
+              COALESCE(act.chat, 0) AS chat, COALESCE(act.learn, 0) AS learn
+         FROM d LEFT JOIN reg ON reg.day = d.day LEFT JOIN act ON act.day = d.day ORDER BY d.day`, [day]),
+    q(`SELECT COALESCE(sum(t.input), 0) AS input, COALESCE(sum(t.output), 0) AS output, count(*) AS users
+         FROM token_usage t JOIN users u ON u.id = t.user_id AND u.role = 'student' WHERE t.month = $1`, [month]),
+    q(`SELECT u.email, u.created_at, u.premium_until, u.plan_kind, u.plan_tier, t.input, t.output
+         FROM token_usage t JOIN users u ON u.id = t.user_id AND u.role = 'student'
+        WHERE t.month = $1 ORDER BY t.output DESC LIMIT 10`, [month]),
+    q(`SELECT d.key, count(*) AS n FROM user_data d JOIN users u ON u.id = d.user_id AND u.role = 'student' GROUP BY d.key`),
+  ]);
+
+  // Money: monthly value of the paid plans running now, and closed paid requests.
+  const price = (id) => PLANS[planId(id)].price;
+  const paid = payments.filter((p) => p.status === 'paid' && Number(p.months) > 0);
+  const paidSum = (list) => list.reduce((s, p) => s + price(p.plan) * Number(p.months), 0);
+  const subs = { pro: num(u.pro), gold: num(u.gold), max: num(u.max) };
+
+  return {
+    day,
+    month,
+    users: {
+      students: num(u.students), parents: num(u.parents), admins: num(u.admins), google: num(u.google),
+      newToday: num(u.new_today), new7d: num(u.new_7d), new30d: num(u.new_30d),
+    },
+    subscriptions: {
+      active: num(u.active), trial: num(u.trial), ...subs,
+      expiring: num(u.expiring), expired: num(u.expired), never: num(u.never),
+    },
+    money: {
+      monthly: Object.entries(subs).reduce((s, [id, n]) => s + price(id) * n, 0),
+      paid30d: paidSum(paid.filter((p) => p.recent)),
+      paidAll: paidSum(paid),
+      paidCount: paid.length,
+      pending: payments.filter((p) => p.status === 'pending').length,
+    },
+    activity: Object.fromEntries(Object.entries(act).map(([k, v]) => [k, num(v)])),
+    series: series.map((r) => ({ day: r.day, reg: num(r.reg), users: num(r.users), chat: num(r.chat), learn: num(r.learn) })),
+    tokens: {
+      input: num(tok.input), output: num(tok.output), users: num(tok.users),
+      top: top.map((r) => {
+        const p = plan(r);
+        return {
+          email: r.email, tier: p.active ? (p.trial ? 'trial' : p.tier) : null,
+          input: num(r.input), output: num(r.output),
+          share: Math.round(100 * Math.max(num(r.input) / p.limits.input, num(r.output) / p.limits.output)),
+        };
+      }),
+    },
+    features: Object.fromEntries(features.map((r) => [r.key, num(r.n)])),
+  };
+}
+
+// ---------- admin: take access away ----------
+// Access ends now; the plan the student had stays recorded (they can ask for a new one).
+async function revokeSubscription(email) {
+  const { rows } = await requirePool().query(
+    `UPDATE users SET premium_until = now() WHERE email = $1 AND role = 'student' AND premium_until > now() RETURNING email`,
+    [normalizeEmail(email)],
+  );
+  if (!rows.length) throw new AuthError('user_not_found', 404);
+  return rows[0];
+}
+
+// Students with access now, except the kept emails. Without apply it only lists them; to end
+// access, pass the exact list that was shown, so nobody who got access in between is touched.
+const cleanEmails = (list) => list.map((v) => String(v || '').trim().toLowerCase()).filter(Boolean);
+
+async function revokeAllExcept(keep, apply) {
+  const kept = cleanEmails(keep);
+  if (!apply) {
+    const { rows } = await requirePool().query(
+      `SELECT email, premium_until, plan_kind, plan_tier FROM users
+        WHERE role = 'student' AND premium_until > now() AND NOT (email = ANY($1::text[])) ORDER BY premium_until DESC`,
+      [kept],
+    );
+    return { users: rows };
+  }
+  const { rows } = await requirePool().query(
+    `UPDATE users SET premium_until = now()
+      WHERE role = 'student' AND premium_until > now() AND email = ANY($1::text[]) AND NOT (email = ANY($2::text[]))
+      RETURNING email`,
+    [cleanEmails(apply), kept],
+  );
+  return { revoked: rows.map((r) => r.email) };
+}
+
 module.exports = {
   plan,
   ensureParent,
@@ -559,6 +698,9 @@ module.exports = {
   listRequests,
   grantMonths,
   rejectRequest,
+  adminStats,
+  revokeSubscription,
+  revokeAllExcept,
   countGeneration,
   generationsToday,
   tokensThisMonth,

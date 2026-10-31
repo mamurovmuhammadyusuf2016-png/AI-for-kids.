@@ -568,6 +568,13 @@ async function handleAdmin(req, res, body, user, action) {
     await auth.deleteStudent(cleanText(body.email, 254));
     return sendJson(res, 200, { ok: true });
   }
+  if (action === 'stats') return sendJson(res, 200, await auth.adminStats(today(), month()));
+  if (action === 'revoke') return sendJson(res, 200, await auth.revokeSubscription(cleanText(body.email, 254)));
+  // Without "apply" it only lists who would lose access; "apply" is that list, confirmed.
+  if (action === 'revoke-except') {
+    const list = (v, max) => (Array.isArray(v) ? v.slice(0, max).map((e) => cleanText(e, 254)) : []);
+    return sendJson(res, 200, await auth.revokeAllExcept(list(body.keep, 100), Array.isArray(body.apply) ? list(body.apply, 20000) : null));
+  }
   // Staff accounts are created only with the admin key (from the chat with Claude).
   if (action === 'create-admin' && user.apiAdmin) return sendJson(res, 200, await auth.createAdminAccount(cleanText(body.login, 32), cleanText(body.password, 128)));
   sendJson(res, 404, { code: 'not_found' });
