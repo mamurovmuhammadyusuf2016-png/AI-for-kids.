@@ -468,7 +468,13 @@ async function verifyGoogleToken(credential) {
     Number(info.exp) * 1000 > Date.now() &&
     info.email_verified === 'true' &&
     info.sub && info.email;
-  if (!valid) throw new AuthError('google_failed', 401);
+  if (!valid) {
+    // The reason only, without the token or the address: helps to see in the Render logs why sign-in failed.
+    const why = !r.ok ? `tokeninfo ${r.status}` : info.aud !== GOOGLE_CLIENT_ID ? 'wrong client id' : !GOOGLE_ISSUERS.has(info.iss) ? 'wrong issuer'
+      : Number(info.exp) * 1000 <= Date.now() ? 'expired' : info.email_verified !== 'true' ? 'email not verified' : 'no email';
+    console.warn(`Google sign-in rejected: ${why}`);
+    throw new AuthError('google_failed', 401);
+  }
   return { sub: String(info.sub), email: normalizeEmail(info.email) };
 }
 

@@ -99,6 +99,8 @@
       noVoice: 'На этом устройстве нет голоса для этого языка.',
       micDenied: 'Нет доступа к микрофону. Разреши его в настройках браузера.',
       googleInApp: 'Продолжить с Google',
+      googleEmbedded: 'Вход через Google не работает во встроенном браузере Telegram, Instagram и других приложений. Откройте сайт в Chrome или Safari (меню ⋮ или … → «Открыть в браузере») или войдите по почте.',
+      openInChrome: 'Открыть в Chrome',
       speakNow: 'Говори, я слушаю…',
       language: 'Язык',
       themeToLight: 'Светлая тема',
@@ -196,6 +198,8 @@
       noVoice: "Bu qurilmada bu til uchun ovoz yo'q.",
       micDenied: "Mikrofonga ruxsat yo'q. Brauzer sozlamalarida ruxsat ber.",
       googleInApp: 'Google orqali davom etish',
+      googleEmbedded: "Google orqali kirish Telegram, Instagram va boshqa ilovalarning ichki brauzerida ishlamaydi. Saytni Chrome yoki Safari'da oching (⋮ yoki … menyusi → «Brauzerda ochish») yoki pochta orqali kiring.",
+      openInChrome: "Chrome'da ochish",
       speakNow: 'Gapir, tinglayapman…',
       language: 'Til',
       themeToLight: 'Yorug\' rejim',
@@ -1273,6 +1277,23 @@
       b.onclick = () => AndroidApp.googleLogin(lang);
       $('googleBtn').appendChild(b);
       return;
+    }
+    // Telegram, Instagram and other apps open links in their own browser, where Google blocks sign-in.
+    const embedded = /; wv\)|Instagram|FBAN|FBAV|FB_IAB|Telegram|TikTok|musical_ly|Line\//i.test(navigator.userAgent);
+    $('googleNote')?.remove();
+    if (embedded) {
+      const note = document.createElement('div');
+      note.id = 'googleNote';
+      note.className = 'mb-3 flex flex-col gap-2 rounded-2xl bg-amber-400/10 p-3 text-sm text-amber-100 ring-1 ring-amber-400/30';
+      note.appendChild(Object.assign(document.createElement('p'), { textContent: t('googleEmbedded') }));
+      if (/Android/i.test(navigator.userAgent)) {
+        const a = document.createElement('a');
+        a.className = 'flex min-h-11 items-center justify-center rounded-xl bg-brand-500 px-4 font-semibold text-onfill';
+        a.href = `intent://${location.host}/#Intent;scheme=https;package=com.android.chrome;end`;
+        a.textContent = t('openInChrome');
+        note.appendChild(a);
+      }
+      $('googleBlock').prepend(note);
     }
     try { await loadGoogle(); } catch { return; }
     if (!gisReady) {

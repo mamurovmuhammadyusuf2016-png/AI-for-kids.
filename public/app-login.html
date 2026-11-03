@@ -33,8 +33,8 @@
   (function () {
     var uz = new URLSearchParams(location.search).get('lang') === 'uz';
     var T = uz
-      ? { title: 'Google orqali kirish', text: 'Google hisobingizni tanlang — keyin Nimi ilovasiga qaytasiz.', back: 'Nimi ilovasiga qaytish', done: 'Tayyor! Ilovaga qaytilmoqda…', error: "Kirib bo'lmadi. Qaytadan urinib ko'ring." }
-      : { title: 'Вход через Google', text: 'Выберите аккаунт Google — потом вы вернётесь в приложение Nimi.', back: 'Вернуться в приложение Nimi', done: 'Готово! Возвращаемся в приложение…', error: 'Не получилось войти. Попробуйте ещё раз.' };
+      ? { title: 'Google orqali kirish', text: 'Google hisobingizni tanlang — keyin Nimi ilovasiga qaytasiz.', back: 'Nimi ilovasiga qaytish', done: "Tayyor! Ilovaga qaytish uchun quyidagi tugmani bosing.", error: "Kirib bo'lmadi. Qaytadan urinib ko'ring." }
+      : { title: 'Вход через Google', text: 'Выберите аккаунт Google — потом вы вернётесь в приложение Nimi.', back: 'Вернуться в приложение Nimi', done: 'Готово! Нажмите кнопку ниже, чтобы вернуться в приложение.', error: 'Не получилось войти. Попробуйте ещё раз.' };
     document.documentElement.lang = uz ? 'uz' : 'ru';
     document.getElementById('title').textContent = T.title;
     document.getElementById('text').textContent = T.text;
@@ -44,6 +44,7 @@
 
     function toApp(code) {
       // An intent link names the app package, so no other app can take the code.
+      // Chrome may not switch apps by itself after a sign-in, so the button stays as the sure way back.
       var url = 'intent://auth?code=' + encodeURIComponent(code) + '#Intent;scheme=nimi;package=uz.nimi.app;end';
       document.getElementById('text').textContent = T.done;
       document.getElementById('google').style.display = 'none';
