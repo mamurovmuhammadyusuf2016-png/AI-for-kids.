@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Nimi AI — вход через Google</title>
+<link rel="icon" href="/img/favicon.png">
+<!-- Opened by the Android app in Chrome: Google sign-in is not allowed inside the app's WebView.
+     After sign-in the Google token is swapped for a one-time code that goes back to the app. -->
+<style>
+  :root { color-scheme: light dark; --bg: #ffffff; --text: #0f1f16; --muted: #56665c; --btn: #138a43; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #000000; --text: #ffffff; --muted: #9a9a9a; --btn: #2563eb; } }
+  body { margin: 0; min-height: 100dvh; display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
+  main { width: 100%; max-width: 360px; padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+  img { width: 96px; height: 96px; }
+  h1 { margin: 0; font-size: 22px; }
+  p { margin: 0; color: var(--muted); line-height: 1.5; }
+  a.btn { display: none; min-height: 52px; width: 100%; align-items: center; justify-content: center; border-radius: 16px; background: var(--btn); color: #fff; font-weight: 600; text-decoration: none; }
+  #err { color: #e11d48; }
+</style>
+</head>
+<body>
+<main>
+  <img src="/img/logo-mark.png" alt="Nimi AI">
+  <h1 id="title"></h1>
+  <p id="text"></p>
+  <div id="google"></div>
+  <a id="back" class="btn" href="#"></a>
+  <p id="err"></p>
+</main>
+<script>
+  (function () {
+    var uz = new URLSearchParams(location.search).get('lang') === 'uz';
+    var T = uz
+      ? { title: 'Google orqali kirish', text: 'Google hisobingizni tanlang — keyin Nimi ilovasiga qaytasiz.', back: 'Nimi ilovasiga qaytish', done: 'Tayyor! Ilovaga qaytilmoqda…', error: "Kirib bo'lmadi. Qaytadan urinib ko'ring." }
+      : { title: 'Вход через Google', text: 'Выберите аккаунт Google — потом вы вернётесь в приложение Nimi.', back: 'Вернуться в приложение Nimi', done: 'Готово! Возвращаемся в приложение…', error: 'Не получилось войти. Попробуйте ещё раз.' };
+    document.documentElement.lang = uz ? 'uz' : 'ru';
+    document.getElementById('title').textContent = T.title;
+    document.getElementById('text').textContent = T.text;
+    var err = document.getElementById('err');
+    var back = document.getElementById('back');
+    back.textContent = T.back;
+
+    function toApp(code) {
+      // An intent link names the app package, so no other app can take the code.
+      var url = 'intent://auth?code=' + encodeURIComponent(code) + '#Intent;scheme=nimi;package=uz.nimi.app;end';
+      document.getElementById('text').textContent = T.done;
+      document.getElementById('google').style.display = 'none';
+      back.href = url;
+      back.style.display = 'flex';
+      location.href = url;
+    }
+    function onCredential(resp) {
+      err.textContent = '';
+      fetch('/api/auth/app-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: resp.credential }) })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { if (d.code) toApp(d.code); else err.textContent = T.error; })
+        .catch(function () { err.textContent = T.error; });
+    }
+    fetch('/api/config').then(function (r) { return r.json(); }).then(function (cfg) {
+      if (!cfg.googleClientId) { err.textContent = T.error; return; }
+      var s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.onload = function () {
+        google.accounts.id.initialize({ client_id: cfg.googleClientId, callback: onCredential, ux_mode: 'popup' });
+        google.accounts.id.renderButton(document.getElementById('google'), {
+          theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'filled_black' : 'outline',
+          size: 'large', shape: 'pill', text: 'continue_with', locale: uz ? 'uz' : 'ru', width: 300,
+        });
+      };
+      s.onerror = function () { err.textContent = T.error; };
+      document.head.appendChild(s);
+    }).catch(function () { err.textContent = T.error; });
+  })();
+</script>
+</body>
+</html>

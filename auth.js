@@ -472,7 +472,8 @@ async function verifyGoogleToken(credential) {
   return { sub: String(info.sub), email: normalizeEmail(info.email) };
 }
 
-async function google(req, body) {
+// The Google account of an ID token: found, or created (with a parent account for a new student).
+async function googleUser(body) {
   const db = requirePool();
   const { sub, email } = await verifyGoogleToken(body.credential);
   const known = await db.query(
@@ -480,8 +481,7 @@ async function google(req, body) {
     [sub],
   );
   if (known.rows.length) {
-    const user = known.rows[0];
-    return { user: { ...user, has_google: true }, cookie: await startSession(req, user.id) };
+    return { ...known.rows[0], has_google: true };
   }
   // New Google account, or an email account with the same (Google-verified) address.
   const { rows } = await db.query(
@@ -493,7 +493,12 @@ async function google(req, body) {
   const user = rows[0];
   if (user.google_sub !== sub) throw new AuthError('google_failed', 401);
   if (user.role === 'student') await ensureParent(user.id);
-  return { user: { ...user, has_google: true }, cookie: await startSession(req, user.id) };
+  return { ...user, has_google: true };
+}
+
+async function google(req, body) {
+  const user = await googleUser(body);
+  return { user, cookie: await startSession(req, user.id) };
 }
 
 async function logout(req) {
@@ -811,6 +816,8 @@ module.exports = {
   register,
   login,
   google,
+  googleUser,
+  startSession,
   logout,
   usedToday,
   countQuestion,
