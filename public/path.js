@@ -1,0 +1,565 @@
+// Learning path in the spirit of Duolingo: units of short lessons, no AI.
+// Each unit is one topic with three lessons: "learn" (the rule and worked examples,
+// then easy practice), "practice" and "check". Questions come from code (the bank of
+// quest.js): math by grade, English words and grammar. A wrong answer comes back at the
+// end of the lesson until it is right. XP, a daily goal and the streak keep the habit.
+// Progress is saved with the account as data.path. Uses window.NimiLearn.kit.
+(() => {
+  const N = window.Nimi;
+  const K = () => window.NimiLearn.kit;
+  const bank = () => window.NimiQuest.bank;
+  const tr = (ru, uz) => (N.lang === 'uz' ? uz : ru);
+
+  const DAILY_GOAL = 30;
+  const LESSONS = ['learn', 'practice', 'check'];
+  const SIZE = { learn: 6, practice: 8, check: 10 };
+  const XP = { learn: 10, practice: 10, check: 15 };
+  const PERFECT_BONUS = 5;
+
+  const T = {
+    ru: {
+      title: 'Путь знаний',
+      lead: 'Уроки по шагам: правило, примеры и упражнения. Без ИИ, работает всегда.',
+      math: 'Математика',
+      english: 'Английский',
+      unit: (n) => `Раздел ${n}`,
+      lessons: { learn: 'Новая тема', practice: 'Практика', check: 'Проверка' },
+      start: 'Начать',
+      again: 'Повторить',
+      locked: 'Сначала пройди предыдущий урок',
+      today: (x) => `Сегодня ${x} / ${DAILY_GOAL} XP`,
+      goalDone: 'Цель дня выполнена!',
+      xpTotal: (x) => `${x} XP всего`,
+      homeTitle: 'Путь знаний',
+      homeDesc: (u, n) => `Раздел ${u} из ${n} · уроки без ИИ`,
+      homeAll: 'Все разделы пройдены — можно повторять',
+      cont: 'Продолжить',
+      rule: 'Правило',
+      example: 'Пример',
+      solution: 'Решение',
+      newTopic: 'Новая тема',
+      gotIt: 'Понятно, к упражнениям',
+      words: 'Новые слова',
+      listenHint: 'Нажми, чтобы послушать',
+      check: 'Проверить',
+      next: 'Дальше',
+      right: ['Верно!', 'Отлично!', 'Молодец!', 'Так держать!'],
+      wrong: 'Не совсем',
+      answerIs: 'Правильный ответ:',
+      typeHere: 'Напиши по-английски',
+      typeQ: (w) => `Напиши по-английски: «${w}»`,
+      listenQ: 'Что ты услышал?',
+      matchQ: 'Найди пары',
+      chooseTr: (w) => `Как переводится **${w}**?`,
+      chooseEn: (w) => `Как по-английски «${w}»?`,
+      fillQ: 'Вставь пропущенное слово',
+      wordsUnit: (list) => `Слова: ${list}`,
+      grammarUnit: (n) => `Грамматика ${n}`,
+      doneTitle: 'Урок пройден!',
+      doneUnit: 'Раздел пройден!',
+      accLabel: 'Точность',
+      perfect: 'Без ошибок — бонус +5 XP',
+      streak: (n) => `Серия: ${n} ${n === 1 ? 'день' : n < 5 ? 'дня' : 'дней'}`,
+      backToPath: 'К пути',
+      nextLesson: 'Следующий урок',
+      quit: 'Выйти из урока',
+      mistakeBack: 'Эта ошибка вернётся в конце урока',
+    },
+    uz: {
+      title: "Bilim yo'li",
+      lead: "Bosqichma-bosqich darslar: qoida, misollar va mashqlar. SI siz, doim ishlaydi.",
+      math: 'Matematika',
+      english: 'Ingliz tili',
+      unit: (n) => `${n}-bo'lim`,
+      lessons: { learn: 'Yangi mavzu', practice: 'Mashq', check: 'Tekshiruv' },
+      start: 'Boshlash',
+      again: 'Takrorlash',
+      locked: 'Avval oldingi darsni tugat',
+      today: (x) => `Bugun ${x} / ${DAILY_GOAL} XP`,
+      goalDone: 'Kunlik maqsad bajarildi!',
+      xpTotal: (x) => `Jami ${x} XP`,
+      homeTitle: "Bilim yo'li",
+      homeDesc: (u, n) => `${n} ta bo'limdan ${u}-bo'lim · SI siz darslar`,
+      homeAll: "Hamma bo'limlar tugadi — takrorlash mumkin",
+      cont: 'Davom etish',
+      rule: 'Qoida',
+      example: 'Misol',
+      solution: 'Yechim',
+      newTopic: 'Yangi mavzu',
+      gotIt: 'Tushunarli, mashqlarga',
+      words: "Yangi so'zlar",
+      listenHint: 'Eshitish uchun bos',
+      check: 'Tekshirish',
+      next: 'Davom etish',
+      right: ["To'g'ri!", "Zo'r!", 'Barakalla!', 'Shunday davom et!'],
+      wrong: "Unchalik emas",
+      answerIs: "To'g'ri javob:",
+      typeHere: 'Inglizcha yoz',
+      typeQ: (w) => `Inglizcha yoz: «${w}»`,
+      listenQ: 'Nimani eshitding?',
+      matchQ: 'Juftlarini top',
+      chooseTr: (w) => `**${w}** so'zi qanday tarjima qilinadi?`,
+      chooseEn: (w) => `«${w}» inglizcha qanday bo'ladi?`,
+      fillQ: "Tushib qolgan so'zni qo'y",
+      wordsUnit: (list) => `So'zlar: ${list}`,
+      grammarUnit: (n) => `Grammatika ${n}`,
+      doneTitle: 'Dars tugadi!',
+      doneUnit: "Bo'lim tugadi!",
+      accLabel: 'Aniqlik',
+      perfect: 'Xatosiz — bonus +5 XP',
+      streak: (n) => `Seriya: ${n} kun`,
+      backToPath: "Yo'lga qaytish",
+      nextLesson: 'Keyingi dars',
+      quit: 'Darsdan chiqish',
+      mistakeBack: 'Bu savol dars oxirida yana chiqadi',
+    },
+  };
+  const t = (k) => T[N.lang === 'uz' ? 'uz' : 'ru'][k];
+
+  // ---------- saved state ----------
+  function P() {
+    const d = K().data;
+    const p = d.path;
+    p.xp = p.xp || 0;
+    p.days = p.days && typeof p.days === 'object' ? p.days : {};
+    p.done = p.done && typeof p.done === 'object' ? p.done : {};
+    p.course = p.course === 'english' ? 'english' : 'math';
+    return p;
+  }
+  const save = () => K().save('path');
+  const todayXp = () => P().days[N.today()] || 0;
+  const grade = () => Number(N.setup?.grade) || 5;
+
+  // ---------- courses: units built from the question bank ----------
+  const shuffle = (a) => bank().shuffle(a);
+  const chunk = (arr, n) => Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, i * n + n));
+
+  function mathUnits() {
+    return bank().mathPool(grade()).map((tp) => ({ id: `m:${tp.id}`, kind: 'math', topic: tp, name: () => tp.name[N.lang === 'uz' ? 1 : 0] }));
+  }
+  function englishUnits() {
+    const { WORDS, GRAMMAR, enLevel } = bank();
+    const lvl = enLevel(grade());
+    const words = chunk(WORDS.filter((w) => w[3] <= lvl), 6);
+    const grammar = chunk(GRAMMAR.filter((g) => g[0] <= lvl), 4);
+    const units = [];
+    let gi = 0;
+    words.forEach((ws, i) => {
+      units.push({ id: `w:${ws[0][0]}`, kind: 'words', words: ws, name: () => t('wordsUnit')(ws.slice(0, 3).map((w) => w[0]).join(', ')) });
+      if (i % 2 === 1 && gi < grammar.length) {
+        const gs = grammar[gi++];
+        const n = gi;
+        units.push({ id: `g:${n}`, kind: 'grammar', items: gs, name: () => t('grammarUnit')(n) });
+      }
+    });
+    while (gi < grammar.length) { const gs = grammar[gi++]; const n = gi; units.push({ id: `g:${n}`, kind: 'grammar', items: gs, name: () => t('grammarUnit')(n) }); }
+    return units;
+  }
+  const courseKey = (c) => (c === 'math' ? `math:${grade()}` : `en:${bank().enLevel(grade())}`);
+  const unitsOf = (c) => (c === 'math' ? mathUnits() : englishUnits());
+  const doneMap = (c) => { const p = P(); p.done[courseKey(c)] = p.done[courseKey(c)] || {}; return p.done[courseKey(c)]; };
+  // The first unit that still has lessons to take (or -1 when all are done).
+  function position(c) {
+    const units = unitsOf(c), done = doneMap(c);
+    const i = units.findIndex((u) => (done[u.id] || 0) < LESSONS.length);
+    return { units, done, unit: i, lesson: i < 0 ? -1 : done[units[i].id] || 0 };
+  }
+
+  // ---------- exercises ----------
+  const native = (w) => (N.lang === 'uz' ? w[2] : w[1]);
+  function mathExercise(unit) {
+    const x = unit.topic.gen();
+    return { type: 'choice', q: x.q, a: x.a, opts: x.opts, rule: x.rule, explain: x.explain };
+  }
+  function wordExercise(unit, kind) {
+    const { WORDS, enLevel, strChoice } = bank();
+    const pool = WORDS.filter((w) => w[3] <= Math.max(1, enLevel(grade())));
+    const w = unit.words[Math.floor(Math.random() * unit.words.length)];
+    const others = shuffle(pool.filter((x) => x !== w)).slice(0, 6);
+    const explain = `**${w[0]}** — ${native(w)}. ${t('example')}: ${w[4]}`;
+    const canHear = 'speechSynthesis' in window;
+    const k = kind || (canHear ? ['tr', 'en', 'en', 'listen', 'type'] : ['tr', 'en', 'en', 'type'])[Math.floor(Math.random() * (canHear ? 5 : 4))];
+    if (k === 'tr') return { type: 'choice', q: t('chooseTr')(w[0]), ...strChoice(native(w), others.map(native)), explain, speak: w[0] };
+    if (k === 'listen') return { type: 'choice', listen: w[0], q: t('listenQ'), ...strChoice(w[0], others.map((x) => x[0])), explain, speak: w[0] };
+    if (k === 'type') return { type: 'input', q: t('typeQ')(native(w)), a: w[0], explain, speak: w[0] };
+    return { type: 'choice', q: t('chooseEn')(native(w)), ...strChoice(w[0], others.map((x) => x[0])), explain, speak: w[0] };
+  }
+  function matchExercise(words) {
+    const four = shuffle(words).slice(0, 4);
+    return { type: 'match', q: t('matchQ'), pairs: four.map((w) => [w[0], native(w)]) };
+  }
+  function grammarExercise(unit) {
+    const g = unit.items[Math.floor(Math.random() * unit.items.length)];
+    const [, s, right, wrong, ru, uz] = g;
+    return { type: 'choice', q: `${t('fillQ')}:\n**${s}**`, ...bank().strChoice(right, wrong), rule: tr(ru, uz), explain: `**${s.replace('___', right)}**`, speak: s.replace('___', right) };
+  }
+  // A lesson's questions; similar ones are not repeated back to back.
+  function buildLesson(unit, lessonType) {
+    const n = SIZE[lessonType];
+    const out = [];
+    const seen = new Set();
+    for (let tries = 0; out.length < n && tries < n * 8; tries++) {
+      let ex;
+      if (unit.kind === 'math') ex = mathExercise(unit);
+      else if (unit.kind === 'grammar') ex = grammarExercise(unit);
+      else if (out.length === 3 || (lessonType === 'check' && out.length === 7)) ex = matchExercise(unit.words);
+      else ex = wordExercise(unit, lessonType === 'learn' && out.length < 2 ? 'tr' : null);
+      const key = ex.q + (ex.a || '') + (ex.listen || '');
+      if (seen.has(key) && tries < n * 6) continue;
+      seen.add(key);
+      out.push(ex);
+    }
+    return out;
+  }
+
+  // ---------- sound ----------
+  let audio = null;
+  function beep(freqs, dur = 0.09, vol = 0.05) {
+    if (!N.store.get('questSound', true)) return;
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      let at = audio.currentTime;
+      for (const f of freqs) {
+        const o = audio.createOscillator(), g = audio.createGain();
+        o.type = 'triangle';
+        o.frequency.value = f;
+        g.gain.setValueAtTime(vol, at);
+        g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+        o.connect(g); g.connect(audio.destination);
+        o.start(at); o.stop(at + dur);
+        at += dur * 0.85;
+      }
+    } catch {}
+  }
+  const SFX = { right: () => beep([660, 880]), wrong: () => beep([300, 220], 0.14, 0.04), done: () => beep([523, 659, 784, 1047], 0.13, 0.06) };
+  const say = (text) => N.speak && N.speak(text, 'en');
+
+  // ---------- small view helpers ----------
+  const H = (...a) => K().h(...a);
+  const ico = (...a) => K().ico(...a);
+  const html = (tag, cls, text) => { const el = H(tag, { class: cls }); el.innerHTML = N.formatReply(String(text)); return el; };
+  const norm = (s) => String(s).toLowerCase().replace(/ё/g, 'е').replace(/[.!?,]+$/g, '').replace(/\s+/g, ' ').trim();
+
+  // ---------- the path screen ----------
+  function open() {
+    const k = K();
+    const p = P();
+    const root = k.screen('activity');
+    root.append(k.titleBar(t('title')));
+    root.append(H('p', { class: 'text-sm text-slate-400' }, t('lead')));
+    const x = todayXp();
+    root.append(H('div', { class: 'flex flex-wrap items-center gap-2 text-sm' },
+      H('span', { class: 'flex items-center gap-1.5 rounded-full bg-amber-400/15 px-3 py-1.5 text-amber-200' }, ico('flame', 'h-4 w-4'), t('streak')(streakDays())),
+      H('span', { class: `flex items-center gap-1.5 rounded-full px-3 py-1.5 ${x >= DAILY_GOAL ? 'bg-emerald-500/15 text-emerald-200' : 'bg-night-800 text-slate-300'}` }, ico('zap', 'h-4 w-4'), x >= DAILY_GOAL ? t('goalDone') : t('today')(x)),
+      H('span', { class: 'rounded-full bg-night-800 px-3 py-1.5 text-slate-300' }, t('xpTotal')(p.xp))));
+    root.append(H('div', { class: 'grid grid-cols-2 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5' },
+      ...['math', 'english'].map((c) => H('button', { type: 'button', class: `min-h-12 rounded-xl text-[15px] font-semibold ${p.course === c ? 'bg-brand-500 text-onfill' : 'text-slate-300'}`, onclick: () => { P().course = c; save(); open(); } }, t(c)))));
+
+    const pos = position(p.course);
+    pos.units.forEach((u, ui) => {
+      const doneN = pos.done[u.id] || 0;
+      const finished = doneN >= LESSONS.length;
+      const isCurrent = ui === pos.unit;
+      const box = H('section', { class: `flex flex-col gap-4 rounded-3xl p-4 ring-1 ${isCurrent ? 'bg-brand-500/10 ring-brand-400/40' : 'bg-night-900/80 ring-white/5'}` });
+      box.append(H('div', { class: 'flex items-center justify-between gap-3' },
+        H('div', { class: 'min-w-0' },
+          H('p', { class: 'text-xs font-semibold uppercase tracking-wide text-brand-400' }, t('unit')(ui + 1)),
+          H('p', { class: 'font-semibold text-white' }, u.name())),
+        finished ? H('span', { class: 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-400 text-onfill', title: t('doneUnit') }, ico('crown', 'h-5 w-5')) : H('span', { class: 'shrink-0 text-sm tabular-nums text-slate-400' }, `${doneN}/${LESSONS.length}`)));
+      // Lesson nodes in a gentle zigzag, like a path.
+      const offsets = ['self-center', 'self-center -translate-x-12', 'self-center translate-x-12'];
+      const nodes = H('div', { class: 'flex flex-col gap-3 pb-1' });
+      LESSONS.forEach((lt, li) => {
+        const state = li < doneN ? 'done' : isCurrent && li === doneN ? 'current' : 'locked';
+        const node = H('button', {
+          type: 'button',
+          'aria-label': `${u.name()}: ${t('lessons')[lt]}`,
+          class: `flex h-16 w-16 items-center justify-center rounded-full border-b-4 transition active:translate-y-0.5 active:border-b-0 ${
+            state === 'done' ? 'border-amber-500 bg-amber-400 text-onfill' : state === 'current' ? 'border-brand-600 bg-brand-500 text-onfill ring-4 ring-brand-400/30' : 'border-night-700 bg-night-800 text-slate-500'}`,
+          onclick: () => (state === 'locked' ? hint(nodes, t('locked')) : startLesson(p.course, ui, li)),
+        }, ico(state === 'done' ? 'check' : state === 'current' ? (lt === 'learn' ? 'book-open' : lt === 'check' ? 'trophy' : 'dumbbell') : 'lock', 'h-7 w-7'));
+        nodes.append(H('div', { class: `flex flex-col items-center gap-1 ${offsets[li]}` }, node,
+          H('span', { class: `text-xs ${state === 'current' ? 'font-semibold text-white' : 'text-slate-400'}` }, state === 'current' ? `${t('lessons')[lt]} · ${t('start')}` : t('lessons')[lt])));
+      });
+      if (isCurrent || finished || ui < pos.unit || pos.unit < 0) box.append(nodes);
+      root.append(box);
+      if (isCurrent) setTimeout(() => box.scrollIntoView({ block: 'center' }), 50);
+    });
+  }
+  function hint(container, text) {
+    const old = container.querySelector('[data-hint]');
+    if (old) old.remove();
+    const el = H('p', { 'data-hint': '1', class: 'text-center text-sm text-amber-200' }, text);
+    container.append(el);
+    setTimeout(() => el.remove(), 2200);
+  }
+  function streakDays() {
+    const days = new Set(K().data.progress.days || []);
+    const f = (dt) => dt.toLocaleDateString('en-CA');
+    let d = new Date();
+    if (!days.has(f(d))) d = new Date(d.getTime() - 86400000);
+    let n = 0;
+    while (days.has(f(d))) { n++; d = new Date(d.getTime() - 86400000); }
+    return n;
+  }
+
+  // ---------- a lesson ----------
+  function startLesson(course, unitIndex, lessonIndex) {
+    const units = unitsOf(course);
+    const unit = units[unitIndex];
+    const lessonType = LESSONS[lessonIndex];
+    const queue = buildLesson(unit, lessonType);
+    const total = queue.length;
+    const state = { course, unit, unitIndex, lessonIndex, lessonType, queue, total, solved: 0, firstTry: 0, mistakes: 0, retried: new Set() };
+    if (lessonType === 'learn') intro(state); else next(state);
+  }
+
+  function frame(state) {
+    const k = K();
+    const root = k.screen('activity');
+    const pct = Math.round((state.solved / state.total) * 100);
+    root.append(H('div', { class: 'flex items-center gap-3' },
+      H('button', { type: 'button', class: 'flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-night-800 text-slate-300 ring-1 ring-white/5 hover:bg-night-700', 'aria-label': t('quit'), onclick: open }, ico('x')),
+      H('div', { class: 'h-4 flex-1 overflow-hidden rounded-full bg-night-700', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(pct) },
+        H('div', { class: 'h-full rounded-full bg-brand-500 transition-all duration-500', style: `width:${pct}%` }))));
+    return root;
+  }
+
+  // The "learn" lesson starts with the rule and worked examples (math, grammar) or the new words.
+  function intro(state) {
+    const root = frame(state);
+    const { unit } = state;
+    root.append(H('p', { class: 'text-xs font-semibold uppercase tracking-wide text-brand-400' }, t('newTopic')));
+    root.append(H('h2', { class: 'text-2xl font-semibold text-white' }, unit.name()));
+    if (unit.kind === 'math') {
+      const a = unit.topic.gen(), b = unit.topic.gen();
+      root.append(H('div', { class: 'flex flex-col gap-2 rounded-3xl bg-brand-500/10 p-4 ring-1 ring-brand-400/30' },
+        H('p', { class: 'flex items-center gap-2 font-semibold text-white' }, ico('lightbulb', 'icon text-amber-300'), t('rule')),
+        html('div', 'text-slate-200', a.rule || '')));
+      for (const x of [a, b]) {
+        root.append(H('div', { class: 'flex flex-col gap-2 rounded-3xl bg-night-900/80 p-4 ring-1 ring-white/5' },
+          H('p', { class: 'text-sm font-semibold text-slate-400' }, t('example')),
+          html('div', 'text-slate-100', x.q),
+          H('p', { class: 'text-sm font-semibold text-slate-400' }, t('solution')),
+          html('div', 'text-emerald-200', x.explain || `${t('answerIs')} ${x.a}`)));
+      }
+    } else if (unit.kind === 'grammar') {
+      for (const g of unit.items) {
+        root.append(H('div', { class: 'flex flex-col gap-2 rounded-3xl bg-night-900/80 p-4 ring-1 ring-white/5' },
+          html('div', 'text-slate-200', tr(g[4], g[5])),
+          html('div', 'text-emerald-200', `${t('example')}: **${g[1].replace('___', g[2])}**`)));
+      }
+    } else {
+      root.append(H('p', { class: 'text-sm text-slate-400' }, t('listenHint')));
+      root.append(H('div', { class: 'grid grid-cols-2 gap-2' }, ...unit.words.map((w) => H('button', {
+        type: 'button', class: 'flex flex-col items-start gap-1 rounded-2xl bg-night-900/80 p-3 text-left ring-1 ring-white/5 transition hover:bg-night-800 active:scale-[.98]', onclick: () => say(w[0]),
+      }, H('span', { class: 'flex items-center gap-2 text-lg font-semibold text-white' }, w[0], ico('volume-2', 'h-4 w-4 text-brand-400')), H('span', { class: 'text-sm text-slate-300' }, native(w)), H('span', { class: 'text-xs text-slate-500' }, w[4])))));
+    }
+    root.append(H('button', { type: 'button', class: K().BTN, onclick: () => next(state) }, t('gotIt')));
+  }
+
+  function next(state) {
+    if (!state.queue.length) return finish(state);
+    const ex = state.queue.shift();
+    if (ex.type === 'match') return askMatch(state, ex);
+    ask(state, ex);
+  }
+
+  function ask(state, ex) {
+    const k = K();
+    const root = frame(state);
+    let chosen = null;
+    root.append(html('div', 'text-xl font-semibold leading-snug text-white', ex.q));
+    if (ex.listen) {
+      root.append(H('button', { type: 'button', class: 'flex h-20 w-20 items-center justify-center self-center rounded-3xl border-b-4 border-brand-600 bg-brand-500 text-onfill active:translate-y-0.5', 'aria-label': t('listenHint'), onclick: () => say(ex.listen) }, ico('volume-2', 'h-9 w-9')));
+      setTimeout(() => say(ex.listen), 250);
+    }
+    const checkBtn = H('button', { type: 'button', class: k.BTN, disabled: true }, t('check'));
+    let input = null;
+    let optButtons = [];
+    if (ex.type === 'input') {
+      input = H('input', { type: 'text', class: k.INPUT, placeholder: t('typeHere'), autocapitalize: 'none', autocomplete: 'off', spellcheck: 'false', 'aria-label': t('typeHere') });
+      input.addEventListener('input', () => { checkBtn.disabled = !input.value.trim(); });
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && input.value.trim()) checkBtn.click(); });
+      root.append(input);
+      setTimeout(() => input.focus(), 50);
+    } else {
+      const opts = H('div', { class: 'flex flex-col gap-2' });
+      ex.opts.forEach((o) => {
+        const b = H('button', { type: 'button', class: 'min-h-14 rounded-2xl border-b-4 border-night-700 bg-night-800 px-4 py-3 text-left text-lg text-slate-100 ring-1 ring-white/10 transition active:translate-y-0.5' });
+        b.innerHTML = N.formatReply(String(o));
+        b.onclick = () => {
+          chosen = o;
+          for (const x of opts.children) x.classList.remove('ring-2!', 'ring-brand-400!', 'bg-brand-500/15!');
+          b.classList.add('ring-2!', 'ring-brand-400!', 'bg-brand-500/15!');
+          checkBtn.disabled = false;
+        };
+        opts.append(b);
+        optButtons.push([b, o]);
+      });
+      root.append(opts);
+    }
+    root.append(checkBtn);
+    checkBtn.onclick = () => {
+      const given = ex.type === 'input' ? input.value : chosen;
+      const ok = ex.type === 'input' ? norm(given) === norm(ex.a) : given === ex.a;
+      checkBtn.remove();
+      if (input) input.disabled = true;
+      // Show the right option in green and a wrong choice in red; no more taps.
+      for (const [b, o] of optButtons) {
+        b.disabled = true;
+        b.classList.remove('ring-2!', 'ring-brand-400!', 'bg-brand-500/15!');
+        if (o === ex.a) b.classList.add('ring-2!', 'ring-emerald-400!', 'bg-emerald-500/15!');
+        else if (o === given) b.classList.add('ring-2!', 'ring-rose-400!', 'bg-rose-500/15!');
+        else b.classList.add('opacity-60');
+      }
+      grade1(state, ex, ok);
+      feedback(root, state, ex, ok);
+    };
+  }
+
+  // Counts the answer: a mistake comes back at the end of the lesson.
+  function grade1(state, ex, ok) {
+    if (ok) {
+      state.solved++;
+      if (!state.retried.has(ex)) state.firstTry++;
+    } else {
+      state.mistakes++;
+      state.retried.add(ex);
+      state.queue.push(ex);
+    }
+    const s = K().data.progress.stats;
+    s.tasks = (s.tasks || 0) + 1;
+    if (ok) s.correct = (s.correct || 0) + 1;
+  }
+
+  function feedback(root, state, ex, ok) {
+    const k = K();
+    (ok ? SFX.right : SFX.wrong)();
+    const praise = t('right')[Math.floor(Math.random() * t('right').length)];
+    const box = H('div', { class: `flex flex-col gap-2 rounded-3xl p-4 ring-1 ${ok ? 'bg-emerald-500/15 ring-emerald-400/30' : 'bg-rose-500/15 ring-rose-400/30'}`, role: 'status' },
+      H('p', { class: `flex items-center gap-2 text-lg font-semibold ${ok ? 'text-emerald-200' : 'text-rose-200'}` }, ico(ok ? 'circle-check' : 'circle-alert'), ok ? praise : t('wrong')));
+    if (!ok && ex.type !== 'match') box.append(html('div', 'text-slate-100', `${t('answerIs')} **${ex.a}**`));
+    if (!ok && ex.rule) box.append(html('div', 'text-sm text-slate-300', ex.rule));
+    if (ex.explain && (!ok || ex.type === 'input')) box.append(html('div', 'text-sm text-slate-300', ex.explain));
+    if (ex.speak) box.append(H('button', { type: 'button', class: 'flex items-center gap-2 self-start text-sm text-brand-400', onclick: () => say(ex.speak) }, ico('volume-2', 'h-4 w-4'), ex.speak));
+    if (!ok) box.append(H('p', { class: 'text-xs text-slate-400' }, t('mistakeBack')));
+    root.append(box);
+    const go = H('button', { type: 'button', class: k.BTN, onclick: () => next(state) }, t('next'));
+    root.append(go);
+    go.focus();
+    box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  // Four words and four translations: tap one on each side.
+  function askMatch(state, ex) {
+    const k = K();
+    const root = frame(state);
+    root.append(H('p', { class: 'text-xl font-semibold text-white' }, ex.q));
+    const left = shuffle(ex.pairs.map((p) => p[0]));
+    const right = shuffle(ex.pairs.map((p) => p[1]));
+    const pairOf = new Map(ex.pairs.map(([a, b]) => [a, b]));
+    let pick = null;
+    let matched = 0;
+    let missed = false;
+    const cls = 'min-h-14 rounded-2xl border-b-4 border-night-700 bg-night-800 px-3 py-2 text-[15px] text-slate-100 ring-1 ring-white/10 transition';
+    const colL = H('div', { class: 'flex flex-col gap-2' });
+    const colR = H('div', { class: 'flex flex-col gap-2' });
+    const mark = (b, on) => { b.classList.toggle('ring-brand-400!', on); b.classList.toggle('ring-2!', on); };
+    const mk = (text, side) => {
+      const b = H('button', { type: 'button', class: cls }, text);
+      b.onclick = () => {
+        if (side === 'L') { say(text); }
+        if (!pick || pick.side === side) {
+          if (pick) mark(pick.b, false);
+          pick = { b, text, side };
+          mark(b, true);
+          return;
+        }
+        const [en, nat] = side === 'R' ? [pick.text, text] : [text, pick.text];
+        const other = pick.b;
+        mark(other, false);
+        pick = null;
+        if (pairOf.get(en) === nat) {
+          SFX.right();
+          for (const x of [b, other]) { x.disabled = true; x.classList.add('opacity-40'); }
+          matched++;
+          if (matched === ex.pairs.length) {
+            state.solved++;
+            if (!missed) state.firstTry++;
+            const s = K().data.progress.stats;
+            s.tasks = (s.tasks || 0) + 1;
+            if (!missed) s.correct = (s.correct || 0) + 1;
+            root.append(H('div', { class: 'rounded-3xl bg-emerald-500/15 p-4 text-lg font-semibold text-emerald-200 ring-1 ring-emerald-400/30', role: 'status' }, t('right')[0]));
+            const go = H('button', { type: 'button', class: k.BTN, onclick: () => next(state) }, t('next'));
+            root.append(go);
+            go.focus();
+          }
+        } else {
+          SFX.wrong();
+          if (!missed) { missed = true; state.mistakes++; }
+          for (const x of [b, other]) { x.classList.add('ring-2!', 'ring-rose-400!'); setTimeout(() => x.classList.remove('ring-2!', 'ring-rose-400!'), 600); }
+        }
+      };
+      return b;
+    };
+    left.forEach((x) => colL.append(mk(x, 'L')));
+    right.forEach((x) => colR.append(mk(x, 'R')));
+    root.append(H('div', { class: 'grid grid-cols-2 gap-3' }, colL, colR));
+  }
+
+  function finish(state) {
+    const k = K();
+    const p = P();
+    const done = doneMap(state.course);
+    const prev = done[state.unit.id] || 0;
+    if (state.lessonIndex >= prev) done[state.unit.id] = Math.max(prev, state.lessonIndex + 1);
+    const perfect = state.mistakes === 0;
+    const xp = XP[state.lessonType] + (perfect ? PERFECT_BONUS : 0);
+    p.xp += xp;
+    const day = N.today();
+    p.days[day] = (p.days[day] || 0) + xp;
+    for (const key of Object.keys(p.days)) if (key < new Date(Date.now() - 60 * 86400000).toLocaleDateString('en-CA')) delete p.days[key];
+    save();
+    k.markDay();
+    k.save('progress');
+    SFX.done();
+    const unitDone = (done[state.unit.id] || 0) >= LESSONS.length;
+    const acc = Math.round((state.firstTry / Math.max(1, state.total)) * 100);
+    const root = k.screen('activity');
+    root.append(H('div', { class: 'flex flex-col items-center gap-3 pt-6 text-center' },
+      H('span', { class: 'flex h-24 w-24 items-center justify-center rounded-full bg-amber-400 text-onfill shadow-lg' }, ico(unitDone ? 'crown' : 'trophy', 'h-12 w-12')),
+      H('h2', { class: 'text-3xl font-semibold text-white' }, unitDone ? t('doneUnit') : t('doneTitle')),
+      H('p', { class: 'text-slate-300' }, state.unit.name())));
+    root.append(H('div', { class: 'grid grid-cols-3 gap-2' },
+      ...[[`+${xp}`, 'XP'], [`${acc}%`, t('accLabel')], [String(streakDays()), ico('flame', 'h-4 w-4 text-amber-300')]].map(([v, l]) => H('div', { class: 'flex flex-col items-center gap-1 rounded-2xl bg-night-900/80 p-3 ring-1 ring-white/5' },
+        H('span', { class: 'text-2xl font-semibold tabular-nums text-white' }, v), H('span', { class: 'flex items-center gap-1 text-xs text-slate-400' }, l)))));
+    if (perfect) root.append(H('p', { class: 'text-center text-sm font-semibold text-emerald-200' }, t('perfect')));
+    const x = todayXp();
+    root.append(H('div', { class: 'flex flex-col gap-2 rounded-2xl bg-night-900/80 p-3 ring-1 ring-white/5' },
+      H('p', { class: 'text-sm text-slate-300' }, x >= DAILY_GOAL ? t('goalDone') : t('today')(x)),
+      H('div', { class: 'h-3 overflow-hidden rounded-full bg-night-700' }, H('div', { class: 'h-full rounded-full bg-amber-400', style: `width:${Math.min(100, (x / DAILY_GOAL) * 100)}%` }))));
+    const pos = position(state.course);
+    if (pos.unit >= 0) root.append(H('button', { type: 'button', class: k.BTN, onclick: () => startLesson(state.course, pos.unit, pos.lesson) }, t('nextLesson')));
+    root.append(H('button', { type: 'button', class: k.BTN2, onclick: open }, t('backToPath')));
+  }
+
+  // ---------- the card on the home screen ----------
+  function homeCard() {
+    const p = P();
+    const pos = position(p.course);
+    const x = todayXp();
+    return H('button', { type: 'button', class: 'flex flex-col gap-3 rounded-3xl bg-night-900/80 p-4 text-left ring-1 ring-brand-400/30 transition hover:bg-night-800 active:scale-[.99]', onclick: open },
+      H('div', { class: 'flex items-center gap-3' },
+        H('span', { class: 'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-b-4 border-brand-600 bg-brand-500 text-onfill' }, ico('route', 'h-6 w-6')),
+        H('div', { class: 'min-w-0 flex-1' },
+          H('p', { class: 'text-lg font-semibold text-white' }, t('homeTitle')),
+          H('p', { class: 'text-sm text-slate-400' }, `${t(p.course)} · ${pos.unit < 0 ? t('homeAll') : t('homeDesc')(pos.unit + 1, pos.units.length)}`)),
+        ico('chevron-right', 'icon text-slate-500')),
+      H('div', { class: 'flex items-center gap-2' },
+        H('div', { class: 'h-2.5 flex-1 overflow-hidden rounded-full bg-night-700' }, H('div', { class: 'h-full rounded-full bg-amber-400', style: `width:${Math.min(100, (x / DAILY_GOAL) * 100)}%` })),
+        H('span', { class: 'shrink-0 text-xs tabular-nums text-slate-400' }, x >= DAILY_GOAL ? t('goalDone') : t('today')(x))));
+  }
+
+  window.NimiPath = { open, homeCard };
+})();

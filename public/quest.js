@@ -1234,5 +1234,7 @@
   }
 
   const TEST = { MATH, mathPool, englishQuestion, q: null }; // for automated checks
-  window.NimiQuest = { open, card: () => t('card'), _test: TEST };
+  // The question bank is shared with the learning path (path.js).
+  const bank = { MATH, mathPool, WORDS, GRAMMAR, enLevel, shuffle, strChoice };
+  window.NimiQuest = { open, card: () => t('card'), bank, _test: TEST };
 })();

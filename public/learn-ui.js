@@ -879,6 +879,7 @@
     diary: [],
     cards: { decks: [] },
     quest: {},
+    path: {},
   });
   let data = blank();
   const saveTimers = {};
@@ -890,6 +891,7 @@
       diary: Array.isArray(d?.diary) ? d.diary : [],
       cards: { decks: Array.isArray(d?.cards?.decks) ? d.cards.decks : [] },
       quest: d?.quest && typeof d.quest === 'object' && !Array.isArray(d.quest) ? d.quest : {},
+      path: d?.path && typeof d.path === 'object' && !Array.isArray(d.path) ? d.path : {},
     };
   }
 
@@ -2239,6 +2241,9 @@
         h('span', { class: 'flex h-12 w-12 items-center justify-center rounded-2xl bg-onfill/15' }, ico(can('training') ? 'dumbbell' : 'lock')),
         h('div', { class: 'min-w-0' }, h('p', { class: 'text-lg font-semibold' }, t('dailyTitle')), h('p', { class: 'text-sm text-onfill/80' }, daily ? t('dailyDone')(daily.score) : t('dailyDesc')(level())))),
       h('button', { type: 'button', class: 'flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-onfill text-base font-semibold text-brand-600 transition hover:bg-onfill/90 active:scale-[.98]', onclick: guard(() => startTraining(), 'training') }, daily ? ico('repeat') : ico('chevron-right'), !can('training') ? S.open : locked ? `${t('start')} · ${S.tileFree}` : daily ? t('again') : t('start'))));
+
+    // Learning path (path.js): lessons without AI, free for everyone.
+    if (window.NimiPath) root.append(window.NimiPath.homeCard());
 
     const tiles = t('tiles');
     // paid: part of the subscription. Without one it shows "free" while its free try is left, then a lock.
