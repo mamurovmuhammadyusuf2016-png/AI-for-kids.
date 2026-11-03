@@ -1,0 +1,17 @@
+pluginManagement {
+    repositories {
+        google()
+        // Google's mirror of Maven Central (the main host often answers 429).
+        maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        // Google's mirror of Maven Central (the main host often answers 429).
+        maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }
+    }
+}
+rootProject.name = 'NimiAI'
+include ':app'

@@ -50,6 +50,8 @@
         start: 'Попробовать бесплатно',
         login: 'Войти',
         freeNote: 'Каждый раздел можно попробовать бесплатно. Карта не нужна.',
+        apk: 'Скачать приложение для Android',
+        apkNote: 'Телефон может спросить разрешение на установку — нажмите «Разрешить».',
         demoTitle: 'Как Nimi объясняет',
         demoLabel: 'Пример из чата · Математика, 6 класс',
         demo: [
@@ -467,6 +469,8 @@
         start: "Bepul sinab ko'rish",
         login: 'Kirish',
         freeNote: "Har bir bo'limni bepul sinab ko'rish mumkin. Karta kerak emas.",
+        apk: 'Android uchun ilovani yuklab olish',
+        apkNote: "Telefon o'rnatishga ruxsat so'rashi mumkin — «Ruxsat berish»ni bosing.",
         demoTitle: 'Nimi qanday tushuntiradi',
         demoLabel: 'Chatdan namuna · Matematika, 6-sinf',
         demo: [
@@ -1966,6 +1970,7 @@
     const r = await N.postJson('/api/account/settings', {}).catch(() => ({}));
     root.lastChild.remove();
     root.append(h('div', { class: `${CARD} flex flex-col gap-1` }, h('p', { class: 'text-sm text-slate-400' }, P.account), h('p', { class: 'break-all font-semibold text-white' }, N.user?.email || '')));
+    if (offerApk()) root.append(apkLink());
     if (!r.parent) { root.append(h('p', { class: 'text-rose-200' }, t('errors').default)); return; }
     const pw = h('span', { class: 'select-all font-mono text-lg text-white' }, '••••••••');
     let shown = false;
@@ -2083,6 +2088,18 @@
   // Minimal page with gentle animations: blocks fade in when they scroll into view,
   // the sample chat types itself once. With "reduce motion" everything is shown at once.
   let landingObserver = null;
+  // Android app (android/ folder): the APK is on the site; inside the app the link is hidden.
+  const inAndroidApp = (() => {
+    try {
+      if (new URLSearchParams(location.search).get('source') === 'android') localStorage.setItem('nimi-app', '1');
+      return localStorage.getItem('nimi-app') === '1' || document.referrer.startsWith('android-app://');
+    } catch { return false; }
+  })();
+  const offerApk = () => /Android/i.test(navigator.userAgent) && !inAndroidApp;
+  const apkLink = () => h('div', { class: 'flex flex-col items-center gap-1' },
+    h('a', { class: BTN2, href: '/nimi.apk', download: 'NimiAI.apk' }, ico('download'), t('landing').apk),
+    h('p', { class: 'text-xs text-slate-500' }, t('landing').apkNote));
+
   function renderLanding() {
     const root = screen('landing');
     const W = t('landing');
@@ -2114,7 +2131,8 @@
       h('p', { class: 'fade-up max-w-md text-[17px] leading-relaxed text-slate-400', style: 'animation-delay:160ms' }, W.lead),
       h('div', { class: 'fade-up flex w-full max-w-sm flex-col gap-1', style: 'animation-delay:240ms' },
         h('button', { type: 'button', class: BTN, onclick: register }, W.start, ico('chevron-right')),
-        h('button', { type: 'button', class: 'min-h-12 rounded-2xl text-[15px] font-medium text-slate-300 hover:text-white', onclick: () => N.showAuth('login') }, W.login)),
+        h('button', { type: 'button', class: 'min-h-12 rounded-2xl text-[15px] font-medium text-slate-300 hover:text-white', onclick: () => N.showAuth('login') }, W.login),
+        offerApk() ? apkLink() : null),
       h('p', { class: 'fade-up max-w-xs text-xs leading-relaxed text-slate-500', style: 'animation-delay:320ms' }, h('span', { class: 'mr-1 inline-block align-[-3px]' }, ico('gift', 'h-4 w-4')), W.freeNote)));
 
     // Sample chat: the messages appear one by one, like a real conversation.

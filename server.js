@@ -61,6 +61,9 @@ const MIME = {
   '.woff2': 'font/woff2',
   '.txt': 'text/plain; charset=utf-8',
   '.xml': 'application/xml; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  // Android app (android/ folder), downloaded from the site.
+  '.apk': 'application/vnd.android.package-archive',
 };
 
 // userId -> [timestamps of recent questions], for the "asking too often" nudge.
