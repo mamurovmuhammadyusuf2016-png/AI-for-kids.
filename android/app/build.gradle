@@ -1,0 +1,51 @@
+// Nimi AI for Android: a Trusted Web Activity that opens https://nimi-ai.onrender.com
+// full screen in Chrome (Google sign-in, camera, voice work as on the site).
+// Signing: the keystore is not in the repository; pass its path and passwords as
+// NIMI_KEYSTORE, NIMI_KEYSTORE_PASSWORD, NIMI_KEY_ALIAS, NIMI_KEY_PASSWORD.
+plugins {
+    id 'com.android.application'
+}
+
+def siteUrl = 'https://nimi-ai.onrender.com'
+
+android {
+    namespace 'uz.nimi.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'uz.nimi.app'
+        minSdk 24
+        targetSdk 36
+        versionCode 1
+        versionName '1.0'
+        resValue 'string', 'asset_statements', """[{ \\"relation\\": [\\"delegate_permission/common.handle_all_urls\\"], \\"target\\": { \\"namespace\\": \\"web\\", \\"site\\": \\"${siteUrl}\\" } }]"""
+    }
+
+    signingConfigs {
+        release {
+            if (System.getenv('NIMI_KEYSTORE')) {
+                storeFile file(System.getenv('NIMI_KEYSTORE'))
+                storePassword System.getenv('NIMI_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('NIMI_KEY_ALIAS') ?: 'nimi'
+                keyPassword System.getenv('NIMI_KEY_PASSWORD') ?: System.getenv('NIMI_KEYSTORE_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            if (System.getenv('NIMI_KEYSTORE')) signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+}

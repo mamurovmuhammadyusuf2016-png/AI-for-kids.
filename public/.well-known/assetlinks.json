@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "uz.nimi.app",
+      "sha256_cert_fingerprints": ["8C:01:5D:6C:E9:FD:7E:07:BD:EE:D5:B8:2D:29:C5:08:DA:B6:F7:8A:28:60:C9:D8:62:20:BC:11:ED:07:4E:E9"]
+    }
+  }
+]
