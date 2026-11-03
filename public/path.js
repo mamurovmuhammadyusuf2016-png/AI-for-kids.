@@ -1,5 +1,6 @@
 // Learning path in the spirit of Duolingo: units of short lessons, no AI.
-// Each unit is one topic with three lessons: "learn" (the rule and worked examples,
+// Courses: math by grade, English (words with examples and grammar) and 15 more languages
+// (basic words from path-words.js). Each unit is one topic with three lessons: "learn" (the rule and worked examples,
 // then easy practice), "practice" and "check". Questions come from code (the bank of
 // quest.js): math by grade, English words and grammar. A wrong answer comes back at the
 // end of the lesson until it is right. XP, a daily goal and the streak keep the habit.
@@ -22,6 +23,11 @@
       lead: 'Уроки по шагам: правило, примеры и упражнения. Без ИИ, работает всегда.',
       math: 'Математика',
       english: 'Английский',
+      course: 'Курс',
+      langNames: { en: 'Английский', ru: 'Русский', uz: 'Узбекский', es: 'Испанский', fr: 'Французский', de: 'Немецкий', it: 'Итальянский', pt: 'Португальский', nl: 'Нидерландский', pl: 'Польский', sv: 'Шведский', tr: 'Турецкий', zh: 'Китайский', ja: 'Японский', ko: 'Корейский', ar: 'Арабский', hi: 'Хинди' },
+      typeIn: 'Напиши перевод',
+      typeQIn: (w) => `Напиши перевод: «${w}»`,
+      chooseIn: (w) => `Как сказать «${w}»?`,
       unit: (n) => `Раздел ${n}`,
       lessons: { learn: 'Новая тема', practice: 'Практика', check: 'Проверка' },
       start: 'Начать',
@@ -70,6 +76,11 @@
       lead: "Bosqichma-bosqich darslar: qoida, misollar va mashqlar. SI siz, doim ishlaydi.",
       math: 'Matematika',
       english: 'Ingliz tili',
+      course: 'Kurs',
+      langNames: { en: 'Ingliz tili', ru: 'Rus tili', uz: "O'zbek tili", es: 'Ispan tili', fr: 'Fransuz tili', de: 'Nemis tili', it: 'Italyan tili', pt: 'Portugal tili', nl: 'Niderland tili', pl: 'Polyak tili', sv: 'Shved tili', tr: 'Turk tili', zh: 'Xitoy tili', ja: 'Yapon tili', ko: 'Koreys tili', ar: 'Arab tili', hi: 'Hind tili' },
+      typeIn: 'Tarjimasini yoz',
+      typeQIn: (w) => `Tarjimasini yoz: «${w}»`,
+      chooseIn: (w) => `«${w}» qanday aytiladi?`,
       unit: (n) => `${n}-bo'lim`,
       lessons: { learn: 'Yangi mavzu', practice: 'Mashq', check: 'Tekshiruv' },
       start: 'Boshlash',
@@ -123,10 +134,20 @@
     p.xp = p.xp || 0;
     p.days = p.days && typeof p.days === 'object' ? p.days : {};
     p.done = p.done && typeof p.done === 'object' ? p.done : {};
-    p.course = p.course === 'english' ? 'english' : 'math';
+    if (p.course === 'english') p.course = 'en';
+    if (!courses().includes(p.course)) p.course = courseForSubject();
     return p;
   }
   const save = () => K().save('path');
+  // Courses: math, English and the other languages (not the language of the site itself).
+  const W = () => window.NimiPathWords;
+  const courses = () => ['math', 'en', ...W().langs.filter((l) => l !== 'en' && l !== (N.lang === 'uz' ? 'uz' : 'ru'))];
+  const SUBJECT_LANG = { english: 'en', russian: 'ru', uzbek: 'uz', spanish: 'es', french: 'fr', german: 'de', chinese: 'zh', japanese: 'ja', korean: 'ko', arabic: 'ar', turkish: 'tr', italian: 'it', portuguese: 'pt', hindi: 'hi', dutch: 'nl', polish: 'pl', swedish: 'sv' };
+  function courseForSubject() {
+    const code = SUBJECT_LANG[N.setup?.subject];
+    return code && courses().includes(code) ? code : 'math';
+  }
+  const courseName = (c) => (c === 'math' ? t('math') : t('langNames')[c] || c);
   const todayXp = () => P().days[N.today()] || 0;
   const grade = () => Number(N.setup?.grade) || 5;
 
@@ -155,8 +176,22 @@
     while (gi < grammar.length) { const gs = grammar[gi++]; const n = gi; units.push({ id: `g:${n}`, kind: 'grammar', items: gs, name: () => t('grammarUnit')(n) }); }
     return units;
   }
-  const courseKey = (c) => (c === 'math' ? `math:${grade()}` : `en:${bank().enLevel(grade())}`);
-  const unitsOf = (c) => (c === 'math' ? mathUnits() : englishUnits());
+  // A word of another language: shown with its pronunciation when the script is not Latin.
+  const LATIN = new Set(['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'pl', 'sv', 'tr', 'uz']);
+  function vocabUnits(code) {
+    const { langs, themes } = W();
+    const i = langs.indexOf(code);
+    return themes.map((th) => ({
+      id: `v:${th.id}`, kind: 'vocab', code,
+      entries: th.words.map((w) => {
+        const [script, rom] = String(w[i]).split('|');
+        return { t: rom ? `${script} (${rom})` : script, say: script, n: N.lang === 'uz' ? w[1] : w[0] };
+      }),
+      name: () => th[N.lang === 'uz' ? 'uz' : 'ru'],
+    }));
+  }
+  const courseKey = (c) => (c === 'math' ? `math:${grade()}` : c === 'en' ? `en:${bank().enLevel(grade())}` : `lang:${c}`);
+  const unitsOf = (c) => (c === 'math' ? mathUnits() : c === 'en' ? englishUnits() : vocabUnits(c));
   const doneMap = (c) => { const p = P(); p.done[courseKey(c)] = p.done[courseKey(c)] || {}; return p.done[courseKey(c)]; };
   // The first unit that still has lessons to take (or -1 when all are done).
   function position(c) {
@@ -188,6 +223,23 @@
     const four = shuffle(words).slice(0, 4);
     return { type: 'match', q: t('matchQ'), pairs: four.map((w) => [w[0], native(w)]) };
   }
+  // Is there a voice for this language on the device? (Listening exercises need one.)
+  const hasVoice = (code) => code === 'en' || ('speechSynthesis' in window && speechSynthesis.getVoices().some((v) => v.lang.toLowerCase().startsWith(code)));
+  function vocabExercise(unit, kind) {
+    const all = vocabUnits(unit.code).flatMap((u) => u.entries);
+    const e = unit.entries[Math.floor(Math.random() * unit.entries.length)];
+    const others = shuffle(all.filter((x) => x.t !== e.t && x.n !== e.n)).slice(0, 6);
+    const kinds = ['tr', 'to', 'to'];
+    if (hasVoice(unit.code)) kinds.push('listen');
+    if (LATIN.has(unit.code)) kinds.push('type');
+    const k = kind || kinds[Math.floor(Math.random() * kinds.length)];
+    const sc = bank().strChoice;
+    const base = { explain: `**${e.t}** — ${e.n}`, speak: e.say, code: unit.code };
+    if (k === 'tr') return { type: 'choice', q: t('chooseTr')(e.t), ...sc(e.n, others.map((x) => x.n)), ...base };
+    if (k === 'listen') return { type: 'choice', listen: e.say, q: t('listenQ'), ...sc(e.t, others.map((x) => x.t)), ...base };
+    if (k === 'type') return { type: 'input', q: t('typeQIn')(e.n), a: e.t, ...base };
+    return { type: 'choice', q: t('chooseIn')(e.n), ...sc(e.t, others.map((x) => x.t)), ...base };
+  }
   function grammarExercise(unit) {
     const g = unit.items[Math.floor(Math.random() * unit.items.length)];
     const [, s, right, wrong, ru, uz] = g;
@@ -202,6 +254,7 @@
       let ex;
       if (unit.kind === 'math') ex = mathExercise(unit);
       else if (unit.kind === 'grammar') ex = grammarExercise(unit);
+      else if (unit.kind === 'vocab') ex = out.length === 3 || (lessonType === 'check' && out.length === 7) ? { type: 'match', q: t('matchQ'), code: unit.code, pairs: shuffle(unit.entries).slice(0, 4).map((x) => [x.t, x.n, x.say]) } : vocabExercise(unit, lessonType === 'learn' && out.length < 2 ? 'tr' : null);
       else if (out.length === 3 || (lessonType === 'check' && out.length === 7)) ex = matchExercise(unit.words);
       else ex = wordExercise(unit, lessonType === 'learn' && out.length < 2 ? 'tr' : null);
       const key = ex.q + (ex.a || '') + (ex.listen || '');
@@ -232,12 +285,18 @@
     } catch {}
   }
   const SFX = { right: () => beep([660, 880]), wrong: () => beep([300, 220], 0.14, 0.04), done: () => beep([523, 659, 784, 1047], 0.13, 0.06) };
-  const say = (text) => N.speak && N.speak(text, 'en');
+  const say = (text, code = 'en') => N.speak && N.speak(text, code);
 
   // ---------- small view helpers ----------
   const H = (...a) => K().h(...a);
   const ico = (...a) => K().ico(...a);
   const html = (tag, cls, text) => { const el = H(tag, { class: cls }); el.innerHTML = N.formatReply(String(text)); return el; };
+  // A typed word is right with or without its article ("die Mutter" or "Mutter", "to go" or "go").
+  const ARTICLES = /^(the|to|el|la|los|las|le|les|l'|der|die|das|il|lo|gli|i|o|a|os|as|de|het)\s+|^l'/;
+  const typedRight = (given, right) => {
+    const g = norm(given), r = norm(right);
+    return g === r || g.replace(ARTICLES, '') === r.replace(ARTICLES, '');
+  };
   const norm = (s) => String(s).toLowerCase().replace(/ё/g, 'е').replace(/[.!?,]+$/g, '').replace(/\s+/g, ' ').trim();
 
   // ---------- the path screen ----------
@@ -252,8 +311,10 @@
       H('span', { class: 'flex items-center gap-1.5 rounded-full bg-amber-400/15 px-3 py-1.5 text-amber-200' }, ico('flame', 'h-4 w-4'), t('streak')(streakDays())),
       H('span', { class: `flex items-center gap-1.5 rounded-full px-3 py-1.5 ${x >= DAILY_GOAL ? 'bg-emerald-500/15 text-emerald-200' : 'bg-night-800 text-slate-300'}` }, ico('zap', 'h-4 w-4'), x >= DAILY_GOAL ? t('goalDone') : t('today')(x)),
       H('span', { class: 'rounded-full bg-night-800 px-3 py-1.5 text-slate-300' }, t('xpTotal')(p.xp))));
-    root.append(H('div', { class: 'grid grid-cols-2 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5' },
-      ...['math', 'english'].map((c) => H('button', { type: 'button', class: `min-h-12 rounded-xl text-[15px] font-semibold ${p.course === c ? 'bg-brand-500 text-onfill' : 'text-slate-300'}`, onclick: () => { P().course = c; save(); open(); } }, t(c)))));
+    const pickCourse = H('select', { id: 'pathCourse', class: `${k.INPUT} appearance-none font-semibold`, 'aria-label': t('course') },
+      ...courses().map((c) => { const o = H('option', { value: c }, courseName(c)); if (c === p.course) o.selected = true; return o; }));
+    pickCourse.onchange = () => { P().course = pickCourse.value; save(); open(); };
+    root.append(H('label', { class: 'flex flex-col gap-1' }, H('span', { class: 'px-1 text-xs font-semibold uppercase tracking-wide text-slate-400' }, t('course')), pickCourse));
 
     const pos = position(p.course);
     pos.units.forEach((u, ui) => {
@@ -349,6 +410,12 @@
           html('div', 'text-slate-200', tr(g[4], g[5])),
           html('div', 'text-emerald-200', `${t('example')}: **${g[1].replace('___', g[2])}**`)));
       }
+    } else if (unit.kind === 'vocab') {
+      const voice = hasVoice(unit.code);
+      if (voice) root.append(H('p', { class: 'text-sm text-slate-400' }, t('listenHint')));
+      root.append(H('div', { class: 'grid grid-cols-2 gap-2' }, ...unit.entries.map((e) => H('button', {
+        type: 'button', class: 'flex flex-col items-start gap-1 rounded-2xl bg-night-900/80 p-3 text-left ring-1 ring-white/5 transition hover:bg-night-800 active:scale-[.98]', onclick: () => voice && say(e.say, unit.code),
+      }, H('span', { class: 'flex items-center gap-2 text-lg font-semibold text-white' }, e.t, voice ? ico('volume-2', 'h-4 w-4 shrink-0 text-brand-400') : null), H('span', { class: 'text-sm text-slate-300' }, e.n)))));
     } else {
       root.append(H('p', { class: 'text-sm text-slate-400' }, t('listenHint')));
       root.append(H('div', { class: 'grid grid-cols-2 gap-2' }, ...unit.words.map((w) => H('button', {
@@ -371,14 +438,15 @@
     let chosen = null;
     root.append(html('div', 'text-xl font-semibold leading-snug text-white', ex.q));
     if (ex.listen) {
-      root.append(H('button', { type: 'button', class: 'flex h-20 w-20 items-center justify-center self-center rounded-3xl border-b-4 border-brand-600 bg-brand-500 text-onfill active:translate-y-0.5', 'aria-label': t('listenHint'), onclick: () => say(ex.listen) }, ico('volume-2', 'h-9 w-9')));
-      setTimeout(() => say(ex.listen), 250);
+      root.append(H('button', { type: 'button', class: 'flex h-20 w-20 items-center justify-center self-center rounded-3xl border-b-4 border-brand-600 bg-brand-500 text-onfill active:translate-y-0.5', 'aria-label': t('listenHint'), onclick: () => say(ex.listen, ex.code) }, ico('volume-2', 'h-9 w-9')));
+      setTimeout(() => say(ex.listen, ex.code), 250);
     }
     const checkBtn = H('button', { type: 'button', class: k.BTN, disabled: true }, t('check'));
     let input = null;
     let optButtons = [];
     if (ex.type === 'input') {
-      input = H('input', { type: 'text', class: k.INPUT, placeholder: t('typeHere'), autocapitalize: 'none', autocomplete: 'off', spellcheck: 'false', 'aria-label': t('typeHere') });
+      const ph = ex.code && ex.code !== 'en' ? t('typeIn') : t('typeHere');
+      input = H('input', { type: 'text', class: k.INPUT, placeholder: ph, autocapitalize: 'none', autocomplete: 'off', spellcheck: 'false', 'aria-label': ph });
       input.addEventListener('input', () => { checkBtn.disabled = !input.value.trim(); });
       input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && input.value.trim()) checkBtn.click(); });
       root.append(input);
@@ -402,7 +470,7 @@
     root.append(checkBtn);
     checkBtn.onclick = () => {
       const given = ex.type === 'input' ? input.value : chosen;
-      const ok = ex.type === 'input' ? norm(given) === norm(ex.a) : given === ex.a;
+      const ok = ex.type === 'input' ? typedRight(given, ex.a) : given === ex.a;
       checkBtn.remove();
       if (input) input.disabled = true;
       // Show the right option in green and a wrong choice in red; no more taps.
@@ -442,7 +510,7 @@
     if (!ok && ex.type !== 'match') box.append(html('div', 'text-slate-100', `${t('answerIs')} **${ex.a}**`));
     if (!ok && ex.rule) box.append(html('div', 'text-sm text-slate-300', ex.rule));
     if (ex.explain && (!ok || ex.type === 'input')) box.append(html('div', 'text-sm text-slate-300', ex.explain));
-    if (ex.speak) box.append(H('button', { type: 'button', class: 'flex items-center gap-2 self-start text-sm text-brand-400', onclick: () => say(ex.speak) }, ico('volume-2', 'h-4 w-4'), ex.speak));
+    if (ex.speak && hasVoice(ex.code || 'en')) box.append(H('button', { type: 'button', class: 'flex items-center gap-2 self-start text-sm text-brand-400', onclick: () => say(ex.speak, ex.code || 'en') }, ico('volume-2', 'h-4 w-4'), ex.speak));
     if (!ok) box.append(H('p', { class: 'text-xs text-slate-400' }, t('mistakeBack')));
     root.append(box);
     const go = H('button', { type: 'button', class: k.BTN, onclick: () => next(state) }, t('next'));
@@ -459,6 +527,8 @@
     const left = shuffle(ex.pairs.map((p) => p[0]));
     const right = shuffle(ex.pairs.map((p) => p[1]));
     const pairOf = new Map(ex.pairs.map(([a, b]) => [a, b]));
+    const sayOf = new Map(ex.pairs.map(([a, , s]) => [a, s || a]));
+    const voice = hasVoice(ex.code || 'en');
     let pick = null;
     let matched = 0;
     let missed = false;
@@ -469,7 +539,7 @@
     const mk = (text, side) => {
       const b = H('button', { type: 'button', class: cls }, text);
       b.onclick = () => {
-        if (side === 'L') { say(text); }
+        if (side === 'L' && voice) say(sayOf.get(text), ex.code || 'en');
         if (!pick || pick.side === side) {
           if (pick) mark(pick.b, false);
           pick = { b, text, side };
@@ -554,7 +624,7 @@
         H('span', { class: 'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-b-4 border-brand-600 bg-brand-500 text-onfill' }, ico('route', 'h-6 w-6')),
         H('div', { class: 'min-w-0 flex-1' },
           H('p', { class: 'text-lg font-semibold text-white' }, t('homeTitle')),
-          H('p', { class: 'text-sm text-slate-400' }, `${t(p.course)} · ${pos.unit < 0 ? t('homeAll') : t('homeDesc')(pos.unit + 1, pos.units.length)}`)),
+          H('p', { class: 'text-sm text-slate-400' }, `${courseName(p.course)} · ${pos.unit < 0 ? t('homeAll') : t('homeDesc')(pos.unit + 1, pos.units.length)}`)),
         ico('chevron-right', 'icon text-slate-500')),
       H('div', { class: 'flex items-center gap-2' },
         H('div', { class: 'h-2.5 flex-1 overflow-hidden rounded-full bg-night-700' }, H('div', { class: 'h-full rounded-full bg-amber-400', style: `width:${Math.min(100, (x / DAILY_GOAL) * 100)}%` })),
