@@ -27,7 +27,26 @@
     ['history', 'landmark', 'История', 'Tarix'],
     ['geography', 'globe', 'География', 'Geografiya'],
     ['informatics', 'monitor', 'Информатика', 'Informatika'],
+    ['spanish', 'languages', 'Испанский язык', 'Ispan tili'],
+    ['french', 'languages', 'Французский язык', 'Fransuz tili'],
+    ['german', 'languages', 'Немецкий язык', 'Nemis tili'],
+    ['chinese', 'languages', 'Китайский язык', 'Xitoy tili'],
+    ['japanese', 'languages', 'Японский язык', 'Yapon tili'],
+    ['korean', 'languages', 'Корейский язык', 'Koreys tili'],
+    ['arabic', 'languages', 'Арабский язык', 'Arab tili'],
+    ['turkish', 'languages', 'Турецкий язык', 'Turk tili'],
+    ['italian', 'languages', 'Итальянский язык', 'Italyan tili'],
+    ['portuguese', 'languages', 'Португальский язык', 'Portugal tili'],
+    ['hindi', 'languages', 'Язык хинди', 'Hind tili'],
+    ['dutch', 'languages', 'Нидерландский язык', 'Niderland tili'],
+    ['polish', 'languages', 'Польский язык', 'Polyak tili'],
+    ['swedish', 'languages', 'Шведский язык', 'Shved tili'],
   ];
+  // On the setup screen these are inside the "Languages" button (the 17 most studied languages).
+  const LANGUAGE_SUBJECTS = {
+    english: 'EN', russian: 'RU', uzbek: 'UZ', spanish: 'ES', french: 'FR', german: 'DE', chinese: 'ZH', japanese: 'JA', korean: 'KO',
+    arabic: 'AR', turkish: 'TR', italian: 'IT', portuguese: 'PT', hindi: 'HI', dutch: 'NL', polish: 'PL', swedish: 'SV',
+  };
 
   const T = {
     ru: {
@@ -36,6 +55,7 @@
       welcomeTitle: 'Привет! Давай учиться вместе',
       welcomeText: 'Я не даю готовых ответов, а помогаю дойти до них самому.',
       chooseSubject: 'Выбери предмет',
+      languages: 'Языки',
       chooseGrade: 'Выбери класс',
       start: 'Начать урок',
       grade: 'класс',
@@ -131,6 +151,7 @@
       welcomeTitle: "Salom! Keling, birga o'rganamiz",
       welcomeText: "Men tayyor javob bermayman, balki uni o'zing topishingga yordam beraman.",
       chooseSubject: 'Fanni tanla',
+      languages: 'Tillar',
       chooseGrade: 'Sinfni tanla',
       start: 'Darsni boshlash',
       grade: 'sinf',
@@ -399,18 +420,45 @@
       (on ? 'bg-brand-500/15 text-white ring-brand-400' : 'bg-night-800 text-slate-200 ring-white/5 hover:bg-night-700');
   }
 
+  let languagesOpen = false;
+  function subjectButton(key, badge, label, on, onclick) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = optionClass(on);
+    b.innerHTML = `<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${on ? 'bg-brand-500 text-onfill' : 'bg-night-700 text-slate-200'}">${badge}</span><span class="min-w-0"></span>`;
+    b.lastChild.textContent = label;
+    b.onclick = onclick;
+    return b;
+  }
   function renderSetupOptions() {
     const subjects = $('subjects');
     subjects.innerHTML = '';
-    SUBJECTS.forEach(([key, ic]) => {
-      const on = key === pendingSubject;
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = optionClass(on);
-      b.innerHTML = `<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${on ? 'bg-brand-500 text-onfill' : 'bg-night-700 text-slate-200'}">${icon(ic)}</span><span class="min-w-0"></span>`;
-      b.lastChild.textContent = subjectName(key);
-      b.onclick = () => { pendingSubject = key; renderSetupOptions(); };
-      subjects.appendChild(b);
+    const langPicked = Object.hasOwn(LANGUAGE_SUBJECTS, pendingSubject || '');
+    SUBJECTS.filter(([key]) => !Object.hasOwn(LANGUAGE_SUBJECTS, key)).forEach(([key, ic], i) => {
+      subjects.appendChild(subjectButton(key, icon(ic), subjectName(key), key === pendingSubject, () => { pendingSubject = key; renderSetupOptions(); }));
+      if (i !== 0) return;
+      // "Languages" right after math: opens the list of all languages.
+      const open = languagesOpen;
+      const lb = subjectButton('languages', icon('languages'), langPicked ? `${t('languages')} · ${subjectName(pendingSubject)}` : t('languages'), langPicked,
+        () => { languagesOpen = !open; renderSetupOptions(); });
+      lb.setAttribute('aria-expanded', String(open));
+      lb.insertAdjacentHTML('beforeend', `<span class="ml-auto shrink-0 transition ${open ? 'rotate-180' : ''}">${icon('chevron-down')}</span>`);
+      subjects.appendChild(lb);
+      if (!open) return;
+      const panel = document.createElement('div');
+      panel.className = 'col-span-2 grid grid-cols-2 gap-2 rounded-2xl bg-night-900/80 p-2 ring-1 ring-white/5 sm:col-span-3 sm:grid-cols-3';
+      Object.entries(LANGUAGE_SUBJECTS).forEach(([key, code]) => {
+        // Inside "Languages" the word "язык" is not repeated: "Испанский", "Хинди".
+        const short = lang === 'uz' ? subjectName(key) : subjectName(key).replace(/^Язык (.)/, (m, c) => c.toUpperCase()).replace(/ язык$/, '');
+        const b = subjectButton(key, code, short, key === pendingSubject, () => { pendingSubject = key; renderSetupOptions(); });
+        b.classList.replace('gap-3', 'gap-2');
+        b.classList.replace('text-[15px]', 'text-sm');
+        b.firstChild.classList.replace('h-10', 'h-8');
+        b.firstChild.classList.replace('w-10', 'w-8');
+        b.firstChild.classList.replace('text-sm', 'text-xs');
+        panel.appendChild(b);
+      });
+      subjects.appendChild(panel);
     });
     const grades = $('grades');
     grades.innerHTML = '';
@@ -621,6 +669,7 @@
   };
   function openSetup() {
     pendingSubject = setup && setup.subject;
+    languagesOpen = Object.hasOwn(LANGUAGE_SUBJECTS, pendingSubject || '');
     pendingGrade = setup && setup.grade;
     renderSetupOptions();
     showScreen('setup');
@@ -1054,6 +1103,7 @@
     sessions = store.get('sessions', []);
     sessions.forEach((x) => { if (!x.id) x.id = newId(); });
     pendingSubject = setup && setup.subject;
+    languagesOpen = Object.hasOwn(LANGUAGE_SUBJECTS, pendingSubject || '');
     pendingGrade = setup && setup.grade;
     setRemaining(left);
     if (setup && (!currentSession() || currentSession().date !== today())) newSession();
