@@ -1,6 +1,7 @@
 // Learning path in the spirit of Duolingo: units of short lessons, no AI.
-// Courses: math by grade, English (words with examples and grammar) and 15 more languages
-// (basic words from path-words.js). Each unit is one topic with three lessons: "learn" (the rule and worked examples,
+// Courses: math by grade, school subjects by grade (path-subjects.js), English (words with
+// examples and grammar) and 15 more languages (basic words from path-words.js). The path follows
+// the subject and grade the student chose; another course can be picked until the subject changes. Each unit is one topic with three lessons: "learn" (the rule and worked examples,
 // then easy practice), "practice" and "check". Questions come from code (the bank of
 // quest.js): math by grade, English words and grammar. A wrong answer comes back at the
 // end of the lesson until it is right. XP, a daily goal and the streak keep the habit.
@@ -70,6 +71,12 @@
       nextLesson: 'Следующий урок',
       quit: 'Выйти из урока',
       mistakeBack: 'Эта ошибка вернётся в конце урока',
+      review: (g) => `Повторение · ${g} класс`,
+      forGrade: (c, g) => `${c} · ${g} класс`,
+      startsFrom: (n, g) => `Предмет «${n}» начинается с ${g} класса — пока здесь первые темы.`,
+      allGrades: 'Слова для начинающих — подходят для любого класса.',
+      reviewNote: 'Сначала темы твоего класса, потом повторение прошлых классов.',
+      pastOnly: (n, a, b) => `«${n}» проходят в ${a}–${b} классе — здесь повторение.`,
     },
     uz: {
       title: "Bilim yo'li",
@@ -123,6 +130,12 @@
       nextLesson: 'Keyingi dars',
       quit: 'Darsdan chiqish',
       mistakeBack: 'Bu savol dars oxirida yana chiqadi',
+      review: (g) => `Takrorlash · ${g}-sinf`,
+      forGrade: (c, g) => `${c} · ${g}-sinf`,
+      startsFrom: (n, g) => `«${n}» fani ${g}-sinfdan boshlanadi — hozircha birinchi mavzular.`,
+      allGrades: "Boshlovchilar uchun so'zlar — har qanday sinfga mos.",
+      reviewNote: "Avval sening sinfing mavzulari, keyin oldingi sinflarni takrorlash.",
+      pastOnly: (n, a, b) => `«${n}» ${a}–${b}-sinflarda o'tiladi — bu yerda takrorlash.`,
     },
   };
   const t = (k) => T[N.lang === 'uz' ? 'uz' : 'ru'][k];
@@ -135,19 +148,27 @@
     p.days = p.days && typeof p.days === 'object' ? p.days : {};
     p.done = p.done && typeof p.done === 'object' ? p.done : {};
     if (p.course === 'english') p.course = 'en';
+    // The path follows the chosen subject: when the subject changes, the course changes too.
+    const subject = N.setup?.subject;
+    if (subject && p.subjectSeen !== subject) { p.course = courseForSubject(); p.subjectSeen = subject; }
     if (!courses().includes(p.course)) p.course = courseForSubject();
     return p;
   }
   const save = () => K().save('path');
-  // Courses: math, English and the other languages (not the language of the site itself).
+  // Courses: math, school subjects, English and the other languages (not the language of the
+  // site itself). Russian grammar is for the Russian site, Ona tili for the Uzbek one.
   const W = () => window.NimiPathWords;
-  const courses = () => ['math', 'en', ...W().langs.filter((l) => l !== 'en' && l !== (N.lang === 'uz' ? 'uz' : 'ru'))];
+  const SUBJ = () => window.NimiPathSubjects || {};
+  const subjectCourses = () => Object.keys(SUBJ()).filter((k) => !SUBJ()[k].lang || SUBJ()[k].lang === (N.lang === 'uz' ? 'uz' : 'ru'));
+  const courses = () => ['math', ...subjectCourses(), 'en', ...W().langs.filter((l) => l !== 'en' && l !== (N.lang === 'uz' ? 'uz' : 'ru'))];
   const SUBJECT_LANG = { english: 'en', russian: 'ru', uzbek: 'uz', spanish: 'es', french: 'fr', german: 'de', chinese: 'zh', japanese: 'ja', korean: 'ko', arabic: 'ar', turkish: 'tr', italian: 'it', portuguese: 'pt', hindi: 'hi', dutch: 'nl', polish: 'pl', swedish: 'sv' };
   function courseForSubject() {
-    const code = SUBJECT_LANG[N.setup?.subject];
+    const s = N.setup?.subject;
+    if (s && SUBJ()[s] && courses().includes(s)) return s;
+    const code = SUBJECT_LANG[s];
     return code && courses().includes(code) ? code : 'math';
   }
-  const courseName = (c) => (c === 'math' ? t('math') : t('langNames')[c] || c);
+  const courseName = (c) => (c === 'math' ? t('math') : SUBJ()[c] ? N.subjectName(c) : t('langNames')[c] || c);
   const todayXp = () => P().days[N.today()] || 0;
   const grade = () => Number(N.setup?.grade) || 5;
 
@@ -190,8 +211,31 @@
       name: () => th[N.lang === 'uz' ? 'uz' : 'ru'],
     }));
   }
-  const courseKey = (c) => (c === 'math' ? `math:${grade()}` : c === 'en' ? `en:${bank().enLevel(grade())}` : `lang:${c}`);
-  const unitsOf = (c) => (c === 'math' ? mathUnits() : c === 'en' ? englishUnits() : vocabUnits(c));
+  // A school subject: the topics of the student's grade first, then the earlier grades as review.
+  // Topics of later grades are not shown. When the subject starts later than the student's
+  // grade, its first topics are shown with a note.
+  const pick = (v) => (Array.isArray(v) ? v[N.lang === 'uz' ? 1 : 0] : v);
+  function subjectPlan(key) {
+    const sj = SUBJ()[key];
+    const g = grade();
+    const now = sj.topics.filter((tp) => tp.g[0] <= g && g <= tp.g[1]);
+    const past = sj.topics.filter((tp) => tp.g[1] < g).sort((a, b) => b.g[1] - a.g[1]);
+    if (now.length || past.length) return { now, past, early: false };
+    const first = [...sj.topics].sort((a, b) => a.g[0] - b.g[0]).slice(0, 3);
+    return { now: first, past: [], early: first[0].g[0] };
+  }
+  function subjectUnits(key) {
+    const sj = SUBJ()[key];
+    const { now, past } = subjectPlan(key);
+    const unit = (tp, review) => ({
+      id: `t:${tp.id}`, kind: 'quiz', subj: sj, topic: tp,
+      name: () => pick(tp.name),
+      tag: review ? t('review')(tp.g[1]) : null,
+    });
+    return [...now.map((tp) => unit(tp, false)), ...past.map((tp) => unit(tp, true))];
+  }
+  const courseKey = (c) => (c === 'math' ? `math:${grade()}` : c === 'en' ? `en:${bank().enLevel(grade())}` : SUBJ()[c] ? `sub:${c}` : `lang:${c}`);
+  const unitsOf = (c) => (c === 'math' ? mathUnits() : c === 'en' ? englishUnits() : SUBJ()[c] ? subjectUnits(c) : vocabUnits(c));
   const doneMap = (c) => { const p = P(); p.done[courseKey(c)] = p.done[courseKey(c)] || {}; return p.done[courseKey(c)]; };
   // The first unit that still has lessons to take (or -1 when all are done).
   function position(c) {
@@ -240,6 +284,26 @@
     if (k === 'type') return { type: 'input', q: t('typeQIn')(e.n), a: e.t, ...base };
     return { type: 'choice', q: t('chooseIn')(e.n), ...sc(e.t, others.map((x) => x.t)), ...base };
   }
+  // A question of a school subject: one language for Russian / Ona tili, otherwise ru or uz.
+  function quizItem(unit, raw) {
+    if (unit.subj.lang) { const [q, opts, why] = raw; return { q, opts, why }; }
+    const uz = N.lang === 'uz';
+    return { q: raw[uz ? 1 : 0], opts: raw[uz ? 3 : 2], why: raw[uz ? 5 : 4] };
+  }
+  function quizExercise(unit, raw) {
+    const it = quizItem(unit, raw);
+    return { type: 'choice', q: it.q, ...bank().strChoice(it.opts[0], it.opts.slice(1)), rule: pick(unit.topic.rule), explain: it.why };
+  }
+  // All questions of the topic in random order, then again, never the same one twice in a row.
+  function quizLesson(unit, n) {
+    const out = [];
+    while (out.length < n) {
+      let round = shuffle(unit.topic.qs.slice());
+      if (out.length && round[0] === out[out.length - 1] && round.length > 1) round = [...round.slice(1), round[0]];
+      out.push(...round);
+    }
+    return out.slice(0, n).map((raw) => quizExercise(unit, raw));
+  }
   function grammarExercise(unit) {
     const g = unit.items[Math.floor(Math.random() * unit.items.length)];
     const [, s, right, wrong, ru, uz] = g;
@@ -248,6 +312,7 @@
   // A lesson's questions; similar ones are not repeated back to back.
   function buildLesson(unit, lessonType) {
     const n = SIZE[lessonType];
+    if (unit.kind === 'quiz') return quizLesson(unit, n);
     const out = [];
     const seen = new Set();
     for (let tries = 0; out.length < n && tries < n * 8; tries++) {
@@ -315,6 +380,7 @@
       ...courses().map((c) => { const o = H('option', { value: c }, courseName(c)); if (c === p.course) o.selected = true; return o; }));
     pickCourse.onchange = () => { P().course = pickCourse.value; save(); open(); };
     root.append(H('label', { class: 'flex flex-col gap-1' }, H('span', { class: 'px-1 text-xs font-semibold uppercase tracking-wide text-slate-400' }, t('course')), pickCourse));
+    root.append(gradeLine(p.course));
 
     const pos = position(p.course);
     pos.units.forEach((u, ui) => {
@@ -324,7 +390,7 @@
       const box = H('section', { class: `flex flex-col gap-4 rounded-3xl p-4 ring-1 ${isCurrent ? 'bg-brand-500/10 ring-brand-400/40' : 'bg-night-900/80 ring-white/5'}` });
       box.append(H('div', { class: 'flex items-center justify-between gap-3' },
         H('div', { class: 'min-w-0' },
-          H('p', { class: 'text-xs font-semibold uppercase tracking-wide text-brand-400' }, t('unit')(ui + 1)),
+          H('p', { class: 'text-xs font-semibold uppercase tracking-wide text-brand-400' }, u.tag ? `${t('unit')(ui + 1)} · ${u.tag}` : t('unit')(ui + 1)),
           H('p', { class: 'font-semibold text-white' }, u.name())),
         finished ? H('span', { class: 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-400 text-onfill', title: t('doneUnit') }, ico('crown', 'h-5 w-5')) : H('span', { class: 'shrink-0 text-sm tabular-nums text-slate-400' }, `${doneN}/${LESSONS.length}`)));
       // Lesson nodes in a gentle zigzag, like a path.
@@ -346,6 +412,20 @@
       root.append(box);
       if (isCurrent) setTimeout(() => box.scrollIntoView({ block: 'center' }), 50);
     });
+  }
+  // "Physics · 8th grade" and, when needed, a note on how the topics were chosen.
+  function gradeLine(c) {
+    const box = H('div', { class: 'flex flex-col gap-1 rounded-2xl bg-night-900/80 px-4 py-3 ring-1 ring-white/5' },
+      H('p', { class: 'flex items-center gap-2 font-semibold text-white' }, ico('graduation-cap', 'h-5 w-5 shrink-0 text-brand-400'), t('forGrade')(courseName(c), grade())));
+    let note = null;
+    if (SUBJ()[c]) {
+      const plan = subjectPlan(c);
+      if (plan.early) note = t('startsFrom')(courseName(c), plan.early);
+      else if (plan.past.length && plan.now.length) note = t('reviewNote');
+      else if (plan.past.length) { const tps = SUBJ()[c].topics; note = t('pastOnly')(courseName(c), Math.min(...tps.map((x) => x.g[0])), Math.max(...tps.map((x) => x.g[1]))); }
+    } else if (c !== 'math' && c !== 'en') note = t('allGrades');
+    if (note) box.append(H('p', { class: 'text-sm text-slate-400' }, note));
+    return box;
   }
   function hint(container, text) {
     const old = container.querySelector('[data-hint]');
@@ -403,6 +483,18 @@
           html('div', 'text-slate-100', x.q),
           H('p', { class: 'text-sm font-semibold text-slate-400' }, t('solution')),
           html('div', 'text-emerald-200', x.explain || `${t('answerIs')} ${x.a}`)));
+      }
+    } else if (unit.kind === 'quiz') {
+      root.append(H('div', { class: 'flex flex-col gap-2 rounded-3xl bg-brand-500/10 p-4 ring-1 ring-brand-400/30' },
+        H('p', { class: 'flex items-center gap-2 font-semibold text-white' }, ico('lightbulb', 'icon text-amber-300'), t('rule')),
+        html('div', 'text-slate-200', pick(unit.topic.rule))));
+      for (const raw of shuffle(unit.topic.qs.slice()).slice(0, 2)) {
+        const it = quizItem(unit, raw);
+        root.append(H('div', { class: 'flex flex-col gap-2 rounded-3xl bg-night-900/80 p-4 ring-1 ring-white/5' },
+          H('p', { class: 'text-sm font-semibold text-slate-400' }, t('example')),
+          html('div', 'text-slate-100', it.q),
+          html('div', 'font-semibold text-emerald-200', `${t('answerIs')} **${it.opts[0]}**`),
+          html('div', 'text-sm text-slate-300', it.why)));
       }
     } else if (unit.kind === 'grammar') {
       for (const g of unit.items) {
@@ -624,7 +716,7 @@
         H('span', { class: 'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-b-4 border-brand-600 bg-brand-500 text-onfill' }, ico('route', 'h-6 w-6')),
         H('div', { class: 'min-w-0 flex-1' },
           H('p', { class: 'text-lg font-semibold text-white' }, t('homeTitle')),
-          H('p', { class: 'text-sm text-slate-400' }, `${courseName(p.course)} · ${pos.unit < 0 ? t('homeAll') : t('homeDesc')(pos.unit + 1, pos.units.length)}`)),
+          H('p', { class: 'text-sm text-slate-400' }, `${t('forGrade')(courseName(p.course), grade())} · ${pos.unit < 0 ? t('homeAll') : t('homeDesc')(pos.unit + 1, pos.units.length)}`)),
         ico('chevron-right', 'icon text-slate-500')),
       H('div', { class: 'flex items-center gap-2' },
         H('div', { class: 'h-2.5 flex-1 overflow-hidden rounded-full bg-night-700' }, H('div', { class: 'h-full rounded-full bg-amber-400', style: `width:${Math.min(100, (x / DAILY_GOAL) * 100)}%` })),
