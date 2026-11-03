@@ -10,6 +10,16 @@ const LANG_NAME = {
   en: 'английском',
 };
 
+// Word cards: the 17 most studied languages (code -> name in Russian for the prompt).
+const CARD_LANGS = {
+  en: 'английский', ru: 'русский', uz: 'узбекский', es: 'испанский', fr: 'французский', de: 'немецкий',
+  zh: 'китайский', ja: 'японский', ko: 'корейский', ar: 'арабский', tr: 'турецкий', it: 'итальянский',
+  pt: 'португальский', hi: 'хинди', nl: 'нидерландский', pl: 'польский', sv: 'шведский',
+};
+// Languages in other scripts get a Latin pronunciation in brackets, so a child can read the word.
+const CARD_TRANSCRIPTION = { zh: 'пиньинь с тонами, например: 你好 (nǐ hǎo)', ja: 'ромадзи, например: こんにちは (konnichiwa)', ko: 'латиницей, например: 안녕 (annyeong)', ar: 'латиницей, например: مرحبا (marhaban)', hi: 'латиницей, например: नमस्ते (namaste)' };
+const CARD_SCRIPT = { ru: 'кириллицей', uz: "латиницей, с апострофом в o' и g'" };
+
 const TASK_SCHEMA = {
   type: 'OBJECT',
   properties: {
@@ -167,9 +177,13 @@ function readingPrompt({ grade, lang }) {
 }
 
 function cardsPrompt({ learn, native, topic, grade }) {
+  const name = CARD_LANGS[learn];
+  const tr = CARD_TRANSCRIPTION[learn];
   return `${COMMON}
-Составь набор из 12 слов для изучения ${LANG_NAME[learn]} языка на тему «${topic}» для ученика ${grade} класса.
-front — слово на ${LANG_NAME[learn]} языке, back — перевод на ${LANG_NAME[native]} язык, example — короткий пример предложения на ${LANG_NAME[learn]} языке.
+Составь набор из 12 слов на тему «${topic}» для ученика ${grade} класса, который учит язык: ${name}. Слова простые и частые, подходят по возрасту.
+front — слово на изучаемом языке (${name}${CARD_SCRIPT[learn] ? `, ${CARD_SCRIPT[learn]}` : ''}).${tr ? ` После слова в скобках дай произношение (${tr}).` : ''}
+back — перевод слова, написанный на ${LANG_NAME[native]} языке.
+example — короткое простое предложение на изучаемом языке с этим словом${tr ? ', после него в скобках произношение латиницей' : ''}.
 title — название набора на ${LANG_NAME[native]} языке.`;
 }
 
@@ -200,6 +214,7 @@ function topicsPrompt({ subject, grade, lang }) {
 }
 
 module.exports = {
+  CARD_LANGS,
   TASK_SCHEMA,
   READING_SCHEMA,
   CARDS_SCHEMA,

@@ -76,7 +76,7 @@
           ['graduation-cap', 'Экзамены и DTM', 'Пробная аттестация и вступительный тест'],
           ['puzzle', 'Олимпиада', 'Задачи на смекалку'],
           ['book-open', 'Чтение', 'Текст и вопросы на понимание'],
-          ['layers', 'Карточки слов', 'Английский, русский, узбекский'],
+          ['layers', 'Карточки слов', '17 языков: английский, русский, китайский, корейский и другие'],
           ['gamepad-2', 'Игры', 'Битва с монстрами и устный счёт'],
           ['notebook-pen', 'Дневник', 'Домашние задания'],
           ['chart-no-axes-column', 'Прогресс', 'Темы, серии и награды'],
@@ -130,7 +130,7 @@
       again: 'Ещё раз',
       tiles: {
         test: ['Тест по теме', '10 вопросов и оценка'],
-        cards: ['Карточки слов', 'Английский, русский, узбекский'],
+        cards: ['Карточки слов', '17 языков мира'],
         reading: ['Чтение', 'Текст и вопросы'],
         games: ['Игры', 'Битва с монстрами и счёт'],
         chat: ['Спросить учителя', 'Разберём задачу вместе'],
@@ -362,7 +362,7 @@
       otherTopic: 'Другая тема',
       newText: 'Новый текст',
       learnLang: 'Какой язык учим?',
-      langs: { en: 'Английский', ru: 'Русский', uz: 'Узбекский' },
+      langs: { en: 'Английский', ru: 'Русский', uz: 'Узбекский', es: 'Испанский', fr: 'Французский', de: 'Немецкий', zh: 'Китайский', ja: 'Японский', ko: 'Корейский', ar: 'Арабский', tr: 'Турецкий', it: 'Итальянский', pt: 'Португальский', hi: 'Хинди', nl: 'Нидерландский', pl: 'Польский', sv: 'Шведский' },
       reviewDue: (n) => (n ? `Повторить слова (${n})` : 'Все слова повторены — загляни завтра'),
       newDeck: 'Новый набор слов',
       deckOwnPh: 'Своя тема, например: Спорт',
@@ -493,7 +493,7 @@
           ['graduation-cap', 'Imtihonlar va DTM', 'Sinov attestatsiyasi va kirish testi'],
           ['puzzle', 'Olimpiada', 'Zukkolik masalalari'],
           ['book-open', "O'qish", 'Matn va tushunish uchun savollar'],
-          ['layers', "So'z kartochkalari", "Ingliz, rus, o'zbek tillari"],
+          ['layers', "So'z kartochkalari", "17 ta til: ingliz, rus, xitoy, koreys va boshqalar"],
           ['gamepad-2', "O'yinlar", "Maxluqlar jangi va og'zaki hisob"],
           ['notebook-pen', 'Kundalik', 'Uy vazifalari'],
           ['chart-no-axes-column', 'Natijalar', 'Mavzular, seriyalar va mukofotlar'],
@@ -547,7 +547,7 @@
       again: 'Yana bir bor',
       tiles: {
         test: ['Mavzu bo\'yicha test', '10 ta savol va baho'],
-        cards: ["So'z kartochkalari", 'Ingliz, rus, o\'zbek'],
+        cards: ["So'z kartochkalari", "Dunyoning 17 ta tili"],
         reading: ["O'qish", 'Matn va savollar'],
         games: ["O'yinlar", 'Maxluqlar jangi va hisob'],
         chat: ["O'qituvchidan so'rash", 'Masalani birga yechamiz'],
@@ -779,7 +779,7 @@
       otherTopic: 'Boshqa mavzu',
       newText: 'Yangi matn',
       learnLang: "Qaysi tilni o'rganamiz?",
-      langs: { en: 'Ingliz tili', ru: 'Rus tili', uz: "O'zbek tili" },
+      langs: { en: 'Ingliz tili', ru: 'Rus tili', uz: "O'zbek tili", es: 'Ispan tili', fr: 'Fransuz tili', de: 'Nemis tili', zh: 'Xitoy tili', ja: 'Yapon tili', ko: 'Koreys tili', ar: 'Arab tili', tr: 'Turk tili', it: 'Italyan tili', pt: 'Portugal tili', hi: 'Hind tili', nl: 'Niderland tili', pl: 'Polyak tili', sv: 'Shved tili' },
       reviewDue: (n) => (n ? `So'zlarni takrorlash (${n})` : "Hamma so'zlar takrorlandi — ertaga kel"),
       newDeck: "Yangi so'zlar to'plami",
       deckOwnPh: "O'z mavzung, masalan: Sport",
@@ -1267,7 +1267,9 @@
 
   // ---------- word cards (spaced repetition by boxes) ----------
   let cardsLang = 'en';
-  const learnLangs = () => ['en', N.lang === 'uz' ? 'ru' : 'uz'];
+  // The 17 most studied languages; the student's own language is not offered.
+  const CARD_LANGS = ['en', 'ru', 'uz', 'es', 'fr', 'de', 'zh', 'ja', 'ko', 'ar', 'tr', 'it', 'pt', 'hi', 'nl', 'pl', 'sv'];
+  const learnLangs = () => CARD_LANGS.filter((l) => l !== N.lang);
   const nowTs = () => Date.now();
   const learnedCount = () => data.cards.decks.reduce((n, d) => n + d.words.filter((w) => w.box >= 3).length, 0);
   const dueWords = (decks) => decks.flatMap((d) => d.words.filter((w) => w.due <= nowTs()).map((w) => ({ w, d })));
@@ -1277,8 +1279,8 @@
     const root = screen('activity');
     root.append(titleBar(t('cards')));
     root.append(h('p', { class: 'text-slate-300' }, t('learnLang')),
-      h('div', { class: 'grid grid-cols-2 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5' }, learnLangs().map((l) =>
-        h('button', { type: 'button', class: `min-h-12 rounded-xl text-[15px] font-medium ${l === cardsLang ? 'bg-brand-500 text-onfill' : 'text-slate-300'}`, onclick: () => { cardsLang = l; openCards(); } }, t('langs')[l]))));
+      h('div', { class: 'flex flex-wrap gap-2' }, learnLangs().map((l) =>
+        h('button', { type: 'button', 'aria-pressed': String(l === cardsLang), class: `min-h-11 rounded-full px-4 text-sm font-medium ring-1 transition ${l === cardsLang ? 'bg-brand-500 text-onfill ring-brand-500' : 'bg-night-800 text-slate-200 ring-white/10 hover:bg-night-700'}`, onclick: () => { cardsLang = l; openCards(); } }, t('langs')[l]))));
     const decks = data.cards.decks.filter((d) => d.learn === cardsLang && d.native === N.lang);
     const due = dueWords(decks);
     root.append(h('button', { type: 'button', class: BTN, disabled: !due.length, onclick: () => review(due.slice(0, 15)) }, ico('repeat'), t('reviewDue')(due.length)));
@@ -1337,7 +1339,7 @@
         h('p', { class: 'text-2xl font-semibold text-brand-400' }, w.back),
         w.example ? h('p', { class: 'text-sm italic text-slate-400' }, w.example) : null);
       const say = h('button', { type: 'button', class: 'flex h-11 items-center gap-2 rounded-full bg-night-700 px-4 text-sm text-slate-200 hover:bg-night-600', 'aria-label': t('listen') }, ico('volume-2', 'h-4 w-4'), t('listen'));
-      say.onclick = (e) => { e.stopPropagation(); N.speak(w.front, items[0].d.learn); };
+      say.onclick = (e) => { e.stopPropagation(); N.speak(w.front.replace(/\s*\([^)]*\)\s*$/, ''), items[0].d.learn); };
       const card = h('div', { class: 'flex min-h-56 flex-col items-center justify-center gap-4 rounded-3xl bg-night-800 p-6 text-center ring-1 ring-white/10' },
         h('p', { class: 'text-3xl font-semibold text-white' }, w.front), 'speechSynthesis' in window ? say : null, back);
       const reveal = h('button', { type: 'button', class: BTN }, t('showBack'));

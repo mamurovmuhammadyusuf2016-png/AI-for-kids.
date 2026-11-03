@@ -467,7 +467,7 @@ function learnParams(body) {
     lang: pick(body.lang, ['ru', 'uz'], 'ru'),
     level: Math.min(5, Math.max(1, parseInt(body.level, 10) || 2)),
     topic: cleanText(body.topic, 80),
-    learn: pick(body.learn, ['en', 'ru', 'uz'], 'en'),
+    learn: pick(body.learn, Object.keys(learn.CARD_LANGS), 'en'),
     native: pick(body.native, ['ru', 'uz'], 'ru'),
     examType: pick(body.examType, ['final', 'dtm'], 'final'),
     topics: Array.isArray(body.topics) ? body.topics.map((x) => cleanText(x, 60)).filter(Boolean).slice(0, 12) : [],

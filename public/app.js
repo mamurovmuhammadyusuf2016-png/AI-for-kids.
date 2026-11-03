@@ -480,7 +480,7 @@
     const voice = voiceFor(code);
     if (!voice && code !== 'en') return false;
     const u = new SpeechSynthesisUtterance(speechText(text));
-    u.lang = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US' }[code];
+    u.lang = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US', es: 'es-ES', fr: 'fr-FR', de: 'de-DE', zh: 'zh-CN', ja: 'ja-JP', ko: 'ko-KR', ar: 'ar-SA', tr: 'tr-TR', it: 'it-IT', pt: 'pt-BR', hi: 'hi-IN', nl: 'nl-NL', pl: 'pl-PL', sv: 'sv-SE' }[code] || code;
     if (voice) u.voice = voice;
     u.rate = 0.95;
     u.onend = u.onerror = () => onEnd?.();
