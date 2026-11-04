@@ -1,4 +1,25 @@
 (() => {
+  // Inside the Android app (android/) the page gets window.NimiAndroid: the phone's text-to-speech,
+  // voice input, Google sign-in through Chrome and the colour of the system bars.
+  const AndroidApp = window.NimiAndroid || null;
+  if (AndroidApp) {
+    // Reading aloud for every section (chat, cards, games) goes to the phone's text-to-speech.
+    let current = null;
+    const done = () => { const u = current; current = null; u?.onend?.(); };
+    window.NimiSpeakDone = done;
+    Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+      configurable: true, writable: true,
+      value: function SpeechSynthesisUtterance(text) { this.text = text; this.lang = ''; this.rate = 1; this.voice = null; },
+    });
+    Object.defineProperty(window, 'speechSynthesis', {
+      configurable: true,
+      value: {
+        getVoices: () => { try { return JSON.parse(AndroidApp.voices()).map((l) => ({ lang: l, name: l })); } catch { return []; } },
+        speak(u) { current = u; if (!AndroidApp.speak(String(u.text), u.voice?.lang || u.lang || 'ru-RU')) { current = null; u.onerror?.(); } },
+        cancel() { AndroidApp.stop(); done(); },
+      },
+    });
+  }
   const DEFAULT_LIMIT = 30;
   const SESSION_MS = 25 * 60 * 1000;
   const BREAK_MS = 5 * 60 * 1000;
@@ -77,6 +98,9 @@
       listen: 'Слушать',
       noVoice: 'На этом устройстве нет голоса для этого языка.',
       micDenied: 'Нет доступа к микрофону. Разреши его в настройках браузера.',
+      googleInApp: 'Продолжить с Google',
+      googleEmbedded: 'Вход через Google не работает во встроенном браузере Telegram, Instagram и других приложений. Откройте сайт в Chrome или Safari (меню ⋮ или … → «Открыть в браузере») или войдите по почте.',
+      openInChrome: 'Открыть в Chrome',
       speakNow: 'Говори, я слушаю…',
       language: 'Язык',
       themeToLight: 'Светлая тема',
@@ -173,6 +197,9 @@
       listen: 'Tinglash',
       noVoice: "Bu qurilmada bu til uchun ovoz yo'q.",
       micDenied: "Mikrofonga ruxsat yo'q. Brauzer sozlamalarida ruxsat ber.",
+      googleInApp: 'Google orqali davom etish',
+      googleEmbedded: "Google orqali kirish Telegram, Instagram va boshqa ilovalarning ichki brauzerida ishlamaydi. Saytni Chrome yoki Safari'da oching (⋮ yoki … menyusi → «Brauzerda ochish») yoki pochta orqali kiring.",
+      openInChrome: "Chrome'da ochish",
       speakNow: 'Gapir, tinglayapman…',
       language: 'Til',
       themeToLight: 'Yorug\' rejim',
@@ -400,6 +427,7 @@
 
   // ---------- theme: dark (black, white, blue) or light (white, green) ----------
   const theme = () => document.documentElement.dataset.theme;
+  AndroidApp?.setTheme(theme());
   function renderThemeBtn() {
     const label = t(theme() === 'light' ? 'themeToDark' : 'themeToLight');
     $('themeBtn').innerHTML = icon(theme() === 'light' ? 'moon' : 'sun');
@@ -411,6 +439,7 @@
     document.documentElement.dataset.theme = next;
     document.querySelector('meta[name="theme-color"]').content = next === 'light' ? '#ffffff' : '#000000';
     try { localStorage.setItem('nimi-theme', next); } catch {}
+    AndroidApp?.setTheme(next);
     renderThemeBtn();
     if (!$('auth').classList.contains('hidden')) renderGoogleButton();
   };
@@ -714,6 +743,14 @@
   }
   const menu = $('menu');
   const closeMenu = () => menu.classList.add('hidden');
+  // The Android app's back button: true when the page handled it, false to leave the app.
+  window.NimiBack = () => {
+    if (!$('reportModal').classList.contains('hidden')) { closeReport(); return true; }
+    if (!menu.classList.contains('hidden')) { closeMenu(); return true; }
+    if (['activity', 'chat', 'progress', 'diary'].includes(currentScreen) || (currentScreen === 'setup' && setup)) { showScreen('home'); return true; }
+    if (currentScreen === 'auth' && config.accounts) { showScreen('landing'); return true; }
+    return false;
+  };
   $('menuBtn').onclick = (e) => {
     e.stopPropagation();
     menu.classList.toggle('hidden');
@@ -789,7 +826,7 @@
   // ---------- voice input (speech recognition) ----------
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   let recognizer = null;
-  if (Recognition) $('micBtn').classList.replace('hidden', 'flex');
+  if (Recognition || AndroidApp) $('micBtn').classList.replace('hidden', 'flex');
   function setMic(on) {
     $('micBtn').innerHTML = icon(on ? 'square' : 'mic');
     $('micBtn').classList.toggle('bg-rose-500', on);
@@ -798,6 +835,19 @@
   }
   $('micBtn').onclick = () => {
     if (recognizer) { recognizer.stop(); return; }
+    if (!Recognition && AndroidApp) {
+      // The phone's own voice input; the result comes back in NimiVoiceResult.
+      const before = $('input').value ? $('input').value.trimEnd() + ' ' : '';
+      window.NimiVoiceResult = (said) => {
+        setMic(false);
+        if (!said) return;
+        $('input').value = before + said;
+        $('input').dispatchEvent(new Event('input'));
+      };
+      setMic(true);
+      AndroidApp.listen(lang === 'uz' ? 'uz-UZ' : 'ru-RU');
+      return;
+    }
     recognizer = new Recognition();
     recognizer.lang = lang === 'uz' ? 'uz-UZ' : 'ru-RU';
     recognizer.interimResults = true;
@@ -1036,6 +1086,7 @@
   }
   $('closeReport').onclick = closeReport;
   $('reportModal').addEventListener('click', (e) => { if (e.target === $('reportModal')) closeReport(); });
+  if (AndroidApp) $('printReport').classList.add('hidden');
   $('printReport').onclick = () => {
     const w = window.open('', '_blank');
     if (!w) return;
@@ -1214,6 +1265,36 @@
   let gisReady = false;
   async function renderGoogleButton() {
     if (!config.googleClientId || user) return;
+    if (AndroidApp) {
+      // Google does not allow its sign-in inside an app: the app opens it in Chrome and comes back signed in.
+      $('googleBlock').classList.remove('hidden');
+      $('googleBtn').innerHTML = '';
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'flex min-h-11 w-full max-w-[400px] items-center justify-center gap-3 rounded-full bg-night-800 px-5 text-[15px] font-medium text-white ring-1 ring-white/15 hover:bg-night-700';
+      b.innerHTML = '<svg viewBox="0 0 48 48" class="h-5 w-5" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.1-13.4-9.9l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>';
+      b.appendChild(document.createTextNode(t('googleInApp')));
+      b.onclick = () => AndroidApp.googleLogin(lang);
+      $('googleBtn').appendChild(b);
+      return;
+    }
+    // Telegram, Instagram and other apps open links in their own browser, where Google blocks sign-in.
+    const embedded = /; wv\)|Instagram|FBAN|FBAV|FB_IAB|Telegram|TikTok|musical_ly|Line\//i.test(navigator.userAgent);
+    $('googleNote')?.remove();
+    if (embedded) {
+      const note = document.createElement('div');
+      note.id = 'googleNote';
+      note.className = 'mb-3 flex flex-col gap-2 rounded-2xl bg-amber-400/10 p-3 text-sm text-amber-100 ring-1 ring-amber-400/30';
+      note.appendChild(Object.assign(document.createElement('p'), { textContent: t('googleEmbedded') }));
+      if (/Android/i.test(navigator.userAgent)) {
+        const a = document.createElement('a');
+        a.className = 'flex min-h-11 items-center justify-center rounded-xl bg-brand-500 px-4 font-semibold text-onfill';
+        a.href = `intent://${location.host}/#Intent;scheme=https;package=com.android.chrome;end`;
+        a.textContent = t('openInChrome');
+        note.appendChild(a);
+      }
+      $('googleBlock').prepend(note);
+    }
     try { await loadGoogle(); } catch { return; }
     if (!gisReady) {
       google.accounts.id.initialize({

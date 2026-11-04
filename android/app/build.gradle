@@ -1,12 +1,11 @@
-// Nimi AI for Android: a Trusted Web Activity that opens https://nimi-ai.onrender.com
-// full screen in Chrome (Google sign-in, camera, voice work as on the site).
+// Nimi AI for Android: the site https://nimi-ai.onrender.com inside the app's own WebView,
+// so it works on any phone (no Chrome needed). The page talks to the app through
+// window.NimiAndroid (MainActivity.Bridge): reading aloud, voice input, Google sign-in via Chrome.
 // Signing: the keystore is not in the repository; pass its path and passwords as
 // NIMI_KEYSTORE, NIMI_KEYSTORE_PASSWORD, NIMI_KEY_ALIAS, NIMI_KEY_PASSWORD.
 plugins {
     id 'com.android.application'
 }
-
-def siteUrl = 'https://nimi-ai.onrender.com'
 
 android {
     namespace 'uz.nimi.app'
@@ -16,9 +15,8 @@ android {
         applicationId 'uz.nimi.app'
         minSdk 24
         targetSdk 36
-        versionCode 1
-        versionName '1.0'
-        resValue 'string', 'asset_statements', """[{ \\"relation\\": [\\"delegate_permission/common.handle_all_urls\\"], \\"target\\": { \\"namespace\\": \\"web\\", \\"site\\": \\"${siteUrl}\\" } }]"""
+        versionCode 2
+        versionName '1.1'
     }
 
     signingConfigs {
@@ -34,10 +32,14 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            // Not shrunk: the page calls the bridge methods by name.
+            minifyEnabled false
             if (System.getenv('NIMI_KEYSTORE')) signingConfig signingConfigs.release
         }
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     compileOptions {
@@ -47,5 +49,6 @@ android {
 }
 
 dependencies {
-    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+    implementation 'androidx.activity:activity:1.12.4'
+    implementation 'androidx.browser:browser:1.9.0'
 }

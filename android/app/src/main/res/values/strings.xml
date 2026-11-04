@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Nimi AI</string>
-    <string name="start_url">https://nimi-ai.onrender.com/?source=android</string>
+    <string name="app_name" translatable="false">Nimi AI</string>
+    <string name="offline_title">Нет интернета</string>
+    <string name="offline_text">Проверьте подключение и попробуйте снова.</string>
+    <string name="retry">Попробовать снова</string>
 </resources>

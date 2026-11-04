@@ -705,6 +705,31 @@ const AREA_HANDLERS = { admin: handleAdmin, parent: handleParent, account: handl
 // Account actions: each returns { user, cookie }.
 const AUTH_ACTIONS = { '/api/auth/register': auth.register, '/api/auth/login': auth.login, '/api/auth/google': auth.google };
 
+// Google sign-in for the Android app (android/): Google does not allow it inside the app's WebView,
+// so the app opens /app-login.html in Chrome. The page swaps the Google token for a one-time code,
+// Chrome hands the code to the app, and the app exchanges it for a session in its own WebView.
+const APP_CODES = new Map(); // code -> { userId, exp }
+const APP_CODE_TTL_MS = 5 * 60 * 1000;
+async function handleAppCode(req, res, body) {
+  const user = await auth.googleUser(body);
+  const now = Date.now();
+  for (const [k, v] of APP_CODES) if (v.exp < now) APP_CODES.delete(k);
+  const code = require('crypto').randomBytes(24).toString('base64url');
+  APP_CODES.set(code, { userId: user.id, exp: now + APP_CODE_TTL_MS });
+  sendJson(res, 200, { code });
+}
+async function handleAppExchange(req, res) {
+  const code = new URL(req.url, 'http://x').searchParams.get('code') || '';
+  const entry = APP_CODES.get(code);
+  APP_CODES.delete(code);
+  if (!entry || entry.exp < Date.now()) {
+    res.writeHead(302, { Location: '/?source=android' });
+    return res.end();
+  }
+  res.writeHead(302, { Location: '/?source=android', 'Set-Cookie': await auth.startSession(req, entry.userId), 'Cache-Control': 'no-store' });
+  res.end();
+}
+
 // Blocks cross-site form posts: a browser always sends Origin on POST from another site.
 function sameOrigin(req) {
   const origin = req.headers.origin;
@@ -728,6 +753,7 @@ async function handleApiPost(req, res, urlPath) {
   if (urlPath === '/api/auth/logout') {
     return sendJson(res, 200, { ok: true }, { 'Set-Cookie': await auth.logout(req) });
   }
+  if (urlPath === '/api/auth/app-code') return handleAppCode(req, res, body);
   const action = AUTH_ACTIONS[urlPath];
   if (action) {
     const { user, cookie } = await action(req, body);
@@ -770,6 +796,7 @@ async function route(req, res) {
   try {
     if (req.method === 'POST' && urlPath.startsWith('/api/')) return await handleApiPost(req, res, urlPath);
     if (req.method === 'GET' && urlPath === '/api/auth/me') return await handleMe(req, res);
+    if (req.method === 'GET' && urlPath === '/api/auth/app-exchange') return await handleAppExchange(req, res);
     if (req.method === 'GET' && urlPath === '/api/config') {
       return sendJson(res, 200, {
         googleClientId: auth.GOOGLE_CLIENT_ID,

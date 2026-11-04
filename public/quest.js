@@ -117,13 +117,13 @@
 
   // Topics in the order they are learned. g: [first grade, last grade].
   const MATH = [
-    { id: 'add20', g: [1, 2], name: ['Сложение до 20', "20 gacha qo'shish"], gen() {
+    { id: 'add20', g: [1, 1], name: ['Сложение до 20', "20 gacha qo'shish"], gen() {
       const a = rnd(3, 9), b = rnd(2, 9), s = a + b;
       return { q: `${tr('Реши', 'Yech')}: ${M(`${a} + ${b}`)}`, ...numChoice(s, [s - 1, s + 1, s - 2, s + 2, s + 10]),
         rule: tr('Дополни первое число до 10, а потом прибавь то, что осталось.', "Birinchi sonni 10 gacha to'ldir, keyin qolganini qo'sh."),
         explain: M(s > 10 ? `${a} + ${b} = ${a} + ${10 - a} + ${b - (10 - a)} = 10 + ${s - 10} = ${s}` : `${a} + ${b} = ${s}`) };
     } },
-    { id: 'sub20', g: [1, 2], name: ['Вычитание до 20', '20 gacha ayirish'], gen() {
+    { id: 'sub20', g: [1, 1], name: ['Вычитание до 20', '20 gacha ayirish'], gen() {
       const a = rnd(11, 18), b = rnd(Math.max(2, a - 9), 9), r = a - b, k = a - 10;
       return { q: `${tr('Реши', 'Yech')}: ${M(`${a} - ${b}`)}`, ...numChoice(r, [r - 1, r + 1, r + 2, r - 2, a + b]),
         rule: tr('Сначала вычти столько, чтобы получилось 10, а потом — остальное.', "Avval 10 qolguncha ayir, keyin qolganini ayir."),
@@ -142,13 +142,13 @@
         rule: tr('Сначала сравни десятки, если они равны — единицы. Знак «>» открытой стороной смотрит на большее число.', "Avval o'nliklarni, ular teng bo'lsa — birliklarni solishtir. «>» belgisining ochiq tomoni katta songa qaraydi."),
         explain };
     } },
-    { id: 'missing', g: [1, 3], name: ['Неизвестное слагаемое', "Noma'lum qo'shiluvchi"], gen(g) {
+    { id: 'missing', g: [1, 2], name: ['Неизвестное слагаемое', "Noma'lum qo'shiluvchi"], gen(g) {
       const c = g <= 1 ? rnd(8, 20) : rnd(20, 99), b = rnd(2, c - 2), x = c - b;
       return { q: `${tr('Найди пропущенное число', 'Tushirib qoldirilgan sonni top')}: ${M(`\\square + ${b} = ${c}`)}`, ...numChoice(x, [c + b, x + 1, x - 1, x + 10, x - 10]),
         rule: tr('Неизвестное слагаемое = сумма − известное слагаемое.', "Noma'lum qo'shiluvchi = yig'indi − ma'lum qo'shiluvchi."),
         explain: M(`\\square = ${c} - ${b} = ${x}`) };
     } },
-    { id: 'add100', g: [2, 3], name: ['Сложение до 100', "100 gacha qo'shish"], gen() {
+    { id: 'add100', g: [2, 2], name: ['Сложение до 100', "100 gacha qo'shish"], gen() {
       let a, b;
       do { a = rnd(15, 75); b = rnd(12, 99 - a); } while ((a % 10) + (b % 10) < 10 && Math.random() < 0.6);
       const ta = a - (a % 10), tb = b - (b % 10), ua = a % 10, ub = b % 10, s = a + b;
@@ -156,26 +156,26 @@
         rule: tr('Складывай отдельно десятки и единицы. Если единиц больше 10 — получился ещё один десяток.', "O'nliklar va birliklarni alohida qo'sh. Birliklar 10 dan oshsa — yana bitta o'nlik hosil bo'ladi."),
         explain: M(`${a} + ${b} = (${ta} + ${tb}) + (${ua} + ${ub}) = ${ta + tb} + ${ua + ub} = ${s}`) };
     } },
-    { id: 'sub100', g: [2, 3], name: ['Вычитание до 100', '100 gacha ayirish'], gen() {
+    { id: 'sub100', g: [2, 2], name: ['Вычитание до 100', '100 gacha ayirish'], gen() {
       const a = rnd(41, 99), b = rnd(12, a - 10), tb = b - (b % 10), ub = b % 10, r = a - b;
       return { q: `${tr('Реши', 'Yech')}: ${M(`${a} - ${b}`)}`, ...numChoice(r, [(Math.floor(a / 10) - Math.floor(b / 10)) * 10 + Math.abs((a % 10) - ub), r + 10, r - 10, r + 1, r - 1]),
         rule: tr('Вычитай по частям: сначала десятки, потом единицы.', "Qismlab ayir: avval o'nliklarni, keyin birliklarni."),
         explain: M(ub ? `${a} - ${b} = ${a} - ${tb} - ${ub} = ${a - tb} - ${ub} = ${r}` : `${a} - ${b} = ${r}`) };
     } },
-    { id: 'mult', g: [2, 4], name: ['Таблица умножения', "Ko'paytirish jadvali"], gen(g, hard) {
+    { id: 'mult', g: [2, 3], name: ['Таблица умножения', "Ko'paytirish jadvali"], gen(g, hard) {
       const a = g <= 2 ? rnd(2, 5) : rnd(2, 9), b = hard ? rnd(6, 9) : rnd(2, 9), p = a * b;
       return { q: `${tr('Реши', 'Yech')}: ${M(`${a} \\times ${b}`)}`, ...numChoice(p, [a * (b + 1), a * (b - 1), (a + 1) * b, p + 1, p - 1, a + b]),
         rule: tr('Умножение — это сложение одинаковых чисел. Множители можно переставлять: $a \\times b = b \\times a$.', "Ko'paytirish — bir xil sonlarni qo'shish. Ko'paytuvchilar o'rnini almashtirish mumkin: $a \\times b = b \\times a$."),
         explain: M(b > 5 ? `${a} \\times ${b} = ${a} \\times 5 + ${a} \\times ${b - 5} = ${a * 5} + ${a * (b - 5)} = ${p}` : `${a} \\times ${b} = ${Array(b).fill(a).join(' + ')} = ${p}`) };
     } },
-    { id: 'perim', g: [2, 5], name: ['Периметр', 'Perimetr'], gen(g) {
+    { id: 'perim', g: [2, 3], name: ['Периметр', 'Perimetr'], gen(g) {
       const a = rnd(3, g <= 3 ? 9 : 15), b = rnd(2, a), p = 2 * (a + b), u = tr(' см', ' sm');
       return { q: tr(`Найди периметр прямоугольника со сторонами ${a} см и ${b} см.`, `Tomonlari ${a} sm va ${b} sm bo'lgan to'g'ri to'rtburchakning perimetrini top.`),
         ...numChoice(p, [a * b, a + b, 2 * a + b, p + 2, p - 2], u),
         rule: tr('Периметр — сумма длин всех сторон. У прямоугольника $P = 2 \\cdot (a + b)$.', "Perimetr — barcha tomonlar uzunliklari yig'indisi. To'g'ri to'rtburchakda $P = 2 \\cdot (a + b)$."),
         explain: `${M(`P = 2 \\cdot (${a} + ${b}) = 2 \\cdot ${a + b} = ${p}`)}${u}` };
     } },
-    { id: 'units', g: [2, 5], name: ['Единицы измерения', "O'lchov birliklari"], gen(g) {
+    { id: 'units', g: [2, 4], name: ['Единицы измерения', "O'lchov birliklari"], gen(g) {
       const U = [[['м', 'm'], ['см', 'sm'], 100], [['дм', 'dm'], ['см', 'sm'], 10], [['м', 'm'], ['дм', 'dm'], 10], [['ч', 'soat'], ['мин', 'daqiqa'], 60],
         [['км', 'km'], ['м', 'm'], 1000], [['кг', 'kg'], ['г', 'g'], 1000], [['мин', 'daqiqa'], ['с', 'soniya'], 60], [['т', 't'], ['кг', 'kg'], 1000]];
       const [from, to, f] = pick(g <= 2 ? U.slice(0, 4) : U);
@@ -184,14 +184,14 @@
         rule: tr(`Запомни: 1 ${fr} = ${f} ${tu}. Большие единицы переводим в маленькие умножением.`, `Yodda tut: 1 ${fr} = ${f} ${tu}. Katta birlikni kichigiga o'tkazish uchun ko'paytiramiz.`),
         explain: tr(`1 ${fr} = ${f} ${tu}, значит ${k} ${fr} = ${k} × ${f} = ${fmt(ans)} ${tu}.`, `1 ${fr} = ${f} ${tu}, demak ${k} ${fr} = ${k} × ${f} = ${fmt(ans)} ${tu}.`) };
     } },
-    { id: 'word', g: [1, 6], name: ['Текстовые задачи', 'Matnli masalalar'], gen: (g) => wordProblem(g) },
-    { id: 'div', g: [3, 5], name: ['Деление', "Bo'lish"], gen(g, hard) {
+    { id: 'word', g: [1, 5], name: ['Текстовые задачи', 'Matnli masalalar'], gen: (g) => wordProblem(g) },
+    { id: 'div', g: [3, 4], name: ['Деление', "Bo'lish"], gen(g, hard) {
       const b = rnd(2, 9), q = rnd(2, hard || g >= 4 ? 12 : 9), n = b * q;
       return { q: `${tr('Реши', 'Yech')}: ${M(`${n} : ${b}`)}`, ...numChoice(q, [q + 1, q - 1, q + 2, b, n - b]),
         rule: tr('Деление проверяй умножением: частное × делитель = делимое.', "Bo'lishni ko'paytirish bilan tekshir: bo'linma × bo'luvchi = bo'linuvchi."),
         explain: `${M(`${n} : ${b} = ${q}`)}, ${tr('потому что', 'chunki')} ${M(`${b} \\times ${q} = ${n}`)}` };
     } },
-    { id: 'order', g: [3, 6], name: ['Порядок действий', 'Amallar tartibi'], gen(g) {
+    { id: 'order', g: [3, 5], name: ['Порядок действий', 'Amallar tartibi'], gen(g) {
       const kind = rnd(0, g >= 5 ? 3 : 2);
       const first = (x) => `${tr('сначала', 'avval')} ${x}`, then = (x) => `${tr('потом', 'keyin')} ${x}`;
       const mul = tr('умножение', "ko'paytirish"), add = tr('сложение', "qo'shish"), sub = tr('вычитание', 'ayirish'), dv = tr('деление', "bo'lish");
@@ -218,7 +218,7 @@
         rule: tr('Порядок действий: сначала скобки, потом умножение и деление, потом сложение и вычитание.', "Amallar tartibi: avval qavs ichidagisi, keyin ko'paytirish va bo'lish, so'ng qo'shish va ayirish."),
         explain: `${steps.join('; ')}.` };
     } },
-    { id: 'area', g: [3, 6], name: ['Площадь', 'Yuz'], gen(g) {
+    { id: 'area', g: [3, 5], name: ['Площадь', 'Yuz'], gen(g) {
       const a = rnd(3, g <= 3 ? 9 : 15), b = rnd(2, a), s = a * b, u = tr(' см²', ' sm²');
       return { q: tr(`Найди площадь прямоугольника со сторонами ${a} см и ${b} см.`, `Tomonlari ${a} sm va ${b} sm bo'lgan to'g'ri to'rtburchakning yuzini top.`),
         ...numChoice(s, [2 * (a + b), a + b, s + a, s - b], u),
@@ -233,7 +233,7 @@
         rule: tr('Разложи число на десятки и единицы, умножь каждую часть и сложи.', "Sonni o'nlik va birliklarga ajrat, har birini ko'paytirib, natijalarni qo'sh."),
         explain: M(`${a} \\times ${b} = ${ta} \\times ${b} + ${ua} \\times ${b} = ${ta * b} + ${ua * b} = ${p}`) };
     } },
-    { id: 'fracSame', g: [4, 6], name: ['Дроби с одинаковым знаменателем', 'Maxrajlari bir xil kasrlar'], gen() {
+    { id: 'fracSame', g: [4, 5], name: ['Дроби с одинаковым знаменателем', 'Maxrajlari bir xil kasrlar'], gen() {
       const n = rnd(5, 12), plus = Math.random() < 0.6;
       let a, b;
       if (plus) { a = rnd(1, n - 2); b = rnd(1, n - 1 - a); } else { a = rnd(2, n - 1); b = rnd(1, a - 1); }
@@ -243,14 +243,14 @@
         rule: tr('Если знаменатели одинаковые, складывают (вычитают) только числители, а знаменатель не меняется.', "Maxrajlar bir xil bo'lsa, faqat suratlar qo'shiladi (ayiriladi), maxraj o'zgarmaydi."),
         explain: M(`\\frac{${a}}{${n}} ${op} \\frac{${b}}{${n}} = \\frac{${a} ${op} ${b}}{${n}} = \\frac{${r}}{${n}}`) };
     } },
-    { id: 'fracOf', g: [4, 6], name: ['Дробь от числа', 'Sonning kasr qismi'], gen() {
+    { id: 'fracOf', g: [4, 5], name: ['Дробь от числа', 'Sonning kasr qismi'], gen() {
       const d = pick([2, 3, 4, 5, 10]), k = rnd(1, d - 1), m = rnd(2, 12), base = d * m, ans = m * k;
       return { q: tr(`Найди ${M(`\\frac{${k}}{${d}}`)} от числа ${base}.`, `${base} sonining ${M(`\\frac{${k}}{${d}}`)} qismini top.`),
         ...numChoice(ans, [m, base - ans, base * k, ans + m, base / k]),
         rule: tr('Чтобы найти дробь от числа, раздели число на знаменатель и умножь на числитель.', "Sonning kasr qismini topish uchun sonni maxrajga bo'lib, suratga ko'paytir."),
         explain: M(`${base} : ${d} \\times ${k} = ${m} \\times ${k} = ${ans}`) };
     } },
-    { id: 'eq1', g: [4, 7], name: ['Простые уравнения', 'Oddiy tenglamalar'], gen(g) {
+    { id: 'eq1', g: [4, 5], name: ['Простые уравнения', 'Oddiy tenglamalar'], gen(g) {
       const kind = rnd(0, g >= 5 ? 3 : 1);
       let expr, x, sol, cands, rule;
       if (kind === 0) {
@@ -272,7 +272,7 @@
       }
       return { q: `${tr('Реши уравнение', 'Tenglamani yech')}: ${M(expr)}`, ...numChoice(x, cands), rule, explain: M(sol) };
     } },
-    { id: 'dec', g: [5, 7], name: ['Десятичные дроби', "O'nli kasrlar"], gen() {
+    { id: 'dec', g: [5, 6], name: ['Десятичные дроби', "O'nli kasrlar"], gen() {
       if (Math.random() < 0.55) {
         let X = rnd(11, 89), Y = rnd(11, 89);
         if (X % 10 === 0) X += 1;
@@ -292,7 +292,7 @@
         rule: tr('При умножении на 10 запятая сдвигается вправо на 1 знак, на 100 — на 2 знака.', "10 ga ko'paytirganda vergul 1 xona o'ngga, 100 ga — 2 xona o'ngga suriladi."),
         explain: tr(`Запятая сдвигается вправо на ${shift} ${plural(shift, 'знак', 'знака', 'знаков')}: ${dstr(v)} × ${m} = ${dstr(v * m)}.`, `Vergul ${shift} xona o'ngga suriladi: ${dstr(v)} × ${m} = ${dstr(v * m)}.`) };
     } },
-    { id: 'gcdlcm', g: [5, 7], name: ['НОД и НОК', 'EKUB va EKUK'], gen() {
+    { id: 'gcdlcm', g: [5, 6], name: ['НОД и НОК', 'EKUB va EKUK'], gen() {
       const [m, n] = pick([[2, 3], [2, 5], [3, 4], [3, 5], [2, 7], [3, 7], [4, 5], [5, 6], [4, 7], [5, 7]]);
       const k = rnd(2, 9), a = k * m, b = k * n, lcm = k * m * n;
       if (Math.random() < 0.5) {
@@ -304,14 +304,14 @@
         rule: tr('НОК — наименьшее число, которое делится на оба числа без остатка.', "EKUK — ikkala songa ham qoldiqsiz bo'linadigan eng kichik son."),
         explain: tr(`${a} = ${k} · ${m}, ${b} = ${k} · ${n}. НОК = ${k} · ${m} · ${n} = ${lcm}.`, `${a} = ${k} · ${m}, ${b} = ${k} · ${n}. EKUK = ${k} · ${m} · ${n} = ${lcm}.`) };
     } },
-    { id: 'percent', g: [5, 9], name: ['Проценты', 'Foizlar'], gen() {
+    { id: 'percent', g: [5, 7], name: ['Проценты', 'Foizlar'], gen() {
       const p = pick([10, 20, 25, 50, 5, 75, 30, 1, 15]), step = 100 / gcd(p, 100);
       const lo = Math.ceil(20 / step), base = step * rnd(lo, Math.max(lo + 1, Math.floor(600 / step))), ans = (base * p) / 100;
       return { q: tr(`Найди ${p}% от числа ${base}.`, `${base} sonining ${p} foizini top.`), ...numChoice(ans, [(base * p) / 10, base - ans, ans + p, ans * 2, base / p]),
         rule: tr('1% — это сотая часть числа. Чтобы найти p%, умножь число на p и раздели на 100. 50% — половина, 25% — четверть, 10% — десятая часть.', "1% — sonning yuzdan bir qismi. p% ni topish uchun sonni p ga ko'paytirib, 100 ga bo'l. 50% — yarmi, 25% — choragi, 10% — o'ndan biri."),
         explain: M(`${base} \\cdot ${p} : 100 = ${base * p} : 100 = ${ans}`) };
     } },
-    { id: 'neg', g: [6, 8], name: ['Отрицательные числа', 'Manfiy sonlar'], gen() {
+    { id: 'neg', g: [6, 6], name: ['Отрицательные числа', 'Manfiy sonlar'], gen() {
       const kind = rnd(0, 3);
       if (kind <= 1) {
         const a = rnd(2, 15); let b = rnd(2, 15);
@@ -333,7 +333,7 @@
         rule: tr('Минус на минус даёт плюс, минус на плюс — минус.', "Minusni minusga ko'paytirsak — plyus, minusni plyusga — minus."),
         explain: M(`${expr} = ${ans}`) };
     } },
-    { id: 'fracDiff', g: [6, 7], name: ['Дроби с разными знаменателями', 'Maxrajlari har xil kasrlar'], gen() {
+    { id: 'fracDiff', g: [5, 6], name: ['Дроби с разными знаменателями', 'Maxrajlari har xil kasrlar'], gen() {
       const D = [2, 3, 4, 5, 6, 8, 10, 12];
       let a = 1, b = 2, c = 1, d = 3, L = 6, num = 5;
       for (let tries = 0; tries < 200; tries++) {
@@ -350,13 +350,13 @@
         rule: tr('Приведи дроби к общему знаменателю (НОК знаменателей), потом сложи числители. Знаменатели между собой не складывают!', "Kasrlarni umumiy maxrajga (maxrajlarning EKUKi) keltir, keyin suratlarni qo'sh. Maxrajlar o'zaro qo'shilmaydi!"),
         explain: M(`\\frac{${a}}{${b}} + \\frac{${c}}{${d}} = \\frac{${(a * L) / b}}{${L}} + \\frac{${(c * L) / d}}{${L}} = \\frac{${num}}{${L}}${g2 > 1 ? ` = \\frac{${P}}{${Q}}` : ''}`) };
     } },
-    { id: 'prop', g: [6, 7], name: ['Пропорции', 'Proporsiyalar'], gen() {
+    { id: 'prop', g: [6, 6], name: ['Пропорции', 'Proporsiyalar'], gen() {
       const a = rnd(2, 9), m = rnd(2, 6), b = rnd(2, 12), c = a * m, x = b * m;
       return { q: `${tr('Найди x из пропорции', 'Proporsiyadan x ni top')}: ${M(`${a} : ${b} = ${c} : x`)}`, ...numChoice(x, [b + c - a, x + m, x - m, (c * a) / b, a * c]),
         rule: tr('Произведение крайних членов пропорции равно произведению средних: для $a : b = c : x$ получаем $a \\cdot x = b \\cdot c$.', "Proporsiyaning chetki hadlari ko'paytmasi o'rta hadlari ko'paytmasiga teng: $a : b = c : x$ uchun $a \\cdot x = b \\cdot c$."),
         explain: M(`${a} \\cdot x = ${b} \\cdot ${c}, \\; x = \\dfrac{${b} \\cdot ${c}}{${a}} = ${x}`) };
     } },
-    { id: 'powers', g: [7, 10], name: ['Степени', 'Darajalar'], gen() {
+    { id: 'powers', g: [7, 8], name: ['Степени', 'Darajalar'], gen() {
       if (Math.random() < 0.5) {
         const b = rnd(2, 5), e = rnd(2, { 2: 8, 3: 5, 4: 4, 5: 3 }[b]), v = b ** e;
         return { q: `${tr('Вычисли', 'Hisobla')}: ${M(`${b}^{${e}}`)}`, ...numChoice(v, [b * e, b ** (e - 1), b ** (e + 1), e ** b, v + b]),
@@ -372,7 +372,7 @@
       return { q: `${tr('Найди показатель', "Ko'rsatkichni top")}: ${M(`${expr} = a^{?}`)}`, ...numChoice(ans, [wrong, ans + 1, ans - 1, m]),
         rule, explain: M(`${expr} = a^{${m} ${op} ${n}} = a^{${ans}}`) };
     } },
-    { id: 'lin', g: [7, 10], name: ['Линейные уравнения', 'Chiziqli tenglamalar'], gen() {
+    { id: 'lin', g: [7, 7], name: ['Линейные уравнения', 'Chiziqli tenglamalar'], gen() {
       let x, a, b;
       do { x = rnd(-6, 12); a = rnd(2, 9); b = rnd(-20, 20); } while (x === 0 || b === 0);
       const c = a * x + b, sb = b < 0 ? '-' : '+', inv = b < 0 ? '+' : '-';
@@ -380,7 +380,7 @@
         rule: tr('Перенеси число в другую часть, поменяв знак, а потом раздели обе части на коэффициент при x.', "Sonni ishorasini o'zgartirib boshqa tomonga o'tkaz, keyin ikkala tomonni x oldidagi koeffitsiyentga bo'l."),
         explain: M(`${a}x = ${c} ${inv} ${Math.abs(b)} = ${c - b}, \\; x = ${c - b} : ${a} = ${x}`) };
     } },
-    { id: 'sqf', g: [7, 9], name: ['Формулы сокращённого умножения', "Qisqa ko'paytirish formulalari"], gen() {
+    { id: 'sqf', g: [7, 7], name: ['Формулы сокращённого умножения', "Qisqa ko'paytirish formulalari"], gen() {
       const a = rnd(3, 9), a2 = a * a, a2x = 2 * a;
       const kind = rnd(0, 2);
       const P = (s) => M(s);
@@ -398,7 +398,7 @@
         ...strChoice(P(`x^2 - ${a2}`), [P(`x^2 + ${a2}`), P(`x^2 - ${a2x}x + ${a2}`), P(`x^2 - ${a2x}`)]),
         rule: M('(a - b)(a + b) = a^2 - b^2'), explain: M(`(x - ${a})(x + ${a}) = x^2 - ${a}^2 = x^2 - ${a2}`) };
     } },
-    { id: 'roots', g: [8, 9], name: ['Квадратные корни', 'Kvadrat ildizlar'], gen(g) {
+    { id: 'roots', g: [8, 8], name: ['Квадратные корни', 'Kvadrat ildizlar'], gen(g) {
       const rule = tr('$\\sqrt{a} = b$, если $b \\ge 0$ и $b^2 = a$. Корень из произведения: $\\sqrt{a} \\cdot \\sqrt{b} = \\sqrt{ab}$.', "$\\sqrt{a} = b$, agar $b \\ge 0$ va $b^2 = a$ bo'lsa. Ko'paytmaning ildizi: $\\sqrt{a} \\cdot \\sqrt{b} = \\sqrt{ab}$.");
       if (Math.random() < 0.7) {
         const n = rnd(4, g >= 9 ? 25 : 15);
@@ -409,7 +409,7 @@
       return { q: `${tr('Вычисли', 'Hisobla')}: ${M(`\\sqrt{${a}} \\cdot \\sqrt{${b}}`)}`, ...numChoice(r, [r + 1, r - 1, r * 2, (a * b) / 2]), rule,
         explain: M(`\\sqrt{${a}} \\cdot \\sqrt{${b}} = \\sqrt{${a * b}} = ${r}`) };
     } },
-    { id: 'pyth', g: [8, 9], name: ['Теорема Пифагора', 'Pifagor teoremasi'], gen() {
+    { id: 'pyth', g: [8, 8], name: ['Теорема Пифагора', 'Pifagor teoremasi'], gen() {
       const [a, b, c] = pick([[3, 4, 5], [6, 8, 10], [5, 12, 13], [8, 15, 17], [9, 12, 15], [7, 24, 25], [12, 16, 20]]);
       const rule = tr('Теорема Пифагора: $c^2 = a^2 + b^2$, где c — гипотенуза (сторона напротив прямого угла).', "Pifagor teoremasi: $c^2 = a^2 + b^2$, bu yerda c — gipotenuza (to'g'ri burchak qarshisidagi tomon).");
       if (Math.random() < 0.5) {
@@ -421,7 +421,7 @@
         ...numChoice(b, [c - a, c + a, b + 1, b - 1]), rule,
         explain: M(`b^2 = ${c}^2 - ${a}^2 = ${c * c} - ${a * a} = ${b * b}, \\; b = ${b}`) };
     } },
-    { id: 'quad', g: [8, 11], name: ['Квадратные уравнения', 'Kvadrat tenglamalar'], gen() {
+    { id: 'quad', g: [8, 9], name: ['Квадратные уравнения', 'Kvadrat tenglamalar'], gen() {
       let r1, r2;
       do { r1 = rnd(-6, 8); r2 = rnd(-6, 8); } while (r1 === r2 || !r1 || !r2);
       if (r1 > r2) [r1, r2] = [r2, r1];
@@ -481,7 +481,13 @@
         explain: M(`f'(x) = ${k} \\cdot ${n} ${P(1, n - 1)} = ${P(k * n, n - 1)}`) };
     } },
   ];
-  const mathPool = (g) => MATH.filter((t) => g >= t.g[0] && g <= t.g[1]);
+  // Topics of the student's grade: the ones that start in this grade first, then the ones
+  // still studied from earlier grades. Ranges follow the school programme, so a 4th grader
+  // does not get the perimeter or the times table of grades 2-3.
+  const mathPool = (g) => {
+    const pool = MATH.filter((t) => g >= t.g[0] && g <= t.g[1]);
+    return [...pool.filter((t) => t.g[0] === g), ...pool.filter((t) => t.g[0] !== g).sort((a, b) => b.g[0] - a.g[0])];
+  };
 
   // ---------- English: words and grammar (no AI) ----------
   // [english, russian, uzbek, level 1-3, example]

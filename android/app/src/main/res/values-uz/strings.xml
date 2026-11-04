@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="offline_title">Internet yo\'q</string>
+    <string name="offline_text">Ulanishni tekshiring va qaytadan urinib ko\'ring.</string>
+    <string name="retry">Qayta urinish</string>
+</resources>
