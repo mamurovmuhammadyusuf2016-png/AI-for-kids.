@@ -812,6 +812,28 @@ async function route(req, res) {
         },
       });
     }
+    // TEMPORARY (ad voice-over): Google speech synthesis with the site's AI key.
+    // Works only while TTS_TOKEN is set on Render; remove this block after use.
+    if (req.method === 'POST' && urlPath === '/api/tts-temp') {
+      const token = Buffer.from(process.env.TTS_TOKEN || '');
+      const given = Buffer.from(String(req.headers['x-tts-token'] || ''));
+      if (token.length < 24 || given.length !== token.length || !require('crypto').timingSafeEqual(given, token)) {
+        return sendJson(res, 403, { code: 'forbidden' });
+      }
+      const body = JSON.parse(await readBody(req, 50000) || '{}');
+      const path = String(body.path || '');
+      if (!/^(models\/[a-z0-9.-]*tts[a-z0-9.-]*:generateContent|interactions)$/.test(path)) return sendJson(res, 400, { code: 'bad_path' });
+      if (path === 'interactions' && !/tts/.test(String(body.payload?.model || ''))) return sendJson(res, 400, { code: 'bad_model' });
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
+        body: JSON.stringify(body.payload || {}),
+        signal: AbortSignal.timeout(90000),
+      });
+      const type = r.headers.get('content-type') || 'application/octet-stream';
+      res.writeHead(r.status, { 'Content-Type': type });
+      return res.end(Buffer.from(await r.arrayBuffer()));
+    }
     if (req.method === 'GET' && urlPath === '/health') return sendJson(res, 200, { ok: true });
     if (req.method === 'GET' && serveStatic(res, urlPath)) return;
     sendJson(res, 404, { code: 'not_found' });
