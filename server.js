@@ -814,7 +814,7 @@ async function route(req, res) {
     }
     // TEMPORARY (ad voice-over): Google speech synthesis with the site's AI key.
     // Works only while TTS_TOKEN is set on Render; remove this block after use.
-    if (req.method === 'POST' && urlPath === '/api/tts-temp') {
+    if (req.method === 'POST' && urlPath === '/tts-temp') {
       const token = Buffer.from(process.env.TTS_TOKEN || '');
       const given = Buffer.from(String(req.headers['x-tts-token'] || ''));
       if (token.length < 24 || given.length !== token.length || !require('crypto').timingSafeEqual(given, token)) {
