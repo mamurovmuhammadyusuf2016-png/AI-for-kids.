@@ -9,7 +9,7 @@
 <!-- Opened by the Android app in Chrome: Google sign-in is not allowed inside the app's WebView.
      After sign-in the Google token is swapped for a one-time code that goes back to the app. -->
 <style>
-  :root { color-scheme: light dark; --bg: #ffffff; --text: #0f1f16; --muted: #56665c; --btn: #138a43; }
+  :root { color-scheme: light dark; --bg: #faf7ef; --text: #303b35; --muted: #66726a; --btn: #477a65; }
   @media (prefers-color-scheme: dark) { :root { --bg: #000000; --text: #ffffff; --muted: #9a9a9a; --btn: #2563eb; } }
   body { margin: 0; min-height: 100dvh; display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
   main { width: 100%; max-width: 360px; padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
@@ -17,7 +17,8 @@
   h1 { margin: 0; font-size: 22px; }
   p { margin: 0; color: var(--muted); line-height: 1.5; }
   a.btn { display: none; min-height: 52px; width: 100%; align-items: center; justify-content: center; border-radius: 16px; background: var(--btn); color: #fff; font-weight: 600; text-decoration: none; }
-  #err { color: #e11d48; }
+  #err { color: #b5504a; }
+  @media (prefers-color-scheme: dark) { #err { color: #fb7185; } }
 </style>
 </head>
 <body>

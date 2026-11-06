@@ -248,12 +248,12 @@
         week: 'Бесплатная неделя',
         reject: 'Отклонить',
         manual: 'Включить подписку вручную',
-        emailPh: 'Почта ученика',
+        emailPh: 'Телефон или почта ученика',
         done: (email, d) => `Готово: ${email} — подписка до ${d}`,
         status: { pending: 'ждёт', paid: 'оплачено', granted: 'выдано', rejected: 'отклонено' },
         notFound: 'Аккаунт с такой почтой не найден.',
         students: 'Ученики',
-        searchPh: 'Поиск по почте',
+        searchPh: 'Поиск по телефону или почте',
         noUsers: 'Никого не нашли.',
         registered: (d) => `с ${d}`,
         until: (d) => `до ${d}`,
@@ -684,12 +684,12 @@
         week: 'Bepul hafta',
         reject: 'Rad etish',
         manual: "Obunani qo'lda yoqish",
-        emailPh: "O'quvchi pochtasi",
+        emailPh: "O'quvchi telefoni yoki pochtasi",
         done: (email, d) => `Tayyor: ${email} — obuna ${d} gacha`,
         status: { pending: 'kutmoqda', paid: "to'langan", granted: 'berildi', rejected: 'rad etilgan' },
         notFound: 'Bunday pochtali akkaunt topilmadi.',
         students: "O'quvchilar",
-        searchPh: "Pochta bo'yicha qidirish",
+        searchPh: "Telefon yoki pochta bo'yicha qidirish",
         noUsers: 'Hech kim topilmadi.',
         registered: (d) => `ro'yxat: ${d}`,
         until: (d) => `${d} gacha`,
@@ -1785,7 +1785,7 @@
     if (adminTab === 'dash') return renderDashboard(root, A);
     if (adminTab === 'consents') return renderConsents(root, A);
     const msg = h('p', { class: 'text-sm' });
-    const email = h('input', { type: 'email', class: INPUT, placeholder: A.emailPh, id: 'adminEmail' });
+    const email = h('input', { type: 'text', class: INPUT, placeholder: A.emailPh, id: 'adminEmail' });
     const months = h('select', { class: `${INPUT} appearance-none`, id: 'adminMonths' }, [0, 1, 3, 6, 12].map((m) => h('option', { value: m }, m ? t('sub').monthLabel(m) : A.week)));
     const tier = h('select', { class: `${INPUT} appearance-none`, id: 'adminPlan' }, plans().map((p) => h('option', { value: p.id }, `${p.name} · ${sum(p.price)}`)));
     const grant = async (mail, m, requestId, plan) => {

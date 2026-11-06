@@ -488,7 +488,7 @@
   $('themeBtn').onclick = () => {
     const next = theme() === 'light' ? 'dark' : 'light';
     document.documentElement.dataset.theme = next;
-    document.querySelector('meta[name="theme-color"]').content = next === 'light' ? '#ffffff' : '#000000';
+    document.querySelector('meta[name="theme-color"]').content = next === 'light' ? '#faf7ef' : '#000000';
     try { localStorage.setItem('nimi-theme', next); } catch {}
     AndroidApp?.setTheme(next);
     renderThemeBtn();

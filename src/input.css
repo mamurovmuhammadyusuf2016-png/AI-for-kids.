@@ -3,7 +3,7 @@
 
 /* Colors are theme tokens: the same class (bg-night-800, text-white, text-brand-400...)
    gets its value from the active theme on <html data-theme="dark|light">.
-   Dark: black first, white second, a little blue. Light: white and green.
+   Dark: black first, white second, a little blue. Light: Soft Sage Green & Beige.
    "white" means the main text color, "onfill" is text on a solid brand/status fill. */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -26,36 +26,74 @@
 
 :root { color-scheme: dark; --page-glow: #081127; }
 
+/* Light theme "Calm & Friendly — Soft Sage Green & Beige".
+   Palette: green #477A65, mint #B9D8C5, cream #FAF7EF, text #303B35, white #FFFFFF,
+   secondary text #78847C, lines #E7E9E1, light green #EDF3ED,
+   success #4B956B, error #D96B65, warning #D5A44C.
+   Small texts use slightly deeper shades of the same hues, so they stay readable (WCAG AA). */
 :root[data-theme="light"] {
   color-scheme: light;
-  --page-glow: #e3f6ea;
-  --color-white: #0f1f16;
-  --color-night-950: #ffffff;
-  --color-night-900: #f6f9f7;
-  --color-night-800: #eef4f0;
-  --color-night-700: #e1ebe4;
-  --color-night-600: #cfdcd3;
-  --color-brand-600: #0f7438;
-  --color-brand-500: #138a43;
-  --color-brand-400: #12863f;
-  --color-slate-100: #13241a;
-  --color-slate-200: #1f3127;
-  --color-slate-300: #3a4b41;
-  --color-slate-400: #56665c;
-  --color-slate-500: #7b8981;
-  /* Status texts are light shades made for black; on white they need dark ones. */
-  --color-emerald-100: #065f46;
-  --color-emerald-200: #047857;
-  --color-emerald-300: #059669;
-  --color-rose-100: #9f1239;
-  --color-rose-200: #be123c;
-  --color-rose-300: #e11d48;
-  --color-amber-100: #78350f;
-  --color-amber-200: #92400e;
-  --color-amber-300: #b45309;
-  --color-sky-100: #075985;
-  --color-sky-300: #0369a1;
+  --page-glow: #edf3ed;
+  --color-mint: #b9d8c5;
+  --color-line: #e7e9e1;
+  --color-line-strong: #d9ddd2;
+  --color-white: #303b35;          /* main text and headings */
+  --color-night-950: #faf7ef;      /* page background: warm cream */
+  --color-night-900: #ffffff;      /* cards */
+  --color-night-800: #edf3ed;      /* inputs, secondary buttons, tabs */
+  --color-night-700: #e2ebe3;      /* hover / pressed of light elements, disabled fills */
+  --color-night-600: #d3ded5;
+  --color-brand-600: #355d4d;      /* pressed */
+  --color-brand-500: #477a65;      /* primary green */
+  --color-brand-400: #3d6b58;      /* hover of green buttons, green links and icons */
+  --color-slate-100: #303b35;
+  --color-slate-200: #3a463f;
+  --color-slate-300: #4e5a53;      /* body text on cards */
+  --color-slate-400: #66726a;      /* secondary text (deeper #78847C for small type) */
+  --color-slate-500: #78847c;      /* secondary text, placeholders, hints */
+  /* Status: fills use the palette colors, texts on light backgrounds use deeper shades. */
+  --color-emerald-100: #2e6446;
+  --color-emerald-200: #3b7a56;
+  --color-emerald-300: #3b7a56;
+  --color-emerald-400: #4b956b;
+  --color-emerald-500: #4b956b;
+  --color-rose-100: #8f3a35;
+  --color-rose-200: #a84640;
+  --color-rose-300: #b5504a;
+  --color-rose-400: #d96b65;
+  --color-rose-500: #d96b65;
+  --color-amber-100: #6f5219;
+  --color-amber-200: #8a6620;
+  --color-amber-300: #8a6620;
+  --color-amber-400: #d5a44c;
+  --color-amber-500: #d5a44c;
+  --color-sky-100: #2f5e63;
+  --color-sky-300: #3e7177;
+  --color-sky-400: #7fb0b3;
+  --color-sky-500: #6fa3a8;
+  --color-violet-400: #9a92c4;
+  --color-violet-500: #8c84b8;
 }
+
+/* Light theme details: thin warm borders instead of dark-tinted rings, barely visible shadows,
+   white cards, a soft green focus ring and a calm backdrop under dialogs. */
+:root[data-theme="light"] .ring-white\/5,
+:root[data-theme="light"] .ring-white\/10 { --tw-ring-color: var(--color-line); }
+:root[data-theme="light"] .ring-white\/15 { --tw-ring-color: var(--color-line-strong); }
+:root[data-theme="light"] .border-white\/5,
+:root[data-theme="light"] .border-white\/10 { border-color: var(--color-line); }
+:root[data-theme="light"] .border-white\/15 { border-color: var(--color-line-strong); }
+:root[data-theme="light"] [class*="bg-night-900"] { --tw-shadow: 0 1px 2px rgb(48 59 53 / .04), 0 8px 24px -16px rgb(48 59 53 / .12); }
+:root[data-theme="light"] [class*="shadow-brand-500"] { --tw-shadow-color: rgb(71 122 101 / .18); }
+:root[data-theme="light"] .bg-black\/70,
+:root[data-theme="light"] .bg-black\/60 { background-color: rgb(48 59 53 / .45); }
+:root[data-theme="light"] input:focus-visible,
+:root[data-theme="light"] textarea:focus-visible,
+:root[data-theme="light"] select:focus-visible { outline: none; }
+:root[data-theme="light"] input[type="checkbox"],
+:root[data-theme="light"] input[type="radio"] { accent-color: var(--color-brand-500); }
+:root[data-theme="light"] ::selection { background: var(--color-mint); color: var(--color-white); }
+:root[data-theme="light"] button:disabled { cursor: not-allowed; }
 
 .page-bg { background: radial-gradient(ellipse at top, var(--page-glow) 0%, var(--color-night-950) 60%) var(--color-night-950); }
 .bubble strong { font-weight: 700; color: var(--color-white); }
