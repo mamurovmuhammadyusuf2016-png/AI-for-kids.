@@ -1639,7 +1639,7 @@
         h('p', { class: 'mt-1 text-xs text-slate-500' }, S.tokensHint)));
   }
 
-  // What is still free without a subscription: { chat: 5, test: 0, ... } from the server.
+  // What is still free without a subscription: { chat: 20, test: 0, ... } from the server.
   function freeCard() {
     const S = t('sub');
     const free = N.user?.free || {};
@@ -2194,7 +2194,7 @@
     const S = t('sub');
     const b = N.billing;
     const ctx = {
-      chat: b.freeTries?.chat || 5,
+      chat: b.freeTries?.chat || 20,
       from: plans().length ? sum(minPrice()) : '',
       levels: plans().map((p) => `«${S.level[p.id] || p.name}» — ${S.perDay(p.questions)}`).join(', '),
     };

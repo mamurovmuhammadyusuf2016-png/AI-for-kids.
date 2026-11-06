@@ -279,7 +279,7 @@ function plan(u) {
   return { active: until > Date.now(), trial: u.plan_kind === 'trial', never: !until, until: until ? new Date(until).toISOString() : null, tier, limits, questions };
 }
 
-// Free tries left per section, e.g. { chat: 5, test: 1, ... }.
+// Free tries left per section, e.g. { chat: 20, test: 1, ... }.
 function freeLeft(u) {
   const used = u.free_used || {};
   return Object.fromEntries(Object.entries(FREE_TRIES).map(([k, n]) => [k, Math.max(0, n - (Number(used[k]) || 0))]));
