@@ -16,8 +16,8 @@ const PLANS = {
 const DEFAULT_PLAN = 'pro';
 const planId = (v) => (Object.hasOwn(PLANS, v) ? v : DEFAULT_PLAN);
 
-// Without a subscription every paid section can be tried for free: the chat — FREE_TRIES.chat
-// questions (20, counted for the whole account, not per day), every other section — once. Counted per account.
-const FREE_TRIES = { chat: 20, photo: 1, training: 1, test: 1, exam: 1, olympiad: 1, reading: 1, report: 1 };
+// Without a subscription only the chat is free: FREE_TRIES.chat questions (since 07.11.2026);
+// counted for the whole account, not per day. Other paid sections open with a subscription or the free week.
+const FREE_TRIES = { chat: 20 };
 
 module.exports = { PLANS, DEFAULT_PLAN, planId, FREE_TRIES };
