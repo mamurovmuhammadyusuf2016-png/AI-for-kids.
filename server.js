@@ -4,6 +4,7 @@ const path = require('path');
 const { buildSystemPrompt, REPORT_PROMPT } = require('./prompt');
 const { verifyStudentMessages, findWrongClaims, fmt } = require('./math');
 const auth = require('./auth');
+const notify = require('./notify');
 const learn = require('./learn');
 const { PLANS, planId, FREE_TRIES } = require('./plans');
 
@@ -589,6 +590,7 @@ async function handleAdmin(req, res, body, user, action) {
     return sendJson(res, 200, { ok: true });
   }
   if (action === 'stats') return sendJson(res, 200, await auth.adminStats(today(), month()));
+  if (action === 'consents') return sendJson(res, 200, await auth.listMarketing());
   if (action === 'revoke') return sendJson(res, 200, await auth.revokeSubscription(cleanText(body.email, 254)));
   // Without "apply" it only lists who would lose access; "apply" is that list, confirmed.
   if (action === 'revoke-except') {
@@ -602,7 +604,12 @@ async function handleAdmin(req, res, body, user, action) {
 
 // ---------- student settings: the parent's login and password ----------
 async function handleAccount(req, res, body, user, action) {
-  if (action === 'settings') return sendJson(res, 200, { email: user.email, parent: await auth.ensureParent(user.id) });
+  if (action === 'settings') return sendJson(res, 200, { email: user.email, parent: await auth.ensureParent(user.id), marketing: !!user.marketing });
+  // The rules (once) and news by SMS / email / calls (given or withdrawn at any time).
+  if (action === 'consent') {
+    await auth.applyConsents(req, user.id, { terms: body.terms === true, marketing: typeof body.marketing === 'boolean' ? body.marketing : undefined, lang: body.lang });
+    return sendJson(res, 200, { ok: true });
+  }
   if (action === 'parent-reset') return sendJson(res, 200, { parent: await auth.resetParentPassword(user.id) });
   sendJson(res, 404, { code: 'not_found' });
 }
@@ -703,7 +710,7 @@ async function handleParent(req, res, body, user, action) {
 const AREA_HANDLERS = { admin: handleAdmin, parent: handleParent, account: handleAccount, chats: handleChats };
 
 // Account actions: each returns { user, cookie }.
-const AUTH_ACTIONS = { '/api/auth/register': auth.register, '/api/auth/login': auth.login, '/api/auth/google': auth.google };
+const AUTH_ACTIONS = { '/api/auth/register': auth.register, '/api/auth/login': auth.login, '/api/auth/google': auth.google, '/api/auth/reset': auth.resetPassword };
 
 // Google sign-in for the Android app (android/): Google does not allow it inside the app's WebView,
 // so the app opens /app-login.html in Chrome. The page swaps the Google token for a one-time code,
@@ -754,6 +761,7 @@ async function handleApiPost(req, res, urlPath) {
     return sendJson(res, 200, { ok: true }, { 'Set-Cookie': await auth.logout(req) });
   }
   if (urlPath === '/api/auth/app-code') return handleAppCode(req, res, body);
+  if (urlPath === '/api/auth/send-code') return sendJson(res, 200, await auth.sendCode(req, body));
   const action = AUTH_ACTIONS[urlPath];
   if (action) {
     const { user, cookie } = await action(req, body);
@@ -801,6 +809,9 @@ async function route(req, res) {
       return sendJson(res, 200, {
         googleClientId: auth.GOOGLE_CLIENT_ID,
         accounts: auth.enabled(),
+        // Which codes the site can send: SMS (phone sign-up) and email. Off until the keys are set on Render.
+        verify: { sms: notify.smsEnabled(), email: notify.emailEnabled() },
+        consent: { version: auth.CONSENT_VERSION, texts: auth.CONSENT_TEXTS },
         billing: {
           plans: Object.entries(PLANS).map(([id, p]) => ({ id, name: p.name, price: p.price, input: p.input, output: p.output, questions: p.questions })),
           price: PLANS.pro.price,
@@ -816,7 +827,7 @@ async function route(req, res) {
     if (req.method === 'GET' && serveStatic(res, urlPath)) return;
     sendJson(res, 404, { code: 'not_found' });
   } catch (err) {
-    if (err instanceof auth.AuthError) return sendJson(res, err.status, { code: err.code });
+    if (err instanceof auth.AuthError) return sendJson(res, err.status, { code: err.code, ...(err.retry ? { retry: err.retry } : {}) });
     console.error('Request failed', urlPath, err);
     if (!res.headersSent) sendJson(res, 500, { code: 'server_error' });
   }

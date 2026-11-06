@@ -110,23 +110,43 @@
         <button type="button" id="tabRegister" data-mode="register" class="auth-tab" role="tab" data-i18n="tabRegister"></button>
       </div>
       <form id="authForm" class="mt-4 flex flex-col gap-3" novalidate>
-        <label class="flex min-h-14 items-center gap-3 rounded-2xl bg-night-800 px-4 ring-1 ring-white/10 focus-within:ring-brand-400/60">
-          <span class="text-slate-400" data-icon="mail"></span>
-          <input id="authEmail" type="text" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="254" required class="min-w-0 flex-1 bg-transparent py-3 text-base text-slate-100 outline-none placeholder:text-slate-500">
+        <!-- Step 2: the code from the SMS or the email -->
+        <div id="codeStep" class="hidden flex-col gap-3">
+          <p id="codeSentText" class="px-1 text-sm text-slate-300"></p>
+          <label class="flex min-h-14 items-center gap-3 rounded-2xl bg-night-800 px-4 ring-1 ring-white/10 focus-within:ring-brand-400/60">
+            <span class="text-slate-400" data-icon="shield-check"></span>
+            <input id="authCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="min-w-0 flex-1 bg-transparent py-3 text-base text-slate-100 outline-none placeholder:text-slate-500 text-lg tracking-[0.4em]">
+          </label>
+          <div class="flex items-center justify-between gap-3 px-1">
+            <button id="codeBack" type="button" class="min-h-10 text-sm text-slate-400 hover:text-white" data-i18n="codeBack"></button>
+            <button id="codeResend" type="button" class="min-h-10 text-sm text-brand-400 hover:text-white disabled:text-slate-500"></button>
+          </div>
+        </div>
+        <!-- Step 1: phone or email, password and consents -->
+        <label id="phoneWrap" class="hidden flex min-h-14 items-center gap-3 rounded-2xl bg-night-800 px-4 ring-1 ring-white/10 focus-within:ring-brand-400/60">
+          <span class="text-slate-400" data-icon="phone"></span>
+          <span class="text-base text-slate-300">+998</span>
+          <input id="authPhone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="14" placeholder="90 123 45 67" class="min-w-0 flex-1 bg-transparent py-3 text-base text-slate-100 outline-none placeholder:text-slate-500">
         </label>
-        <label class="flex min-h-14 items-center gap-3 rounded-2xl bg-night-800 px-4 ring-1 ring-white/10 focus-within:ring-brand-400/60">
+        <label id="emailWrap" class="flex min-h-14 items-center gap-3 rounded-2xl bg-night-800 px-4 ring-1 ring-white/10 focus-within:ring-brand-400/60">
+          <span class="text-slate-400" data-icon="mail"></span>
+          <input id="authEmail" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" class="min-w-0 flex-1 bg-transparent py-3 text-base text-slate-100 outline-none placeholder:text-slate-500">
+        </label>
+        <label id="passwordWrap" class="flex min-h-14 items-center gap-3 rounded-2xl bg-night-800 px-4 ring-1 ring-white/10 focus-within:ring-brand-400/60">
           <span class="text-slate-400" data-icon="lock"></span>
-          <input id="authPassword" type="password" autocomplete="current-password" maxlength="128" required class="min-w-0 flex-1 bg-transparent py-3 text-base text-slate-100 outline-none placeholder:text-slate-500">
+          <input id="authPassword" type="password" autocomplete="current-password" maxlength="128" class="min-w-0 flex-1 bg-transparent py-3 text-base text-slate-100 outline-none placeholder:text-slate-500">
           <button type="button" id="togglePassword" class="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-slate-400 hover:text-white" data-icon="eye"></button>
         </label>
-        <label id="confirmWrap" class="hidden min-h-14 items-center gap-3 rounded-2xl bg-night-800 px-4 ring-1 ring-white/10 focus-within:ring-brand-400/60">
+        <label id="confirmWrap" class="hidden flex min-h-14 items-center gap-3 rounded-2xl bg-night-800 px-4 ring-1 ring-white/10 focus-within:ring-brand-400/60">
           <span class="text-slate-400" data-icon="lock"></span>
           <input id="authConfirm" type="password" autocomplete="new-password" maxlength="128" class="min-w-0 flex-1 bg-transparent py-3 text-base text-slate-100 outline-none placeholder:text-slate-500">
         </label>
         <p id="passwordHint" class="hidden px-1 text-xs text-slate-400" data-i18n="passwordHint"></p>
+        <div id="consentBox" class="hidden flex-col gap-2"></div>
         <div id="authError" class="hidden items-start gap-2 rounded-2xl bg-rose-500/10 px-4 py-3 text-sm text-rose-200 ring-1 ring-rose-400/20" role="alert"></div>
         <button id="forgotLink" type="button" class="-mt-1 self-end px-1 text-sm text-brand-400 hover:text-white" data-i18n="forgot"></button>
         <button id="authSubmit" type="submit" class="min-h-14 rounded-2xl bg-brand-500 text-lg font-semibold text-onfill shadow-lg shadow-brand-500/30 transition hover:bg-brand-400 active:scale-[.98] disabled:bg-night-700 disabled:text-slate-500 disabled:shadow-none"></button>
+        <button id="methodSwitch" type="button" class="hidden min-h-12 items-center justify-center gap-2 rounded-2xl bg-night-800 px-4 text-[15px] font-medium text-slate-200 ring-1 ring-white/10 hover:text-white"></button>
       </form>
       <div id="googleBlock" class="hidden">
         <div class="my-4 flex items-center gap-3 text-xs uppercase tracking-wide text-slate-500"><span class="h-px flex-1 bg-white/10"></span><span data-i18n="or"></span><span class="h-px flex-1 bg-white/10"></span></div>

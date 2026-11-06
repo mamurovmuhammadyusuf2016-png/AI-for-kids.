@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { promisify } = require('util');
 const { Pool } = require('pg');
 const { PLANS, DEFAULT_PLAN, planId, FREE_TRIES } = require('./plans');
+const notify = require('./notify');
 
 const scrypt = promisify(crypto.scrypt);
 
@@ -115,6 +116,46 @@ async function init() {
       PRIMARY KEY (user_id, id)
     );
     CREATE INDEX IF NOT EXISTS chats_user_updated ON chats (user_id, updated_at DESC);
+    -- Sign-up by phone (the number, 998XXXXXXXXX, is also the login in the email column),
+    -- confirmed contacts and consents: the rules (required) and news by SMS / email / calls (optional).
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT UNIQUE;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_at TIMESTAMPTZ;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_version TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS marketing BOOLEAN NOT NULL DEFAULT false;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS marketing_at TIMESTAMPTZ;
+    -- Every consent given or withdrawn, with the exact text shown: proof if anyone asks.
+    CREATE TABLE IF NOT EXISTS consents (
+      id BIGSERIAL PRIMARY KEY,
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL,
+      granted BOOLEAN NOT NULL,
+      version TEXT NOT NULL,
+      lang TEXT NOT NULL,
+      text TEXT NOT NULL,
+      ip TEXT,
+      user_agent TEXT,
+      at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS consents_user ON consents (user_id, at DESC);
+    -- One-time codes (stored as a keyed hash) and a log of sends for the limits.
+    CREATE TABLE IF NOT EXISTS verify_codes (
+      target TEXT NOT NULL,
+      purpose TEXT NOT NULL,
+      code_hash TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      attempts INT NOT NULL DEFAULT 0,
+      sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (target, purpose)
+    );
+    CREATE TABLE IF NOT EXISTS verify_sends (
+      id BIGSERIAL PRIMARY KEY,
+      channel TEXT NOT NULL,
+      target TEXT NOT NULL,
+      ip TEXT NOT NULL,
+      at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS verify_sends_at ON verify_sends (at);
   `);
   console.log('Accounts database ready');
 }
@@ -141,11 +182,13 @@ async function checkPassword(password, stored) {
 // Used for unknown emails so a wrong email and a wrong password take the same time.
 const DUMMY_HASH = 'scrypt$AAAAAAAAAAAAAAAAAAAAAA==$' + Buffer.alloc(64).toString('base64');
 
-// Parent and admin accounts sign in with a login instead of an email (stored in the email column).
+// Parent and admin accounts sign in with a login instead of an email (stored in the email column);
+// phone accounts with their number.
 const LOGIN_RE = /^[a-z0-9][a-z0-9-]{2,31}$/;
 function normalizeLogin(v) {
   const s = typeof v === 'string' ? v.trim().toLowerCase() : '';
   if (s.includes('@')) return normalizeEmail(s);
+  if (isPhoneLike(s)) return normalizePhone(s);
   if (!LOGIN_RE.test(s)) throw new AuthError('invalid_email');
   return s;
 }
@@ -155,6 +198,18 @@ function normalizeEmail(v) {
   if (email.length > 254 || !EMAIL_RE.test(email)) throw new AuthError('invalid_email');
   return email;
 }
+
+// Uzbek mobile numbers only: 998 and 9 digits. "+998 90 123-45-67" and "901234567" are accepted.
+const isPhoneLike = (v) => typeof v === 'string' && /^[\d\s+()-]{9,20}$/.test(v.trim()) && /^(998)?\d{9}$/.test(v.replace(/\D/g, ''));
+function normalizePhone(v) {
+  const d = typeof v === 'string' ? v.replace(/\D/g, '') : '';
+  const phone = d.length === 9 ? `998${d}` : d;
+  if (!/^998\d{9}$/.test(phone)) throw new AuthError('invalid_phone');
+  return phone;
+}
+
+// A student's account name in admin tools: a phone number or an email.
+const normalizeAccount = (v) => (isPhoneLike(v) ? normalizePhone(v) : normalizeEmail(v));
 
 function validatePassword(v) {
   if (typeof v !== 'string' || v.length < 8 || v.length > 128 || !/\p{L}/u.test(v) || !/\d/.test(v)) {
@@ -200,6 +255,7 @@ async function getUser(req) {
   if (!token) return null;
   const { rows } = await pool.query(
     `SELECT u.id, u.email, u.created_at, u.premium_until, u.plan_kind, u.plan_tier, u.role, u.parent_of, u.free_used,
+            u.phone, u.terms_at, u.marketing,
             u.password_hash IS NOT NULL AS has_password, u.google_sub IS NOT NULL AS has_google
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = $1 AND s.expires_at > now()`,
@@ -241,7 +297,10 @@ async function useFree(userId, key) {
 }
 
 function publicUser(u) {
-  return { email: u.email, google: !!u.has_google, password: !!u.has_password, plan: plan(u), role: u.role || 'student', free: freeLeft(u) };
+  return {
+    email: u.email, phone: !!u.phone, google: !!u.has_google, password: !!u.has_password, plan: plan(u), role: u.role || 'student', free: freeLeft(u),
+    terms: !!u.terms_at, marketing: !!u.marketing,
+  };
 }
 
 // ---------- parent accounts ----------
@@ -323,9 +382,10 @@ async function setPassword(userId, password) {
 
 // ---------- admin tools ----------
 async function listStudents(search) {
-  const q = `%${(search || '').toLowerCase().slice(0, 60)}%`;
+  const raw = (search || '').toLowerCase().slice(0, 60);
+  const q = `%${/^[\d\s+()-]+$/.test(raw) ? raw.replace(/\D/g, '') : raw}%`;
   const { rows } = await requirePool().query(
-    `SELECT email, created_at, premium_until, plan_kind, plan_tier, google_sub IS NOT NULL AS google
+    `SELECT email, created_at, premium_until, plan_kind, plan_tier, google_sub IS NOT NULL AS google, marketing
        FROM users WHERE role = 'student' AND email LIKE $1 ORDER BY created_at DESC LIMIT 100`,
     [q],
   );
@@ -333,7 +393,7 @@ async function listStudents(search) {
 }
 
 async function resetStudentPassword(email) {
-  const { rows } = await requirePool().query(`SELECT id FROM users WHERE email = $1 AND role = 'student'`, [normalizeEmail(email)]);
+  const { rows } = await requirePool().query(`SELECT id FROM users WHERE email = $1 AND role = 'student'`, [normalizeAccount(email)]);
   if (!rows.length) throw new AuthError('user_not_found', 404);
   const password = readablePassword();
   await requirePool().query('UPDATE users SET password_hash = $2 WHERE id = $1', [rows[0].id, await hashPassword(password)]);
@@ -343,7 +403,7 @@ async function resetStudentPassword(email) {
 
 // Deletes a student with everything linked (parent account, sessions, progress, requests).
 async function deleteStudent(email) {
-  const { rowCount } = await requirePool().query(`DELETE FROM users WHERE email = $1 AND role = 'student'`, [normalizeEmail(email)]);
+  const { rowCount } = await requirePool().query(`DELETE FROM users WHERE email = $1 AND role = 'student'`, [normalizeAccount(email)]);
   if (!rowCount) throw new AuthError('user_not_found', 404);
 }
 
@@ -391,7 +451,7 @@ async function grantMonths(email, months, requestId, tier) {
     `UPDATE users SET premium_until = GREATEST(COALESCE(premium_until, now()), now()) + make_interval(days => $2), plan_kind = $3,
             plan_tier = CASE WHEN $3 = 'paid' THEN COALESCE($4::text, plan_tier, 'pro') ELSE plan_tier END
       WHERE email = $1 RETURNING id, email, premium_until, plan_kind, plan_tier`,
-    [normalizeEmail(email), months ? months * 30 : TRIAL_DAYS, months ? 'paid' : 'trial', tier ? planId(tier) : null],
+    [normalizeAccount(email), months ? months * 30 : TRIAL_DAYS, months ? 'paid' : 'trial', tier ? planId(tier) : null],
   );
   if (!rows.length) throw new AuthError('user_not_found', 404);
   // Close the request it pays for, or every open request of this student.
@@ -420,19 +480,186 @@ function recentFailures(key) {
 }
 
 // ---------- actions ----------
+// ---------- consents ----------
+// The exact texts of the two checkboxes. The site shows these (from /api/config) and the server
+// records the one that was shown, so the record always matches what the person saw.
+// When a text changes, raise CONSENT_VERSION.
+const CONSENT_VERSION = '2026-11-06';
+const CONSENT_TEXTS = {
+  terms: {
+    ru: 'Я принимаю правила использования и политику конфиденциальности Nimi AI и согласен(на) на обработку моих персональных данных (номер телефона или почта, учебные результаты) так, как в них описано. Если мне нет 18 лет, мои родители (законный представитель) согласны.',
+    uz: "Men Nimi AI foydalanish qoidalari va maxfiylik siyosatini qabul qilaman hamda shaxsiy ma'lumotlarim (telefon raqami yoki pochta, o'qish natijalari) ularda yozilganidek qayta ishlanishiga roziman. 18 yoshga to'lmagan bo'lsam, ota-onam (qonuniy vakilim) bunga rozi.",
+  },
+  marketing: {
+    ru: 'Я согласен(на) получать от Nimi AI SMS, письма и звонки о новостях, акциях и предложениях. Отказаться можно в любой момент в «Настройках».',
+    uz: "Nimi AI menga yangiliklar, aksiyalar va takliflar haqida SMS, xat yuborishi va qo'ng'iroq qilishiga roziman. Bu rozilikdan istalgan vaqtda «Sozlamalar»da voz kechishim mumkin.",
+  },
+};
+const consentLang = (v) => (v === 'ru' ? 'ru' : 'uz');
+
+async function logConsent(db, req, userId, kind, granted, lang) {
+  await db.query(
+    `INSERT INTO consents (user_id, kind, granted, version, lang, text, ip, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [userId, kind, granted, CONSENT_VERSION, lang, CONSENT_TEXTS[kind][lang], clientIp(req).slice(0, 64), String(req.headers['user-agent'] || '').slice(0, 300)],
+  );
+}
+
+// terms: true accepts the rules (once); marketing: true / false gives or withdraws the news consent.
+async function applyConsents(req, userId, { terms, marketing, lang }) {
+  const db = requirePool();
+  const l = consentLang(lang);
+  if (terms === true) {
+    const { rowCount } = await db.query(`UPDATE users SET terms_at = now(), terms_version = $2 WHERE id = $1 AND terms_at IS NULL`, [userId, CONSENT_VERSION]);
+    if (rowCount) await logConsent(db, req, userId, 'terms', true, l);
+  }
+  if (typeof marketing === 'boolean') {
+    const { rowCount } = await db.query(
+      `UPDATE users SET marketing = $2, marketing_at = now() WHERE id = $1 AND marketing IS DISTINCT FROM $2`,
+      [userId, marketing],
+    );
+    if (rowCount) await logConsent(db, req, userId, 'marketing', marketing, l);
+  }
+}
+
+// Students who agreed to news by SMS / email / calls (and did not withdraw), for the admin panel.
+async function listMarketing() {
+  const { rows } = await requirePool().query(
+    `SELECT email, phone, marketing_at, created_at FROM users
+      WHERE role = 'student' AND marketing ORDER BY marketing_at DESC LIMIT 20000`,
+  );
+  const { rows: [c] } = await requirePool().query(
+    `SELECT count(*) FILTER (WHERE marketing) AS yes, count(*) AS total FROM users WHERE role = 'student'`,
+  );
+  return {
+    users: rows.map((r) => ({ phone: r.phone, email: r.phone ? null : r.email, at: r.marketing_at, created: r.created_at })),
+    yes: Number(c.yes), total: Number(c.total),
+  };
+}
+
+// ---------- one-time codes (SMS / email) ----------
+const CODE_TTL_MIN = 10;
+const CODE_MAX_ATTEMPTS = 5;
+const CODE_RESEND_SEC = 60;
+const CODE_PER_TARGET_DAY = 5;
+const CODE_PER_IP_HOUR = 10;
+// A cap on paid SMS per day: protects the balance if someone floods the form.
+const SMS_DAILY_LIMIT = Number(process.env.SMS_DAILY_LIMIT) || 300;
+const SMS_HOURLY_LIMIT = Number(process.env.SMS_HOURLY_LIMIT) || 60;
+const codeHash = (target, purpose, code) => crypto.createHmac('sha256', SECRET).update(`${purpose}|${target}|${code}`).digest('hex');
+
+// { channel: 'sms' | 'email', target } from what the person typed.
+function codeTarget(channel, to) {
+  if (channel === 'sms') {
+    if (!notify.smsEnabled()) throw new AuthError('auth_unavailable', 503);
+    return normalizePhone(to);
+  }
+  if (!notify.emailEnabled()) throw new AuthError('auth_unavailable', 503);
+  return normalizeEmail(to);
+}
+
+// Sends a code for sign-up ('register') or a new password ('reset').
+async function sendCode(req, body) {
+  const db = requirePool();
+  const channel = body.channel === 'sms' ? 'sms' : 'email';
+  const purpose = body.purpose === 'reset' ? 'reset' : 'register';
+  const target = codeTarget(channel, body.to);
+  const ip = clientIp(req).slice(0, 64);
+  const { rows: [taken] } = await db.query(`SELECT id, role FROM users WHERE email = $1`, [target]);
+  if (purpose === 'register' && taken) throw new AuthError(channel === 'sms' ? 'phone_taken' : 'email_taken', 409);
+  const wait = await db.query(
+    `SELECT CEIL(EXTRACT(EPOCH FROM sent_at + make_interval(secs => $3) - now()))::int AS s FROM verify_codes
+      WHERE target = $1 AND purpose = $2 AND sent_at > now() - make_interval(secs => $3)`,
+    [target, purpose, CODE_RESEND_SEC],
+  );
+  if (wait.rows.length) throw Object.assign(new AuthError('code_wait', 429), { retry: wait.rows[0].s });
+  const { rows: [n] } = await db.query(
+    `SELECT count(*) FILTER (WHERE target = $1 AND at > now() - interval '1 day') AS target_day,
+            count(*) FILTER (WHERE ip = $2 AND at > now() - interval '1 hour') AS ip_hour,
+            count(*) FILTER (WHERE channel = 'sms' AND at > now() - interval '1 day') AS sms_day,
+            count(*) FILTER (WHERE channel = 'sms' AND at > now() - interval '1 hour') AS sms_hour
+       FROM verify_sends WHERE at > now() - interval '1 day'`,
+    [target, ip],
+  );
+  if (Number(n.target_day) >= CODE_PER_TARGET_DAY || Number(n.ip_hour) >= CODE_PER_IP_HOUR) throw new AuthError('code_limit', 429);
+  if (channel === 'sms' && (Number(n.sms_day) >= SMS_DAILY_LIMIT || Number(n.sms_hour) >= SMS_HOURLY_LIMIT)) {
+    console.warn(`SMS limit reached (${SMS_HOURLY_LIMIT} per hour / ${SMS_DAILY_LIMIT} per day): codes are paused for now`);
+    throw new AuthError('code_limit', 429);
+  }
+  await db.query(`INSERT INTO verify_sends (channel, target, ip) VALUES ($1, $2, $3)`, [channel, target, ip]);
+  db.query(`DELETE FROM verify_sends WHERE at < now() - interval '2 days'`).catch(() => {});
+  // A new password only for an existing student account; the answer is the same either way,
+  // so the form does not tell strangers which numbers and emails are registered.
+  if (purpose === 'reset' && (!taken || taken.role !== 'student')) return { sent: true, retry: CODE_RESEND_SEC };
+  const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+  try {
+    if (channel === 'sms') await notify.sendSmsCode(target, code, purpose);
+    else await notify.sendEmailCode(target, code, purpose, body.lang);
+  } catch {
+    throw new AuthError('code_send_failed', 502);
+  }
+  await db.query(
+    `INSERT INTO verify_codes (target, purpose, code_hash, expires_at) VALUES ($1, $2, $3, now() + make_interval(mins => $4))
+     ON CONFLICT (target, purpose) DO UPDATE SET code_hash = EXCLUDED.code_hash, expires_at = EXCLUDED.expires_at, attempts = 0, sent_at = now()`,
+    [target, purpose, codeHash(target, purpose, code), CODE_TTL_MIN],
+  );
+  return { sent: true, retry: CODE_RESEND_SEC };
+}
+
+// Checks a code; a correct one is used up. Five wrong tries and a new code is needed.
+async function checkCode(target, purpose, code) {
+  const db = requirePool();
+  const clean = String(code || '').replace(/\D/g, '');
+  const { rows: [row] } = await db.query(
+    `UPDATE verify_codes SET attempts = attempts + 1 WHERE target = $1 AND purpose = $2 AND expires_at > now() AND attempts < $3
+     RETURNING code_hash`,
+    [target, purpose, CODE_MAX_ATTEMPTS],
+  );
+  if (!row) throw new AuthError('code_expired');
+  const a = Buffer.from(row.code_hash);
+  const b = Buffer.from(codeHash(target, purpose, clean));
+  if (clean.length !== 6 || a.length !== b.length || !crypto.timingSafeEqual(a, b)) throw new AuthError('code_wrong');
+  await db.query(`DELETE FROM verify_codes WHERE target = $1 AND purpose = $2`, [target, purpose]);
+}
+
+// ---------- actions ----------
+// Sign-up by phone (always with an SMS code) or by email (with an email code when email sending
+// is set up). The rules must be accepted; news by SMS / email / calls is a separate choice.
 async function register(req, body) {
   const db = requirePool();
-  const email = normalizeEmail(body.email);
+  if (body.terms !== true) throw new AuthError('terms_required');
+  const byPhone = body.phone != null;
+  const account = byPhone ? normalizePhone(body.phone) : normalizeEmail(body.email);
   const password = validatePassword(body.password);
+  if (byPhone && !notify.smsEnabled()) throw new AuthError('auth_unavailable', 503);
+  const exists = await db.query(`SELECT 1 FROM users WHERE email = $1`, [account]);
+  if (exists.rows.length) throw new AuthError(byPhone ? 'phone_taken' : 'email_taken', 409);
+  const verify = byPhone || notify.emailEnabled();
+  if (verify) await checkCode(account, 'register', body.code);
   const hash = await hashPassword(password);
   const { rows } = await db.query(
-    `INSERT INTO users (email, password_hash) VALUES ($1, $2) ON CONFLICT (email) DO NOTHING RETURNING id, email`,
-    [email, hash],
+    `INSERT INTO users (email, phone, password_hash, verified_at) VALUES ($1, $2, $3, CASE WHEN $4 THEN now() END)
+     ON CONFLICT DO NOTHING RETURNING id, email`,
+    [account, byPhone ? account : null, hash, verify],
   );
-  if (!rows.length) throw new AuthError('email_taken', 409);
+  if (!rows.length) throw new AuthError(byPhone ? 'phone_taken' : 'email_taken', 409);
   const user = { ...rows[0], has_password: true, has_google: false, role: 'student' };
+  await applyConsents(req, user.id, { terms: true, marketing: body.marketing === true, lang: body.lang });
   await ensureParent(user.id);
   return { user, cookie: await startSession(req, user.id) };
+}
+
+// A new password with a code sent to the student's phone or email; signs in.
+async function resetPassword(req, body) {
+  const db = requirePool();
+  const channel = body.channel === 'sms' ? 'sms' : 'email';
+  const target = codeTarget(channel, body.to);
+  const password = validatePassword(body.password);
+  await checkCode(target, 'reset', body.code);
+  const { rows } = await db.query(`SELECT id, email, role FROM users WHERE email = $1 AND role = 'student'`, [target]);
+  if (!rows.length) throw new AuthError('code_expired');
+  await db.query(`UPDATE users SET password_hash = $2, verified_at = COALESCE(verified_at, now()) WHERE id = $1`, [rows[0].id, await hashPassword(password)]);
+  await db.query('DELETE FROM sessions WHERE user_id = $1', [rows[0].id]);
+  return { user: { ...rows[0], has_password: true }, cookie: await startSession(req, rows[0].id) };
 }
 
 async function login(req, body) {
@@ -504,6 +731,10 @@ async function googleUser(body) {
 
 async function google(req, body) {
   const user = await googleUser(body);
+  // Checkboxes ticked on the sign-up form; without them the site asks once after sign-in.
+  if (user.role === 'student' && (body.terms === true || body.marketing === true)) {
+    await applyConsents(req, user.id, { terms: body.terms === true, marketing: body.marketing === true ? true : undefined, lang: body.lang });
+  }
   return { user, cookie: await startSession(req, user.id) };
 }
 
@@ -754,7 +985,7 @@ async function adminStats(day, month) {
 async function revokeSubscription(email) {
   const { rows } = await requirePool().query(
     `UPDATE users SET premium_until = now() WHERE email = $1 AND role = 'student' AND premium_until > now() RETURNING email`,
-    [normalizeEmail(email)],
+    [normalizeAccount(email)],
   );
   if (!rows.length) throw new AuthError('user_not_found', 404);
   return rows[0];
@@ -820,6 +1051,12 @@ module.exports = {
   getUser,
   publicUser,
   register,
+  sendCode,
+  resetPassword,
+  applyConsents,
+  listMarketing,
+  CONSENT_VERSION,
+  CONSENT_TEXTS,
   login,
   google,
   googleUser,

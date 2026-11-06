@@ -22,6 +22,12 @@
         copy: 'Скопировать',
         copied: 'Скопировано',
         newPw: 'Новый пароль для родителя',
+        newsTitle: 'Новости и акции',
+        newsText: 'SMS, письма и звонки от Nimi AI о новостях, акциях и предложениях. Коды для входа приходят всегда.',
+        newsOn: 'Получаю',
+        newsOff: 'Не получаю',
+        newsTurnOn: 'Включить',
+        newsTurnOff: 'Отказаться',
       },
       parentPage: {
         title: 'Кабинет родителя',
@@ -258,7 +264,18 @@
         delConfirm: (email) => `Удалить ${email} вместе с прогрессом и аккаунтом родителя? Это нельзя отменить.`,
         delYes: 'Да, удалить',
         cancel: 'Отмена',
-        tabs: { dash: 'Показатели', manage: 'Ученики и заявки' },
+        tabs: { dash: 'Показатели', manage: 'Ученики и заявки', consents: 'Рассылка' },
+        consents: {
+          title: 'Согласны на SMS, письма и звонки',
+          text: 'Только эти люди сами отметили согласие на новости и рекламу. Остальным звонить и писать рекламу нельзя: за это бывают штрафы. Список обновляется сразу, когда кто-то отказывается в «Настройках».',
+          count: (yes, total) => `Согласны: ${yes} из ${total} учеников`,
+          phones: (n) => `Скачать телефоны (${n})`,
+          emails: (n) => `Скачать почты (${n})`,
+          none: 'Пока никто не дал согласие.',
+          since: (d) => `согласие с ${d}`,
+          csvHint: 'Файл с телефонами можно загрузить в DevSMS → «Guruhli SMS» для рассылки (нужен одобренный рекламный шаблон).',
+        },
+        marketingBadge: 'согласен на рассылку',
         one: 'Снять подписку',
         oneConfirm: (email) => `Снять подписку у ${email}? Доступ закончится сразу.`,
         oneYes: 'Да, снять',
@@ -441,6 +458,12 @@
         copy: 'Nusxalash',
         copied: 'Nusxalandi',
         newPw: 'Ota-ona uchun yangi parol',
+        newsTitle: 'Yangiliklar va aksiyalar',
+        newsText: "Nimi AI'dan yangiliklar, aksiyalar va takliflar haqida SMS, xat va qo'ng'iroqlar. Kirish kodlari doim keladi.",
+        newsOn: 'Olaman',
+        newsOff: 'Olmayman',
+        newsTurnOn: 'Yoqish',
+        newsTurnOff: 'Voz kechish',
       },
       parentPage: {
         title: 'Ota-ona kabineti',
@@ -677,7 +700,18 @@
         delConfirm: (email) => `${email} natijalari va ota-ona akkaunti bilan birga o'chirilsinmi? Buni qaytarib bo'lmaydi.`,
         delYes: "Ha, o'chirish",
         cancel: 'Bekor qilish',
-        tabs: { dash: "Ko'rsatkichlar", manage: "O'quvchilar va arizalar" },
+        tabs: { dash: "Ko'rsatkichlar", manage: "O'quvchilar va arizalar", consents: 'Xabarnoma' },
+        consents: {
+          title: "SMS, xat va qo'ng'iroqqa roziligi borlar",
+          text: "Faqat shu odamlar yangilik va reklamaga o'zlari rozilik belgilagan. Qolganlarga reklama yozish va qo'ng'iroq qilish mumkin emas: buning uchun jarima bo'lishi mumkin. Kimdir «Sozlamalar»da voz kechsa, ro'yxat darhol yangilanadi.",
+          count: (yes, total) => `Rozi: ${yes} / ${total} o'quvchi`,
+          phones: (n) => `Telefonlarni yuklab olish (${n})`,
+          emails: (n) => `Pochtalarni yuklab olish (${n})`,
+          none: "Hozircha hech kim rozilik bermagan.",
+          since: (d) => `${d} dan rozi`,
+          csvHint: "Telefonlar faylini DevSMS → «Guruhli SMS»ga yuklab, xabar yuborish mumkin (tasdiqlangan reklama shabloni kerak).",
+        },
+        marketingBadge: 'xabarnomaga rozi',
         one: 'Obunani bekor qilish',
         oneConfirm: (email) => `${email} obunasi bekor qilinsinmi? Ruxsat darhol tugaydi.`,
         oneYes: 'Ha, bekor qilish',
@@ -1742,13 +1776,14 @@
     const root = screen(rootId);
     const A = t('admin');
     root.append(rootId === 'activity' ? titleBar(A.title) : h('h2', { class: 'text-2xl font-semibold text-white' }, A.title));
-    root.append(h('div', { class: 'grid grid-cols-2 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5', role: 'tablist' },
-      ['dash', 'manage'].map((id) => h('button', {
+    root.append(h('div', { class: 'grid grid-cols-3 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5', role: 'tablist' },
+      ['dash', 'manage', 'consents'].map((id) => h('button', {
         type: 'button', role: 'tab', 'aria-selected': String(adminTab === id),
         class: `min-h-11 rounded-xl px-3 text-sm font-semibold ${adminTab === id ? 'bg-brand-500 text-onfill' : 'text-slate-300 hover:bg-night-700'}`,
         onclick: () => openAdmin(adminRoot, id),
       }, A.tabs[id]))));
     if (adminTab === 'dash') return renderDashboard(root, A);
+    if (adminTab === 'consents') return renderConsents(root, A);
     const msg = h('p', { class: 'text-sm' });
     const email = h('input', { type: 'email', class: INPUT, placeholder: A.emailPh, id: 'adminEmail' });
     const months = h('select', { class: `${INPUT} appearance-none`, id: 'adminMonths' }, [0, 1, 3, 6, 12].map((m) => h('option', { value: m }, m ? t('sub').monthLabel(m) : A.week)));
@@ -1854,6 +1889,40 @@
         h('span', {}, shortDay(points[0].day)), h('span', {}, shortDay(points[points.length - 1].day))));
   }
 
+  // Admin: who agreed to news by SMS / email / calls — the only people we may send ads to.
+  async function renderConsents(root, A) {
+    const C = A.consents;
+    root.append(loading(t('loadingTopics')));
+    const r = await N.postJson('/api/admin/consents', {}).catch(() => ({}));
+    root.lastChild.remove();
+    if (!r.users) { root.append(h('p', { class: 'text-rose-200' }, t('errors').default)); return; }
+    const phones = r.users.filter((u) => u.phone);
+    const emails = r.users.filter((u) => u.email);
+    // A spreadsheet-safe CSV (a cell never starts with = + - @).
+    const cell = (v) => { const x = String(v ?? ''); return /^[=+\-@]/.test(x) ? `'${x}` : x; };
+    const download = (name, header, rows) => {
+      const csv = '\ufeff' + [header, ...rows].map((row) => row.map(cell).join(';')).join('\r\n');
+      const a = h('a', { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })), download: name });
+      document.body.append(a); a.click(); a.remove();
+    };
+    const day = new Date().toISOString().slice(0, 10);
+    const btn = (label, onclick, on) => h('button', { type: 'button', class: `${BTN2} sm:w-auto`, onclick, disabled: !on }, ico('download'), label);
+    const list = h('div', { class: 'flex flex-col gap-2' });
+    if (!r.users.length) list.append(h('p', { class: 'text-sm text-slate-400' }, C.none));
+    r.users.slice(0, 300).forEach((u) => list.append(h('div', { class: 'flex items-center justify-between gap-3 rounded-2xl bg-night-800 px-3 py-2 ring-1 ring-white/5' },
+      h('p', { class: 'truncate font-medium text-white' }, u.phone ? N.prettyAccount(u.phone) : u.email),
+      h('p', { class: 'shrink-0 text-xs text-slate-400' }, C.since(dateStr(u.at))))));
+    root.append(h('div', { class: `${CARD} flex flex-col gap-3` },
+      h('p', { class: 'text-lg font-semibold text-white' }, C.title),
+      h('p', { class: 'text-sm text-slate-300' }, C.text),
+      h('p', { class: 'font-semibold text-brand-400' }, C.count(r.yes, r.total)),
+      h('div', { class: 'flex flex-col gap-2 sm:flex-row sm:flex-wrap' },
+        btn(C.phones(phones.length), () => download(`nimi-phones-${day}.csv`, ['phone', 'consent_at'], phones.map((u) => [u.phone, u.at])), phones.length),
+        btn(C.emails(emails.length), () => download(`nimi-emails-${day}.csv`, ['email', 'consent_at'], emails.map((u) => [u.email, u.at])), emails.length)),
+      h('p', { class: 'text-xs text-slate-400' }, C.csvHint),
+      list));
+  }
+
   async function renderDashboard(root, A) {
     const D = A.dash;
     const body = h('div', { class: 'flex flex-col gap-4' }, loading(t('loadingTopics')));
@@ -1922,7 +1991,7 @@
       users.forEach((u) => {
         const active = u.premium_until && new Date(u.premium_until) > new Date();
         const info = h('p', { class: 'text-xs text-slate-400' },
-          `${A.registered(dateStr(u.created_at))} · ${active ? `${u.plan_kind === 'trial' ? A.week : planById(u.plan_tier).name} ${A.until(dateStr(u.premium_until))}` : A.noAccess}${u.google ? ' · Google' : ''}`);
+          `${A.registered(dateStr(u.created_at))} · ${active ? `${u.plan_kind === 'trial' ? A.week : planById(u.plan_tier).name} ${A.until(dateStr(u.premium_until))}` : A.noAccess}${u.google ? ' · Google' : ''}${u.marketing ? ` · ${A.marketingBadge}` : ''}`);
         // Adding a month keeps the student's current plan.
         const userPlan = planById(u.plan_tier);
         const out = h('div', { class: 'flex flex-col gap-2' });
@@ -1948,7 +2017,7 @@
             : h('p', { class: 'text-sm text-rose-200' }, t('errors').default));
         };
         list.append(h('div', { class: 'flex flex-col gap-2 rounded-2xl bg-night-800 p-3 ring-1 ring-white/5' },
-          h('p', { class: 'truncate font-semibold text-white' }, u.email), info,
+          h('p', { class: 'truncate font-semibold text-white' }, N.prettyAccount(u.email)), info,
           h('div', { class: 'flex flex-wrap gap-2' },
             h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500 px-3 text-sm font-semibold text-onfill', onclick: () => grant(u.email, 0) }, A.grant(0)),
             h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500/20 px-3 text-sm text-white ring-1 ring-brand-400/40', onclick: () => grant(u.email, 1, null, userPlan.id) }, `${A.grant(1)} · ${userPlan.name}`),
@@ -1969,7 +2038,7 @@
     root.append(titleBar(P.title), loading(t('loadingTopics')));
     const r = await N.postJson('/api/account/settings', {}).catch(() => ({}));
     root.lastChild.remove();
-    root.append(h('div', { class: `${CARD} flex flex-col gap-1` }, h('p', { class: 'text-sm text-slate-400' }, P.account), h('p', { class: 'break-all font-semibold text-white' }, N.user?.email || '')));
+    root.append(h('div', { class: `${CARD} flex flex-col gap-1` }, h('p', { class: 'text-sm text-slate-400' }, P.account), h('p', { class: 'break-all font-semibold text-white' }, N.prettyAccount(N.user?.email || ''))));
     if (offerApk()) root.append(apkLink());
     if (!r.parent) { root.append(h('p', { class: 'text-rose-200' }, t('errors').default)); return; }
     const pw = h('span', { class: 'select-all font-mono text-lg text-white' }, '••••••••');
@@ -1995,6 +2064,25 @@
         h('p', { class: 'mt-2 text-xs text-slate-400' }, P.password), pw),
       h('div', { class: 'flex gap-2' }, showBtn, copyBtn),
       resetBtn));
+    // News by SMS / email / calls: the student (or parent) can give or withdraw it at any time.
+    let news = !!r.marketing;
+    const state = h('p', { class: 'text-sm font-semibold' });
+    const toggle = h('button', { type: 'button', class: BTN2 });
+    const drawNews = () => {
+      state.textContent = news ? P.newsOn : P.newsOff;
+      state.className = `text-sm font-semibold ${news ? 'text-brand-400' : 'text-slate-400'}`;
+      toggle.textContent = news ? P.newsTurnOff : P.newsTurnOn;
+    };
+    toggle.onclick = async () => {
+      toggle.disabled = true;
+      const res = await N.postJson('/api/account/consent', { marketing: !news, lang: N.lang }).catch(() => ({}));
+      toggle.disabled = false;
+      if (res.ok) { news = !news; if (N.user) N.user.marketing = news; drawNews(); }
+    };
+    drawNews();
+    root.append(h('div', { class: `${CARD} flex flex-col gap-3` },
+      h('div', { class: 'flex items-center justify-between gap-3' }, h('p', { class: 'text-lg font-semibold text-white' }, P.newsTitle), state),
+      h('p', { class: 'text-sm text-slate-300' }, P.newsText), toggle));
     root.append(h('a', { href: '/privacy.html', target: '_blank', class: 'text-sm text-slate-400 underline' }, t('privacyTitle')));
   }
 

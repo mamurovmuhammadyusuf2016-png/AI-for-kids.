@@ -135,9 +135,25 @@
       print: 'Распечатать / сохранить',
       tabLogin: 'Вход',
       tabRegister: 'Регистрация',
-      emailPh: 'Почта или логин',
+      emailPh: 'Телефон, почта или логин',
+      emailOnlyPh: 'Почта',
+      resetPh: 'Телефон или почта',
+      getCode: 'Получить код',
+      codeSentSms: (p) => `Мы отправили код в SMS на номер ${p}. Введи его ниже.`,
+      codeSentEmail: (e) => `Мы отправили код на почту ${e}. Если письма нет, проверь папку «Спам».`,
+      codeBack: '← Изменить',
+      codeResend: 'Отправить код ещё раз',
+      codeResendIn: (s) => `Отправить ещё раз через ${s} с`,
+      savePassword: 'Сохранить новый пароль',
+      newPasswordPh: 'Новый пароль',
+      viaEmail: 'Зарегистрироваться через почту',
+      viaPhone: 'Зарегистрироваться по номеру телефона',
+      resetByCode: 'Получить код и поставить новый пароль',
+      consentTitle: 'Ещё один шаг',
+      consentText: 'Чтобы продолжить, отметь согласие с правилами. Второй пункт — по желанию.',
+      consentContinue: 'Продолжить',
       forgot: 'Забыли пароль?',
-      forgotText: 'Не переживай! Есть два способа вернуть вход:',
+      forgotText: 'Не переживай! Вот как вернуть вход:',
       forgotParent: 'Если у тебя есть аккаунт родителя — мама или папа могут поставить новый пароль в своём кабинете.',
       forgotWrite: 'Или напиши нам — мы сбросим пароль и пришлём новый:',
       forgotGoogle: 'Если ты входил через Google — просто нажми «Вход с аккаунтом Google».',
@@ -155,13 +171,21 @@
       registerBtn: 'Создать аккаунт',
       or: 'или',
       logout: 'Выйти',
-      authNote: 'Мы храним только твою почту. Пароль хранится в зашифрованном виде, его не видит никто.',
+      authNote: 'Мы храним только твой телефон или почту. Пароль хранится в зашифрованном виде, его не видит никто.',
       errors: {
         invalid_email: 'Проверь адрес почты — похоже, в нём ошибка.',
         weak_password: 'Пароль слишком простой: нужно минимум 8 символов, буквы и хотя бы одна цифра.',
         mismatch: 'Пароли не совпадают.',
         email_taken: 'Эта почта уже зарегистрирована. Попробуй войти.',
-        invalid_credentials: 'Неверная почта или пароль.',
+        invalid_credentials: 'Неверный телефон, почта или пароль.',
+        invalid_phone: 'Проверь номер: нужен узбекский номер, например 90 123 45 67.',
+        phone_taken: 'Этот номер уже зарегистрирован. Попробуй войти.',
+        terms_required: 'Чтобы продолжить, отметь согласие с правилами и политикой конфиденциальности.',
+        code_wait: 'Код уже отправлен. Подожди минуту и попробуй снова.',
+        code_limit: 'Слишком много запросов кода. Попробуй позже.',
+        code_send_failed: 'Не получилось отправить код. Попробуй ещё раз чуть позже.',
+        code_expired: 'Код устарел или был введён неверно слишком много раз. Запроси новый.',
+        code_wrong: 'Неверный код. Проверь и попробуй снова.',
         use_google: 'Этот аккаунт создан через Google — нажми «Войти через Google».',
         too_many_attempts: 'Слишком много неудачных попыток. Подожди 15 минут и попробуй снова.',
         google_failed: 'Не получилось войти через Google. Попробуй ещё раз.',
@@ -234,9 +258,25 @@
       print: 'Chop etish / saqlash',
       tabLogin: 'Kirish',
       tabRegister: "Ro'yxatdan o'tish",
-      emailPh: 'Pochta yoki login',
+      emailPh: 'Telefon, pochta yoki login',
+      emailOnlyPh: 'Pochta',
+      resetPh: 'Telefon yoki pochta',
+      getCode: 'Kodni olish',
+      codeSentSms: (p) => `${p} raqamiga SMS orqali kod yubordik. Uni pastga kirit.`,
+      codeSentEmail: (e) => `${e} pochtasiga kod yubordik. Xat kelmagan bo'lsa, «Spam» papkasini tekshir.`,
+      codeBack: "← O'zgartirish",
+      codeResend: 'Kodni qayta yuborish',
+      codeResendIn: (s) => `${s} soniyadan keyin qayta yuborish`,
+      savePassword: 'Yangi parolni saqlash',
+      newPasswordPh: 'Yangi parol',
+      viaEmail: "Pochta orqali ro'yxatdan o'tish",
+      viaPhone: "Telefon raqam orqali ro'yxatdan o'tish",
+      resetByCode: "Kod olib, yangi parol qo'yish",
+      consentTitle: 'Yana bir qadam',
+      consentText: "Davom etish uchun qoidalarga roziligingni belgila. Ikkinchi band — xohishga ko'ra.",
+      consentContinue: 'Davom etish',
       forgot: 'Parolni unutdingmi?',
-      forgotText: "Xavotir olma! Kirishni qaytarishning ikki yo'li bor:",
+      forgotText: "Xavotir olma! Kirishni shunday qaytarish mumkin:",
       forgotParent: "Agar ota-ona akkaunting bo'lsa — onang yoki otang o'z kabinetida yangi parol qo'yishi mumkin.",
       forgotWrite: "Yoki bizga yoz — parolni tiklab, yangisini yuboramiz:",
       forgotGoogle: "Agar Google orqali kirgan bo'lsang — «Google orqali kirish» tugmasini bos.",
@@ -254,13 +294,21 @@
       registerBtn: 'Akkaunt yaratish',
       or: 'yoki',
       logout: 'Chiqish',
-      authNote: "Biz faqat pochtangni saqlaymiz. Parol shifrlangan holda saqlanadi, uni hech kim ko'rmaydi.",
+      authNote: "Biz faqat telefoningni yoki pochtangni saqlaymiz. Parol shifrlangan holda saqlanadi, uni hech kim ko'rmaydi.",
       errors: {
         invalid_email: "Pochta manzilini tekshir — xato bor shekilli.",
         weak_password: "Parol juda oddiy: kamida 8 ta belgi, harflar va kamida bitta raqam kerak.",
         mismatch: 'Parollar mos kelmadi.',
         email_taken: "Bu pochta allaqachon ro'yxatdan o'tgan. Kirishga urinib ko'r.",
-        invalid_credentials: "Pochta yoki parol noto'g'ri.",
+        invalid_credentials: "Telefon, pochta yoki parol noto'g'ri.",
+        invalid_phone: "Raqamni tekshir: O'zbekiston raqami kerak, masalan 90 123 45 67.",
+        phone_taken: "Bu raqam allaqachon ro'yxatdan o'tgan. Kirishga urinib ko'r.",
+        terms_required: 'Davom etish uchun qoidalar va maxfiylik siyosatiga roziligingni belgila.',
+        code_wait: "Kod allaqachon yuborilgan. Bir daqiqa kutib, qayta urinib ko'r.",
+        code_limit: "Kod juda ko'p so'raldi. Keyinroq urinib ko'r.",
+        code_send_failed: "Kodni yuborib bo'lmadi. Birozdan keyin qayta urinib ko'r.",
+        code_expired: "Kod eskirgan yoki ko'p marta noto'g'ri kiritilgan. Yangi kod so'ra.",
+        code_wrong: "Kod noto'g'ri. Tekshirib, qayta urinib ko'r.",
         use_google: "Bu akkaunt Google orqali yaratilgan — «Google orqali kirish» tugmasini bos.",
         too_many_attempts: "Juda ko'p muvaffaqiyatsiz urinish. 15 daqiqa kutib, qayta urinib ko'r.",
         google_failed: "Google orqali kirib bo'lmadi. Qayta urinib ko'r.",
@@ -304,7 +352,11 @@
   let user = null;
   let childEmail = null; // for a parent account: the child's email
   let config = { googleClientId: '', accounts: false };
-  let authMode = 'login';
+  let authMode = 'login'; // 'login', 'register' or 'reset' (a new password with a code)
+  let regMethod = 'phone'; // sign-up by 'phone' (SMS code) or 'email'
+  let authStep = 'form'; // 'form' or 'code'
+  let codeCtx = null; // { channel: 'sms' | 'email', to, purpose }
+  let resendTimer = null;
   let setup = null;
   let sessions = [];
   let pendingSubject = null;
@@ -414,7 +466,6 @@
     });
     renderThemeBtn();
     $('input').placeholder = t('placeholder');
-    $('authEmail').placeholder = t('emailPh');
     $('authPassword').placeholder = t('passwordPh');
     $('authConfirm').placeholder = t('confirmPh');
     renderAuthMode();
@@ -1098,21 +1149,143 @@
   };
 
   // ---------- accounts ----------
+  const verify = () => config.verify || {};
+  // Phone sign-up shows only once SMS sending is set up on the server.
+  const regBy = () => (verify().sms ? regMethod : 'email');
+  const PHONE_RE = /^[\d\s+()-]{9,20}$/;
+  const phoneDigits = (v) => { const d = String(v || '').replace(/\D/g, ''); return d.length === 9 ? `998${d}` : d; };
+  const isPhone = (v) => PHONE_RE.test(String(v || '').trim()) && /^998\d{9}$/.test(phoneDigits(v));
+  const isEmailAddr = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+  // "998901234567" -> "+998 90 123 45 67" (phone accounts use the number as their name).
+  const prettyAccount = (v) => (/^998\d{9}$/.test(v || '') ? `+998 ${v.slice(3, 5)} ${v.slice(5, 8)} ${v.slice(8, 10)} ${v.slice(10)}` : v || '');
+  const show = (id, on, display = 'flex') => { $(id).classList.toggle('hidden', !on); $(id).classList.toggle(display, on); };
+
   function renderAuthMode() {
     const reg = authMode === 'register';
+    const reset = authMode === 'reset';
+    const code = authStep === 'code';
     document.querySelectorAll('.auth-tab').forEach((b) => {
-      const on = b.dataset.mode === authMode;
+      const on = b.dataset.mode === (reset ? 'login' : authMode);
       b.className = 'auth-tab min-h-12 rounded-xl text-[15px] font-medium transition ' +
         (on ? 'bg-brand-500 text-onfill shadow-lg shadow-brand-500/30' : 'text-slate-300 hover:text-white');
       b.setAttribute('aria-selected', on);
     });
-    $('confirmWrap').classList.toggle('hidden', !reg);
-    $('confirmWrap').classList.toggle('flex', reg);
-    $('passwordHint').classList.toggle('hidden', !reg);
-    $('authPassword').autocomplete = reg ? 'new-password' : 'current-password';
-    $('authSubmit').textContent = t(reg ? 'registerBtn' : 'loginBtn');
-    $('forgotLink').classList.toggle('hidden', reg);
-    if (reg) $('forgotBox').classList.add('hidden');
+    const byPhone = reg && regBy() === 'phone';
+    show('codeStep', code);
+    show('phoneWrap', byPhone && !code);
+    show('emailWrap', !code && !byPhone);
+    show('passwordWrap', reset ? code : !code);
+    show('confirmWrap', reset ? code : reg && !code);
+    show('passwordHint', reset ? code : reg && !code, 'block');
+    show('consentBox', reg && !code);
+    show('forgotLink', authMode === 'login', 'block');
+    show('methodSwitch', reg && !code && !!verify().sms);
+    if (!reg || code) $('forgotBox').classList.add('hidden');
+    $('authEmail').placeholder = t(reg ? 'emailOnlyPh' : reset ? (verify().sms ? 'resetPh' : 'emailOnlyPh') : 'emailPh');
+    $('authEmail').inputMode = reg ? 'email' : 'text';
+    $('authPassword').placeholder = t(reset ? 'newPasswordPh' : 'passwordPh');
+    $('authPassword').autocomplete = reg || reset ? 'new-password' : 'current-password';
+    const needsCode = reg && (byPhone || verify().email);
+    $('authSubmit').textContent = t(code ? (reset ? 'savePassword' : 'registerBtn') : reset || needsCode ? 'getCode' : reg ? 'registerBtn' : 'loginBtn');
+    $('methodSwitch').innerHTML = icon(regBy() === 'phone' ? 'mail' : 'phone') + '<span></span>';
+    $('methodSwitch').lastChild.textContent = t(regBy() === 'phone' ? 'viaEmail' : 'viaPhone');
+    if (reg) renderConsentBox($('consentBox'));
+    if ($('consentGate')) renderConsentBox($('consentGate').querySelector('.flex.flex-col.gap-2'), 'gate');
+    // Google sign-in sits under the email way of signing up.
+    if (config.googleClientId) $('googleBlock').classList.toggle('hidden', !googleVisible());
+    renderResend();
+  }
+
+  // The two checkboxes, with the texts the server records: the rules (required) and news (optional).
+  function renderConsentBox(box, prefix = 'consent') {
+    const texts = config.consent && config.consent.texts;
+    if (!texts) return box.replaceChildren();
+    const was = { terms: $(`${prefix}Terms`)?.checked, marketing: $(`${prefix}Marketing`)?.checked };
+    const row = (id, text, link, checked) => {
+      const input = h2('input', { type: 'checkbox', id, className: 'mt-0.5 h-5 w-5 shrink-0 accent-brand-500' });
+      input.checked = !!checked;
+      const label = h2('label', { className: 'flex cursor-pointer items-start gap-3 rounded-2xl bg-night-800 p-3 text-sm leading-snug text-slate-300 ring-1 ring-white/10' });
+      const span = h2('span', { textContent: `${text} ` });
+      if (link) span.append(h2('a', { href: '/privacy.html', target: '_blank', className: 'text-brand-400 underline', textContent: t('privacyLink') }));
+      label.append(input, span);
+      return label;
+    };
+    box.replaceChildren(
+      row(`${prefix}Terms`, texts.terms[lang] || texts.terms.uz, true, was.terms),
+      row(`${prefix}Marketing`, texts.marketing[lang] || texts.marketing.uz, false, was.marketing));
+  }
+
+  // Accounts made before the consents (or through Google in the app) are asked once after sign-in.
+  function askConsent() {
+    if ($('consentGate') || !config.consent) return;
+    const err = h2('p', { className: 'hidden text-sm text-rose-200' });
+    const boxes = h2('div', { className: 'flex flex-col gap-2' });
+    renderConsentBox(boxes, 'gate');
+    const go = h2('button', { type: 'button', textContent: t('consentContinue'), className: 'min-h-14 rounded-2xl bg-brand-500 text-lg font-semibold text-onfill disabled:bg-night-700' });
+    const out = h2('button', { type: 'button', textContent: t('logout'), className: 'min-h-10 text-sm text-slate-400 hover:text-white' });
+    const card = h2('div', { className: 'flex max-h-full w-full max-w-md flex-col gap-3 overflow-y-auto rounded-3xl bg-night-900 p-5 ring-1 ring-white/10' });
+    card.append(h2('p', { className: 'text-xl font-semibold text-white', textContent: t('consentTitle') }),
+      h2('p', { className: 'text-sm text-slate-300', textContent: t('consentText') }), boxes, err, go, out);
+    const gate = h2('div', { id: 'consentGate', className: 'fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4' });
+    gate.setAttribute('role', 'dialog');
+    gate.setAttribute('aria-modal', 'true');
+    gate.append(card);
+    document.body.append(gate);
+    go.onclick = async () => {
+      if (!$('gateTerms').checked) { err.textContent = t('errors').terms_required; err.classList.remove('hidden'); return; }
+      go.disabled = true;
+      const r = await postJson('/api/account/consent', { terms: true, marketing: $('gateMarketing').checked, lang }).catch(() => ({}));
+      go.disabled = false;
+      if (!r.ok) { err.textContent = t('errors').offline; err.classList.remove('hidden'); return; }
+      if (user) { user.terms = true; user.marketing = $('gateMarketing').checked; }
+      gate.remove();
+    };
+    out.onclick = () => { gate.remove(); logout(); };
+  }
+  const googleVisible = () => !(authStep === 'code' || authMode === 'reset' || (authMode === 'register' && regBy() === 'phone'));
+  function h2(tag, props) { return Object.assign(document.createElement(tag), props); }
+
+  function renderResend() {
+    const btn = $('codeResend');
+    clearInterval(resendTimer);
+    if (!codeCtx || authStep !== 'code') return;
+    const tick = () => {
+      const left = Math.ceil((codeCtx.until - Date.now()) / 1000);
+      btn.disabled = left > 0;
+      btn.textContent = left > 0 ? t('codeResendIn')(left) : t('codeResend');
+      if (left <= 0) clearInterval(resendTimer);
+    };
+    tick();
+    resendTimer = setInterval(tick, 1000);
+  }
+
+  // Asks the server to send a code; on success shows the code step.
+  async function requestCode(ctx) {
+    $('authSubmit').disabled = true;
+    try {
+      const r = await postJson('/api/auth/send-code', { channel: ctx.channel, to: ctx.to, purpose: ctx.purpose, lang });
+      if (!r.sent) {
+        if (r.code === 'code_wait' && authStep === 'code') return;
+        return showAuthError(r.code);
+      }
+      codeCtx = { ...ctx, until: Date.now() + (r.retry || 60) * 1000 };
+      authStep = 'code';
+      showAuthError(null);
+      $('codeSentText').textContent = ctx.channel === 'sms' ? t('codeSentSms')(prettyAccount(ctx.to)) : t('codeSentEmail')(ctx.to);
+      $('authCode').value = '';
+      renderAuthMode();
+      $('authCode').focus();
+    } catch {
+      showAuthError('offline');
+    } finally {
+      $('authSubmit').disabled = false;
+    }
+  }
+
+  function resetAuthFlow() {
+    authStep = 'form';
+    codeCtx = null;
+    clearInterval(resendTimer);
   }
 
   function showAuthError(code) {
@@ -1133,7 +1306,7 @@
   function signedIn(u, left) {
     user = u;
     account = u.email;
-    $('menuEmail').textContent = u.email;
+    $('menuEmail').textContent = prettyAccount(u.email);
     $('menuEmail').parentElement.classList.toggle('hidden', !u.email);
     const adminItem = document.querySelector('[data-action="admin"]');
     adminItem.classList.toggle('hidden', !u.admin);
@@ -1147,6 +1320,7 @@
     document.querySelector('[data-action="subscribe"]').classList.toggle('hidden', !config.accounts || !student);
     document.querySelector('[data-action="logout"]').classList.toggle('hidden', !u.email);
     $('authForm').reset();
+    resetAuthFlow();
     showAuthError(null);
     // Parents and staff have their own single screen.
     if (u.role === 'parent' || u.role === 'admin') return showScreen(u.role);
@@ -1160,7 +1334,10 @@
     if (setup && (!currentSession() || currentSession().date !== today())) newSession();
     renderSetupOptions();
     renderStatus();
-    Promise.allSettled([window.NimiLearn?.load(), syncChats()]).finally(() => showScreen(setup && currentSession() ? 'home' : 'setup'));
+    Promise.allSettled([window.NimiLearn?.load(), syncChats()]).finally(() => {
+      showScreen(setup && currentSession() ? 'home' : 'setup');
+      if (!u.terms) askConsent();
+    });
   }
 
   function signedOut() {
@@ -1175,6 +1352,7 @@
   // Opens the sign-in form: mode 'login' or 'register'.
   function showAuth(mode = 'login') {
     authMode = mode;
+    resetAuthFlow();
     renderAuthMode();
     showAuthError(null);
     showScreen('auth');
@@ -1216,35 +1394,75 @@
       href, target: '_blank', rel: 'noopener', textContent: label,
       className: `flex min-h-12 items-center justify-center rounded-2xl px-4 font-semibold ${primary ? 'bg-brand-500 text-onfill' : 'bg-night-700 text-slate-100'}`,
     });
-    box.replaceChildren(p(t('forgotText'), 'font-semibold text-white'), p(`1. ${t('forgotParent')}`), p(`2. ${t('forgotWrite')}`));
+    box.replaceChildren(p(t('forgotText'), 'font-semibold text-white'));
+    if (verify().sms || verify().email) {
+      const byCode = Object.assign(document.createElement('button'), {
+        type: 'button', textContent: t('resetByCode'),
+        className: 'flex min-h-12 items-center justify-center rounded-2xl bg-brand-500 px-4 font-semibold text-onfill',
+      });
+      byCode.onclick = () => { authMode = 'reset'; resetAuthFlow(); showAuthError(null); renderAuthMode(); $('authEmail').focus(); };
+      box.append(byCode);
+    }
+    box.append(p(`1. ${t('forgotParent')}`), p(`2. ${t('forgotWrite')}`));
     if (b.telegram) box.append(link(`https://t.me/${encodeURIComponent(b.telegram)}?text=${encodeURIComponent(msg)}`, t('writeTelegram'), true));
     if (b.phone) box.append(link(`tel:${b.phone.replace(/[^\d+]/g, '')}`, `${t('callUs')}: ${b.phone}`, false));
     box.append(p(t('forgotGoogle'), 'text-xs text-slate-400'));
   };
 
   document.querySelectorAll('.auth-tab').forEach((b) => {
-    b.onclick = () => { authMode = b.dataset.mode; showAuthError(null); renderAuthMode(); };
+    b.onclick = () => { authMode = b.dataset.mode; resetAuthFlow(); showAuthError(null); renderAuthMode(); };
   });
+  $('methodSwitch').onclick = () => { regMethod = regMethod === 'phone' ? 'email' : 'phone'; showAuthError(null); renderAuthMode(); };
+  $('codeBack').onclick = () => { resetAuthFlow(); showAuthError(null); renderAuthMode(); };
+  $('codeResend').onclick = () => { if (codeCtx) requestCode(codeCtx); };
+  $('authCode').addEventListener('input', () => { $('authCode').value = $('authCode').value.replace(/\D/g, '').slice(0, 6); });
   $('togglePassword').onclick = () => {
     const show = $('authPassword').type === 'password';
     $('authPassword').type = show ? 'text' : 'password';
     $('authConfirm').type = show ? 'text' : 'password';
     $('togglePassword').innerHTML = icon(show ? 'eye-off' : 'eye');
   };
+  function passwordProblem() {
+    const password = $('authPassword').value;
+    if (password.length < 8 || !/\p{L}/u.test(password) || !/\d/.test(password)) return 'weak_password';
+    if (password !== $('authConfirm').value) return 'mismatch';
+    return null;
+  }
+
   $('authForm').addEventListener('submit', (e) => {
     e.preventDefault();
-    const email = $('authEmail').value.trim();
     const password = $('authPassword').value;
-    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
-    const isLogin = /^[a-z0-9][a-z0-9-]{2,31}$/i.test(email);
-    if (!isEmail && !(authMode === 'login' && isLogin)) return showAuthError('invalid_email');
-    if (authMode === 'register') {
-      if (password.length < 8 || !/\p{L}/u.test(password) || !/\d/.test(password)) return showAuthError('weak_password');
-      if (password !== $('authConfirm').value) return showAuthError('mismatch');
-    } else if (!password) {
-      return showAuthError('invalid_credentials');
+    const id = $('authEmail').value.trim();
+    // A new password with a code.
+    if (authMode === 'reset') {
+      if (authStep === 'form') {
+        const channel = isPhone(id) ? 'sms' : 'email';
+        if (channel === 'sms' ? !verify().sms : !isEmailAddr(id) || !verify().email) return showAuthError(isPhone(id) || !isEmailAddr(id) ? 'invalid_email' : 'auth_unavailable');
+        return requestCode({ channel, to: channel === 'sms' ? phoneDigits(id) : id, purpose: 'reset' });
+      }
+      const problem = passwordProblem();
+      if (problem) return showAuthError(problem);
+      return finishAuth(postJson('/api/auth/reset', { channel: codeCtx.channel, to: codeCtx.to, code: $('authCode').value, password }));
     }
-    finishAuth(postJson(authMode === 'register' ? '/api/auth/register' : '/api/auth/login', { email, password }));
+    if (authMode === 'register') {
+      if (authStep === 'code') {
+        const body = { password, code: $('authCode').value, terms: true, marketing: !!$('consentMarketing')?.checked, lang };
+        body[codeCtx.channel === 'sms' ? 'phone' : 'email'] = codeCtx.to;
+        return finishAuth(postJson('/api/auth/register', body));
+      }
+      const byPhone = regBy() === 'phone';
+      const to = byPhone ? phoneDigits($('authPhone').value) : id;
+      if (byPhone ? !isPhone($('authPhone').value) : !isEmailAddr(id)) return showAuthError(byPhone ? 'invalid_phone' : 'invalid_email');
+      const problem = passwordProblem();
+      if (problem) return showAuthError(problem);
+      if (!$('consentTerms')?.checked) return showAuthError('terms_required');
+      if (byPhone || verify().email) return requestCode({ channel: byPhone ? 'sms' : 'email', to, purpose: 'register' });
+      return finishAuth(postJson('/api/auth/register', { email: to, password, terms: true, marketing: !!$('consentMarketing')?.checked, lang }));
+    }
+    const isLogin = /^[a-z0-9][a-z0-9-]{2,31}$/i.test(id);
+    if (!isEmailAddr(id) && !isLogin && !isPhone(id)) return showAuthError('invalid_email');
+    if (!password) return showAuthError('invalid_credentials');
+    finishAuth(postJson('/api/auth/login', { email: isPhone(id) ? phoneDigits(id) : id, password }));
   });
 
   // "Sign in with Google" button (Google Identity Services).
@@ -1267,7 +1485,7 @@
     if (!config.googleClientId || user) return;
     if (AndroidApp) {
       // Google does not allow its sign-in inside an app: the app opens it in Chrome and comes back signed in.
-      $('googleBlock').classList.remove('hidden');
+      $('googleBlock').classList.toggle('hidden', !googleVisible());
       $('googleBtn').innerHTML = '';
       const b = document.createElement('button');
       b.type = 'button';
@@ -1299,12 +1517,16 @@
     if (!gisReady) {
       google.accounts.id.initialize({
         client_id: config.googleClientId,
-        callback: (resp) => finishAuth(postJson('/api/auth/google', { credential: resp.credential })),
+        callback: (resp) => {
+          if (authMode === 'register' && !$('consentTerms')?.checked) return showAuthError('terms_required');
+          const consent = authMode === 'register' ? { terms: true, marketing: !!$('consentMarketing')?.checked, lang } : {};
+          finishAuth(postJson('/api/auth/google', { credential: resp.credential, ...consent }));
+        },
         ux_mode: 'popup',
       });
       gisReady = true;
     }
-    $('googleBlock').classList.remove('hidden');
+    $('googleBlock').classList.toggle('hidden', !googleVisible());
     $('googleBtn').innerHTML = '';
     google.accounts.id.renderButton($('googleBtn'), {
       theme: theme() === 'light' ? 'outline' : 'filled_black',
@@ -1343,6 +1565,7 @@
     forgetChat,
     refreshUser,
     showAuth,
+    prettyAccount,
     get child() { return childEmail; },
     get sessions() { return sessions; },
   };
