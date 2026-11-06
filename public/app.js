@@ -108,6 +108,7 @@
       share: 'Поделиться',
       back: 'Назад',
       questionsLeft: 'Вопросов осталось:',
+      freeQuestionsLeft: 'Бесплатных вопросов:',
       tabHome: 'Главная',
       tabChat: 'Чат',
       tabProgress: 'Прогресс',
@@ -231,6 +232,7 @@
       share: 'Ulashish',
       back: 'Orqaga',
       questionsLeft: 'Qolgan savollar:',
+      freeQuestionsLeft: 'Bepul savollar:',
       tabHome: 'Bosh sahifa',
       tabChat: 'Chat',
       tabProgress: 'Natijalar',
@@ -556,7 +558,11 @@
 
   function renderStatus() {
     if (setup) $('setupChip').textContent = `${subjectName(setup.subject)} · ${setup.grade} ${lang === 'uz' ? 'sinf' : 'кл.'}`;
-    $('limitText').textContent = `${remaining()}/${dailyLimit()}`;
+    // Without a subscription the chat has a number of free questions for the whole account (20),
+    // so the counter shows those instead of the plan's questions per day.
+    const free = config.accounts && user && (user.role || 'student') === 'student' && !hasAccess();
+    $('limitLabel').textContent = t(free ? 'freeQuestionsLeft' : 'questionsLeft');
+    $('limitText').textContent = free ? `${freeLeft('chat')}/${config.billing?.freeTries?.chat || 20}` : `${remaining()}/${dailyLimit()}`;
   }
 
   const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -763,6 +769,7 @@
   const canUse = (key) => hasAccess() || freeLeft(key) > 0;
   function setFreeLeft(key, n) {
     if (user?.free && typeof n === 'number') user.free[key] = Math.max(0, n);
+    renderStatus();
   }
   document.querySelectorAll('.tab-btn').forEach((b) => {
     b.onclick = () => (b.dataset.tab === 'chat' && !canUse('chat') ? window.NimiLearn?.openSubscribe('chat') : showScreen(b.dataset.tab));
