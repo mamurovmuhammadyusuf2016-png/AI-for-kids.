@@ -25,6 +25,10 @@ const pool = DATABASE_URL
     })
   : null;
 
+// Neon closes idle connections (it sleeps between visits). Without this handler such a drop is an
+// unhandled 'error' event and the whole server stops; the pool simply opens a new connection next time.
+if (pool) pool.on('error', (err) => console.warn(`Database connection dropped: ${err.message}`));
+
 // "ip|email" -> [timestamps of failed logins]
 const failedLogins = new Map();
 
