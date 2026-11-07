@@ -134,6 +134,11 @@
       dailyTitle: 'Тренировка дня',
       dailyDesc: (lvl) => `6 коротких заданий · уровень ${lvl} из 5`,
       dailyDone: (score) => `Сегодня сделано: ${score} верно`,
+      homeAsk: 'Что сегодня изучаем?',
+      dailyDescB: '6 коротких заданий под твой уровень',
+      levelOf: (n) => `Уровень ${n} из 5`,
+      freeChat: (left, total) => (left >= total ? `Без подписки — ${total} вопросов в чат` : `Осталось ${left} из ${total} бесплатных вопросов в чат`),
+      subLink: 'Подписка',
       start: 'Начать',
       again: 'Ещё раз',
       tiles: {
@@ -570,6 +575,11 @@
       dailyTitle: 'Kunlik mashq',
       dailyDesc: (lvl) => `6 ta qisqa topshiriq · daraja ${lvl} / 5`,
       dailyDone: (score) => `Bugun bajarildi: ${score} to'g'ri`,
+      homeAsk: "Bugun nimani o'rganamiz?",
+      dailyDescB: 'Darajangga mos 6 ta qisqa topshiriq',
+      levelOf: (n) => `Daraja ${n} / 5`,
+      freeChat: (left, total) => (left >= total ? `Obunasiz — chatga ${total} ta savol` : `${total} ta bepul savoldan ${left} tasi qoldi`),
+      subLink: 'Obuna',
       start: 'Boshlash',
       again: 'Yana bir bor',
       tiles: {
@@ -2313,6 +2323,8 @@
   }
 
   // ---------- home ----------
+  // Home ("bento"): greeting, the learning path card with today's XP ring, then tiles of
+  // different sizes. Paid sections show a lock without a subscription; free ones say so.
   function renderHome() {
     const root = screen('home');
     const p = data.progress;
@@ -2320,56 +2332,94 @@
     const daily = p.daily?.date === todayStr() ? p.daily : null;
     const undone = data.diary.filter((d) => !d.done).length;
 
-    root.append(h('div', { class: 'flex flex-col items-start gap-2' },
-      h('h2', { class: 'text-2xl font-semibold text-white' }, t('hello')),
-      h('span', { class: `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm ${n ? 'bg-amber-400/15 text-amber-200' : 'bg-night-800 text-slate-400'}` }, ico('flame', 'h-4 w-4'), t('streak')(n))));
+    root.append(h('div', { class: 'flex items-end justify-between gap-3' },
+      h('div', { class: 'flex min-w-0 flex-col gap-1' },
+        h('h2', { class: 'text-[28px] font-bold leading-tight tracking-tight text-white' }, t('hello')),
+        h('p', { class: 'text-sm text-slate-400' }, t('homeAsk'))),
+      h('span', { class: `flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-semibold tabular-nums ${n ? 'bg-amber-400/15 text-amber-200' : 'bg-night-800 text-slate-400'}`, title: t('streak')(n), 'aria-label': t('streak')(n) }, ico('flame', 'h-4 w-4'), String(n))));
 
     const st = planStatus();
     const S = t('sub');
     const locked = !N.hasAccess();
     const can = (key) => !locked || N.freeLeft(key) > 0;
     const guard = (fn, key) => (can(key) ? fn : () => openSubscribe(key));
-    const anyFree = Object.values(N.user?.free || {}).some((n) => n > 0);
-    if (st && (st.tone === 'expired' || st.tone === 'none')) {
+    const anyFree = Object.values(N.user?.free || {}).some((x) => x > 0);
+    const trying = !!st && st.tone === 'none' && anyFree;
+    // Ended access or used-up free questions stay on top; the free-questions line goes to the bottom.
+    if (st && (st.tone === 'expired' || st.tone === 'none') && !trying) {
       const none = st.tone === 'none';
-      const trying = none && anyFree;
-      root.append(h('div', { class: `flex flex-col gap-3 rounded-3xl p-5 ring-1 ${trying ? 'bg-brand-500/10 ring-brand-400/30' : 'bg-amber-400/10 ring-amber-400/30'}` },
-        h('p', { class: `flex items-center gap-2 text-lg font-semibold ${trying ? 'text-white' : 'text-amber-100'}` }, trying ? ico('gift', 'icon text-brand-400') : null, trying ? S.none : none ? S.allUsed : S.expired),
-        h('p', { class: `text-sm ${trying ? 'text-slate-300' : 'text-amber-100/80'}` }, trying ? S.noneText(N.user?.free?.chat ?? 0) : none ? S.allUsedText : S.expiredText),
-        h('button', { type: 'button', class: trying ? BTN2 : BTN, onclick: () => openSubscribe() }, ico(none ? 'sparkles' : 'star'), none ? S.trialAsk : `${S.order} · ${S.from(sum(minPrice()))}`)));
-    } else if (st) {
+      root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-amber-400/10 p-5 ring-1 ring-amber-400/30' },
+        h('p', { class: 'text-lg font-semibold text-amber-100' }, none ? S.allUsed : S.expired),
+        h('p', { class: 'text-sm text-amber-100/80' }, none ? S.allUsedText : S.expiredText),
+        h('button', { type: 'button', class: BTN, onclick: () => openSubscribe() }, ico(none ? 'sparkles' : 'star'), none ? S.trialAsk : `${S.order} · ${S.from(sum(minPrice()))}`)));
+    } else if (st && st.tone !== 'none' && st.tone !== 'expired') {
       root.append(h('button', { type: 'button', class: `flex items-center gap-2 rounded-2xl px-4 py-3 text-left text-sm ring-1 ${st.tone === 'ending' ? 'bg-amber-400/10 text-amber-100 ring-amber-400/30' : 'bg-night-900/80 text-slate-300 ring-white/5'}`, onclick: openSubscribe },
         ico('star', 'icon text-amber-300'), h('span', { class: 'min-w-0 flex-1' }, st.text), ico('chevron-right', 'icon text-slate-500')));
     }
 
-    root.append(h('div', { class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-onfill shadow-lg shadow-brand-500/30' },
-      h('div', { class: 'flex items-center gap-3' },
-        h('span', { class: 'flex h-12 w-12 items-center justify-center rounded-2xl bg-onfill/15' }, ico(can('training') ? 'dumbbell' : 'lock')),
-        h('div', { class: 'min-w-0' }, h('p', { class: 'text-lg font-semibold' }, t('dailyTitle')), h('p', { class: 'text-sm text-onfill/80' }, daily ? t('dailyDone')(daily.score) : t('dailyDesc')(level())))),
-      h('button', { type: 'button', class: 'flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-onfill text-base font-semibold text-brand-600 transition hover:bg-onfill/90 active:scale-[.98]', onclick: guard(() => startTraining(), 'training') }, daily ? ico('repeat') : ico('chevron-right'), !can('training') ? S.open : locked ? `${t('start')} · ${S.tileFree}` : daily ? t('again') : t('start'))));
-
     // Learning path (path.js): lessons without AI, free for everyone.
-    if (window.NimiPath) root.append(window.NimiPath.homeCard());
+    if (window.NimiPath) root.append(window.NimiPath.heroCard ? window.NimiPath.heroCard() : window.NimiPath.homeCard());
 
     const tiles = t('tiles');
-    // paid: part of the subscription. Without one it shows "free" while its free try is left, then a lock.
-    const badge = (key) => (can(key)
-      ? h('span', { class: 'absolute right-3 top-3 rounded-full bg-emerald-500/15 px-2 py-1 text-[11px] font-semibold text-emerald-300' }, S.tileFree)
-      : h('span', { class: 'absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-amber-400/15 text-amber-200', title: S.locked, 'aria-label': S.locked }, ico('lock', 'h-4 w-4')));
-    const tile = (key, icon, onclick, extra, paid = true) => h('button', { type: 'button', class: `${CARD} relative flex min-h-32 flex-col items-start gap-3 text-left transition hover:bg-night-800 active:scale-[.98]`, onclick: paid ? guard(onclick, key) : onclick },
-      h('span', { class: 'flex h-11 w-11 items-center justify-center rounded-2xl bg-night-700 text-brand-400' }, ico(icon)),
-      paid && locked ? badge(key) : null,
-      h('span', { class: 'min-w-0' }, h('span', { class: 'block font-semibold text-white' }, tiles[key][0]), h('span', { class: 'block text-xs text-slate-400' }, extra || tiles[key][1])));
-    // Older students get exams; younger ones keep the chat tile. Always 8 tiles.
+    const lockDot = (place = 'absolute right-3 top-3') => h('span', { class: `${place} flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-amber-200`, title: S.locked, 'aria-label': S.locked }, ico('lock', 'h-3.5 w-3.5'));
+    const circle = (icon, bg) => h('span', { class: `flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${bg} text-brand-400` }, ico(icon));
+    const label = (key, extra) => h('span', { class: 'flex min-w-0 flex-col gap-0.5' },
+      h('span', { class: 'text-[15px] font-semibold text-white' }, tiles[key][0]),
+      h('span', { class: 'text-xs text-slate-400' }, extra || tiles[key][1]));
+    // soft: light green tile (a white circle inside); paid: opens with a subscription.
+    const square = (key, icon, onclick, { paid = true, soft = false, extra } = {}) => h('button', {
+      type: 'button',
+      class: `relative flex min-h-[124px] flex-col items-start justify-between gap-2.5 rounded-[22px] p-4 text-left transition active:scale-[.98] ${soft ? 'bg-night-800 hover:bg-night-700' : 'bg-night-900/80 ring-1 ring-white/5 hover:bg-night-800'}`,
+      onclick: paid ? guard(onclick, key) : onclick,
+    },
+    soft && !paid
+      ? h('span', { class: 'flex w-full items-center justify-between gap-2' }, circle(icon, 'bg-night-900'), locked ? h('span', { class: 'rounded-full bg-night-900 px-2 py-0.5 text-[11px] font-semibold text-emerald-300' }, S.tileFree) : null)
+      : circle(icon, soft ? 'bg-night-900' : 'bg-night-800'),
+    paid && !can(key) ? lockDot() : null,
+    label(key, extra));
+    const wide = (key, icon, onclick, { paid = true, extra } = {}) => h('button', {
+      type: 'button',
+      class: 'col-span-2 flex min-h-[76px] items-center gap-3.5 rounded-[22px] bg-night-900/80 px-4 py-3.5 text-left ring-1 ring-white/5 transition hover:bg-night-800 active:scale-[.98]',
+      onclick: paid ? guard(onclick, key) : onclick,
+    },
+    circle(icon, 'bg-night-800'),
+    h('span', { class: 'min-w-0 flex-1' }, label(key, extra)),
+    paid && !can(key) ? lockDot('') : ico('chevron-right', 'icon text-slate-500'));
+
+    const lvl = level();
+    const training = h('button', {
+      type: 'button',
+      class: 'relative row-span-2 flex flex-col items-start justify-between gap-3 rounded-3xl bg-night-900/80 p-[18px] text-left ring-1 ring-white/5 transition hover:bg-night-800 active:scale-[.98]',
+      onclick: guard(() => startTraining(), 'training'),
+    },
+    !can('training') ? lockDot('absolute right-3.5 top-3.5') : null,
+    h('span', { class: 'flex h-[52px] w-[52px] items-center justify-center rounded-full bg-mint text-brand-600' }, ico(daily ? 'repeat' : 'dumbbell', 'h-6 w-6')),
+    h('span', { class: 'flex flex-col gap-1' },
+      h('span', { class: 'text-[17px] font-bold text-white' }, t('dailyTitle')),
+      h('span', { class: 'text-[13px] leading-snug text-slate-400' }, daily ? t('dailyDone')(daily.score) : t('dailyDescB'))),
+    h('span', { class: 'flex w-full flex-col gap-1.5' },
+      h('span', { class: 'text-xs text-slate-400' }, t('levelOf')(lvl)),
+      h('span', { class: 'flex gap-1' }, [1, 2, 3, 4, 5].map((i) => h('span', { class: `h-1.5 flex-1 rounded-full ${i <= lvl ? 'bg-brand-500' : 'bg-night-700'}` })))));
+
+    // Older students get exams; younger ones keep the chat tile.
     root.append(h('div', { class: 'grid grid-cols-2 gap-3' },
-      tile('photo', 'camera', N.askWithPhoto),
-      tile('test', 'clipboard-check', openTestPicker),
-      grade() >= 8 ? tile('exam', 'graduation-cap', openExams) : tile('chat', 'message-circle', () => N.showScreen('chat')),
-      tile('olympiad', 'puzzle', startOlympiad),
-      tile('cards', 'layers', openCards, null, false),
-      tile('reading', 'book-open', startReading),
-      tile('games', 'gamepad-2', openGames, null, false),
-      tile('diary', 'notebook-pen', () => N.showScreen('diary'), t('undone')(undone), false)));
+      training,
+      square('photo', 'camera', N.askWithPhoto, { soft: true }),
+      square('test', 'clipboard-check', openTestPicker),
+      grade() >= 8 ? wide('exam', 'graduation-cap', openExams) : wide('chat', 'message-circle', () => N.showScreen('chat')),
+      square('olympiad', 'puzzle', startOlympiad),
+      square('reading', 'book-open', startReading),
+      square('cards', 'layers', openCards, { paid: false, soft: true }),
+      square('games', 'gamepad-2', openGames, { paid: false, soft: true }),
+      wide('diary', 'notebook-pen', () => N.showScreen('diary'), { paid: false, extra: t('undone')(undone) })));
+
+    if (trying) {
+      const total = N.billing.freeTries?.chat || 20;
+      root.append(h('div', { class: 'flex items-center gap-2.5 rounded-2xl border border-dashed border-mint px-3.5 py-3 text-[13px] text-brand-400' },
+        ico('message-circle', 'h-[18px] w-[18px] shrink-0'),
+        h('span', { class: 'min-w-0 flex-1' }, t('freeChat')(N.freeLeft('chat'), total)),
+        h('button', { type: 'button', class: 'min-h-10 shrink-0 font-semibold text-brand-400 hover:underline', onclick: () => openSubscribe() }, t('subLink'))));
+    }
   }
 
   // ---------- progress ----------

@@ -40,6 +40,11 @@
       homeTitle: 'Путь знаний',
       homeDesc: (u, n) => `Раздел ${u} из ${n} · уроки без ИИ`,
       homeAll: 'Все разделы пройдены — можно повторять',
+      heroBadge: 'Бесплатно · без ИИ',
+      heroUnit: (u, n) => `Раздел ${u} из ${n}`,
+      heroGo: 'Продолжить урок',
+      heroOf: `из ${DAILY_GOAL} XP`,
+      heroRing: (x) => `Цель дня: ${x} из ${DAILY_GOAL} XP`,
       cont: 'Продолжить',
       rule: 'Правило',
       example: 'Пример',
@@ -99,6 +104,11 @@
       homeTitle: "Bilim yo'li",
       homeDesc: (u, n) => `${n} ta bo'limdan ${u}-bo'lim · SI siz darslar`,
       homeAll: "Hamma bo'limlar tugadi — takrorlash mumkin",
+      heroBadge: 'Bepul · SI siz',
+      heroUnit: (u, n) => `${n} ta bo'limdan ${u}-bo'lim`,
+      heroGo: 'Darsni davom ettirish',
+      heroOf: `/ ${DAILY_GOAL} XP`,
+      heroRing: (x) => `Kunlik maqsad: ${x} / ${DAILY_GOAL} XP`,
       cont: 'Davom etish',
       rule: 'Qoida',
       example: 'Misol',
@@ -728,5 +738,27 @@
         H('span', { class: 'shrink-0 text-xs tabular-nums text-slate-400' }, x >= DAILY_GOAL ? t('goalDone') : t('today')(x))));
   }
 
-  window.NimiPath = { open, homeCard };
+  // The big green card at the top of the home screen: the path, today's XP ring and "continue".
+  function heroCard() {
+    const p = P();
+    const pos = position(p.course);
+    const x = todayXp();
+    const len = 2 * Math.PI * 38;
+    const ring = H('span', { class: 'relative block h-[92px] w-[92px] shrink-0' });
+    ring.innerHTML = `<svg width="92" height="92" viewBox="0 0 92 92" role="img" aria-label="${t('heroRing')(x)}">` +
+      '<circle cx="46" cy="46" r="38" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-width="9"/>' +
+      `<circle cx="46" cy="46" r="38" fill="none" stroke="var(--color-mint)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(Math.min(1, x / DAILY_GOAL) * len).toFixed(1)} ${len.toFixed(1)}" transform="rotate(-90 46 46)"/></svg>`;
+    ring.append(H('span', { class: 'absolute inset-0 flex flex-col items-center justify-center' },
+      H('span', { class: 'text-xl font-bold tabular-nums' }, String(x)),
+      H('span', { class: 'text-[11px] text-onfill/80' }, t('heroOf'))));
+    return H('button', { type: 'button', class: 'flex w-full items-center gap-4 rounded-[28px] bg-brand-500 p-5 text-left text-onfill shadow-lg shadow-brand-500/30 transition hover:bg-brand-400 active:scale-[.99]', onclick: open },
+      H('span', { class: 'flex min-w-0 flex-1 flex-col items-start gap-2' },
+        H('span', { class: 'rounded-full bg-onfill/15 px-2.5 py-1 text-[11px] font-semibold' }, t('heroBadge')),
+        H('span', { class: 'text-[22px] font-bold leading-tight tracking-tight' }, t('homeTitle')),
+        H('span', { class: 'text-sm text-onfill/80' }, `${t('forGrade')(courseName(p.course), grade())} · ${pos.unit < 0 ? t('homeAll') : t('heroUnit')(pos.unit + 1, pos.units.length)}`),
+        H('span', { class: 'mt-1.5 inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-onfill px-4 text-sm font-semibold text-brand-600' }, t('heroGo'), ico('chevron-right', 'h-4 w-4'))),
+      ring);
+  }
+
+  window.NimiPath = { open, homeCard, heroCard };
 })();
