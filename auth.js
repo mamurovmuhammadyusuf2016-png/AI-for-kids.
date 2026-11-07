@@ -803,6 +803,38 @@ async function setData(userId, key, value) {
   );
 }
 
+// ---------- leaderboards: games (coins earned) and the learning path (XP) ----------
+// Names are made up from a hash of the account id (an animal and a number), so no real name,
+// phone or email is ever shown. Values come from the student's saved data, capped for sanity.
+const LEADER_LIMIT = 20;
+// Above these a value is treated as tampered with and not counted (XP is ~10–25 per lesson).
+const LEADER_MAX = { path: 50000, games: 200000 };
+function nickOf(userId) {
+  const h = crypto.createHmac('sha256', SECRET).update(`nick:${userId}`).digest();
+  return { a: h[0] % 12, n: 100 + (h.readUInt16BE(1) % 900) };
+}
+async function leaderboard(board, userId) {
+  const path = board === 'path';
+  const { rows } = await requirePool().query(
+    `WITH s AS (
+       SELECT u.id,
+              CASE WHEN jsonb_typeof(d.value->$2) = 'number' THEN (d.value->>$2)::numeric
+                   WHEN jsonb_typeof(d.value->$3) = 'number' THEN (d.value->>$3)::numeric
+                   ELSE 0 END AS v
+         FROM users u JOIN user_data d ON d.user_id = u.id AND d.key = $1
+        WHERE u.role = 'student'
+     ), r AS (
+       SELECT id, floor(v)::bigint AS v, RANK() OVER (ORDER BY v DESC) AS rk FROM s WHERE v > 0 AND v <= $4
+     )
+     SELECT id, v, rk FROM r WHERE rk <= $5 OR id = $6 ORDER BY rk, id LIMIT $5 + 1`,
+    [path ? 'path' : 'quest', path ? 'xp' : 'earned', path ? 'xp' : 'coins', LEADER_MAX[path ? 'path' : 'games'], LEADER_LIMIT, userId],
+  );
+  const row = (r) => ({ ...nickOf(r.id), value: Number(r.v), rank: Number(r.rk), me: String(r.id) === String(userId) });
+  const top = rows.filter((r) => Number(r.rk) <= LEADER_LIMIT).slice(0, LEADER_LIMIT).map(row);
+  const mine = rows.find((r) => String(r.id) === String(userId));
+  return { board: path ? 'path' : 'games', top, me: mine ? row(mine) : { ...nickOf(userId), value: 0, rank: null, me: true } };
+}
+
 async function cachedTopics(subject, grade, lang) {
   if (!pool) return null;
   const { rows } = await pool.query('SELECT topics FROM topic_cache WHERE subject = $1 AND grade = $2 AND lang = $3', [subject, grade, lang]);
@@ -1055,6 +1087,7 @@ module.exports = {
   resetPassword,
   applyConsents,
   listMarketing,
+  leaderboard,
   CONSENT_VERSION,
   CONSENT_TEXTS,
   login,

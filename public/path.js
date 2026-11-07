@@ -79,6 +79,7 @@
       streak: (n) => `Серия: ${n} ${n === 1 ? 'день' : n < 5 ? 'дня' : 'дней'}`,
       backToPath: 'К пути',
       nextLesson: 'Следующий урок',
+      leaders: 'Рейтинг по XP',
       quit: 'Выйти из урока',
       mistakeBack: 'Эта ошибка вернётся в конце урока',
       review: (g) => `Повторение · ${g} класс`,
@@ -148,6 +149,7 @@
       streak: (n) => `Seriya: ${n} kun`,
       backToPath: "Yo'lga qaytish",
       nextLesson: 'Keyingi dars',
+      leaders: "XP bo'yicha reyting",
       quit: 'Darsdan chiqish',
       mistakeBack: 'Bu savol dars oxirida yana chiqadi',
       review: (g) => `Takrorlash · ${g}-sinf`,
@@ -409,6 +411,7 @@
       ...courses().map((c) => { const o = H('option', { value: c }, courseName(c)); if (c === p.course) o.selected = true; return o; }));
     pickCourse.onchange = () => { P().course = pickCourse.value; save(); open(); };
     root.append(H('label', { class: 'flex flex-col gap-1' }, H('span', { class: 'px-1 text-xs font-semibold uppercase tracking-wide text-slate-400' }, t('course')), pickCourse));
+    if (N.accounts) root.append(H('button', { type: 'button', class: k.BTN2, onclick: () => window.NimiLearn.openLeaderboard('path', open) }, ico('trophy'), t('leaders')));
     root.append(gradeLine(p.course));
 
     const pos = position(p.course);

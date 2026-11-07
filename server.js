@@ -30,7 +30,7 @@ const PAYMENT_CARD = process.env.PAYMENT_CARD || '';
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 const ADMIN_EMAILS = new Set((process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean));
 // Free without a subscription: word cards (and the topic list), games and diary run in the browser.
-const FREE_PATHS = new Set(['/api/learn/cards', '/api/learn/topics', '/api/data', '/api/subscribe']);
+const FREE_PATHS = new Set(['/api/learn/cards', '/api/learn/topics', '/api/data', '/api/subscribe', '/api/leaderboard']);
 // Paid sections that can be tried for free once (plans.js FREE_TRIES): the key of each request.
 const TRY_KINDS = new Set(['training', 'test', 'exam', 'olympiad', 'reading']);
 function tryKey(urlPath, body) {
@@ -602,6 +602,12 @@ async function handleAdmin(req, res, body, user, action) {
   sendJson(res, 404, { code: 'not_found' });
 }
 
+// ---------- leaderboards (games by coins, learning path by XP); open without a subscription ----------
+async function handleLeaderboard(req, res, body, user) {
+  if (!auth.enabled() || typeof user.id !== 'number' && !/^\d+$/.test(String(user.id))) return sendJson(res, 200, { top: [], me: null });
+  sendJson(res, 200, await auth.leaderboard(body.board === 'path' ? 'path' : 'games', user.id));
+}
+
 // ---------- student settings: the parent's login and password ----------
 async function handleAccount(req, res, body, user, action) {
   if (action === 'settings') return sendJson(res, 200, { email: user.email, parent: await auth.ensureParent(user.id), marketing: !!user.marketing });
@@ -774,7 +780,7 @@ async function handleApiPost(req, res, urlPath) {
     ? (q, r, b, u) => handleLearn(q, r, b, u, learnKind)
     : areaHandler
       ? (q, r, b, u) => areaHandler(q, r, b, u, areaAction)
-      : { '/api/chat': handleChat, '/api/report': handleReport, '/api/data': handleData, '/api/subscribe': handleSubscribe }[urlPath];
+      : { '/api/chat': handleChat, '/api/report': handleReport, '/api/data': handleData, '/api/subscribe': handleSubscribe, '/api/leaderboard': handleLeaderboard }[urlPath];
   if (!handler) return sendJson(res, 404, { code: 'not_found' });
   // Without a database the app runs in guest mode, limited per device.
   const deviceId = cleanText(body.deviceId, 64);

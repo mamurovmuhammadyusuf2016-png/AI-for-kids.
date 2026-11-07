@@ -136,6 +136,14 @@
       freeChat: (left, total) => (left >= total ? `Без подписки — ${total} вопросов в чат` : `Осталось ${left} из ${total} бесплатных вопросов в чат`),
       subLink: 'Подписка',
       askLead: 'Разберём задачу вместе — без готовых ответов',
+      lbTitle: 'Рейтинг',
+      lbCard: 'Кто набрал больше всех монеток и XP',
+      lbTabs: { games: 'Игры · монетки', path: 'Путь знаний · XP' },
+      lbYou: 'Это ты',
+      lbEmpty: 'Пока здесь никого нет — стань первым!',
+      lbNotYet: 'Тебя пока нет в рейтинге: сыграй в игру или пройди урок «Пути знаний».',
+      lbNote: 'Имена придуманы автоматически: настоящие имена, телефоны и почты мы не показываем.',
+      lbAnimals: ['Лиса', 'Панда', 'Сова', 'Тигр', 'Коала', 'Лягушка', 'Пингвин', 'Лев', 'Медведь', 'Кролик', 'Дельфин', 'Кит'],
       askPh: 'Напиши свой вопрос…',
       askSend: 'Отправить',
       freeChatLeft: (left, total) => `${left} из ${total} бесплатных вопросов`,
@@ -579,6 +587,14 @@
       freeChat: (left, total) => (left >= total ? `Obunasiz — chatga ${total} ta savol` : `${total} ta bepul savoldan ${left} tasi qoldi`),
       subLink: 'Obuna',
       askLead: 'Masalani birga yechamiz — tayyor javobsiz',
+      lbTitle: 'Reyting',
+      lbCard: "Kim ko'proq tanga va XP to'pladi",
+      lbTabs: { games: "O'yinlar · tangalar", path: "Bilim yo'li · XP" },
+      lbYou: 'Bu sen',
+      lbEmpty: "Hozircha hech kim yo'q — birinchi bo'l!",
+      lbNotYet: "Sen hali reytingda yo'qsan: o'yin o'yna yoki «Bilim yo'li» darsini o't.",
+      lbNote: "Ismlar avtomatik o'ylab topilgan: haqiqiy ism, telefon va pochtani ko'rsatmaymiz.",
+      lbAnimals: ['Tulki', 'Panda', 'Boyqush', "Yo'lbars", 'Koala', 'Baqa', 'Pingvin', 'Sher', 'Ayiq', 'Quyon', 'Delfin', 'Kit'],
       askPh: 'Savolingni yoz…',
       askSend: 'Yuborish',
       freeChatLeft: (left, total) => `${total} ta bepul savoldan ${left} tasi`,
@@ -1451,6 +1467,7 @@
     const root = screen('activity');
     const g = data.progress.stats.games;
     root.append(titleBar(t('games')));
+    if (N.accounts) root.append(h('button', { type: 'button', class: BTN2, onclick: () => openLeaderboard('games', openGames) }, ico('trophy'), t('lbTitle')));
     if (window.NimiQuest) {
       const [name, desc] = window.NimiQuest.card();
       root.append(h('button', { type: 'button', class: 'flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 p-5 text-left text-onfill shadow-lg shadow-brand-500/30 transition active:scale-[.98]', onclick: window.NimiQuest.open },
@@ -2443,6 +2460,41 @@
     return ['bg-rose-400', 'bad'];
   }
 
+  // ---------- leaderboards: games by coins, the learning path by XP ----------
+  const LB_EMOJI = ['🦊', '🐼', '🦉', '🐯', '🐨', '🐸', '🐧', '🦁', '🐻', '🐰', '🐬', '🐳'];
+  async function openLeaderboard(board = 'path', back = () => N.showScreen('progress')) {
+    const root = screen('activity');
+    root.append(titleBar(t('lbTitle'), back));
+    root.append(h('div', { class: 'grid grid-cols-2 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5', role: 'tablist' },
+      ['path', 'games'].map((id) => h('button', {
+        type: 'button', role: 'tab', 'aria-selected': String(board === id),
+        class: `min-h-11 rounded-xl px-3 text-sm font-semibold ${board === id ? 'bg-brand-500 text-onfill' : 'text-slate-300 hover:bg-night-700'}`,
+        onclick: () => openLeaderboard(id, back),
+      }, t('lbTabs')[id]))));
+    root.append(loading(t('loadingTopics')));
+    const r = await N.postJson('/api/leaderboard', { board }).catch(() => ({}));
+    root.lastChild.remove();
+    if (!r.top) { root.append(h('p', { class: 'text-rose-200' }, t('errors').default)); return; }
+    const unit = board === 'games' ? h('span', { class: 'q-emoji text-base', 'aria-hidden': 'true' }, '🪙') : h('span', { class: 'text-xs font-semibold text-slate-400' }, 'XP');
+    const medal = ['bg-amber-400 text-onfill', 'bg-night-700 text-white', 'bg-amber-400/25 text-amber-200'];
+    const row = (x) => h('div', { class: `flex items-center gap-3 rounded-2xl px-3 py-2.5 ring-1 ${x.me ? 'bg-brand-500/10 ring-brand-400/40' : 'bg-night-900/80 ring-white/5'}` },
+      h('span', { class: `flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums ${x.rank && x.rank <= 3 ? medal[x.rank - 1] : 'text-slate-400'}` }, x.rank ? String(x.rank) : '—'),
+      h('span', { class: 'q-emoji flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-night-800 text-xl', 'aria-hidden': 'true' }, LB_EMOJI[x.a] || '🦊'),
+      h('span', { class: 'flex min-w-0 flex-1 items-center gap-2' },
+        h('span', { class: 'truncate font-semibold text-white' }, `${t('lbAnimals')[x.a] || ''} ${x.n}`),
+        x.me ? h('span', { class: 'shrink-0 rounded-full bg-brand-500 px-2 py-0.5 text-[11px] font-semibold text-onfill' }, t('lbYou')) : null),
+      h('span', { class: 'flex shrink-0 items-center gap-1 font-semibold tabular-nums text-white' }, String(x.value), unit.cloneNode(true)));
+    const list = h('div', { class: 'flex flex-col gap-2' });
+    if (!r.top.length) list.append(h('p', { class: `${CARD} text-center text-slate-400` }, t('lbEmpty')));
+    r.top.forEach((x) => list.append(row(x)));
+    root.append(list);
+    if (r.me && !r.top.some((x) => x.me)) {
+      root.append(r.me.rank ? h('div', { class: 'flex flex-col gap-2' }, h('p', { class: 'text-center text-slate-500' }, '···'), row(r.me))
+        : h('p', { class: 'rounded-2xl bg-night-800 px-4 py-3 text-sm text-slate-300' }, t('lbNotYet')));
+    }
+    root.append(h('p', { class: 'flex items-start gap-2 px-1 text-xs text-slate-400' }, ico('shield-check', 'h-4 w-4 shrink-0'), t('lbNote')));
+  }
+
   function renderProgress() {
     const root = screen('progress');
     const p = data.progress, s = p.stats;
@@ -2460,6 +2512,13 @@
         h('span', { class: 'flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-200' }, ico('flame')),
         h('div', {}, h('p', { class: 'font-semibold text-white' }, t('streak')(n)), h('p', { class: 'text-sm text-slate-400' }, t('totalDays')(p.days.length)))),
       h('div', { class: 'flex gap-1.5' }, week)));
+
+    if (N.accounts) {
+      root.append(h('button', { type: 'button', class: `${CARD} flex items-center gap-3 text-left transition hover:bg-night-800 active:scale-[.99]`, onclick: () => openLeaderboard('path') },
+        h('span', { class: 'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-200' }, ico('trophy')),
+        h('span', { class: 'min-w-0 flex-1' }, h('span', { class: 'block font-semibold text-white' }, t('lbTitle')), h('span', { class: 'block text-sm text-slate-400' }, t('lbCard'))),
+        ico('chevron-right', 'icon text-slate-500')));
+    }
 
     const pct = s.tasks ? Math.round((s.correct / s.tasks) * 100) : 0;
     const stat = (v, label) => h('div', { class: 'rounded-2xl bg-night-900/80 p-3 text-center ring-1 ring-white/5' }, h('p', { class: 'text-2xl font-semibold tabular-nums text-white' }, String(v)), h('p', { class: 'text-xs text-slate-400' }, label));
@@ -2599,5 +2658,5 @@
     setStop(fn) { stopActive = fn; },
   };
 
-  window.NimiLearn = { load, render, markDay, openSubscribe, openAdmin, openSettings, renderParent, renderLanding, openHistory, kit };
+  window.NimiLearn = { load, render, markDay, openSubscribe, openAdmin, openSettings, renderParent, renderLanding, openHistory, openLeaderboard, kit };
 })();

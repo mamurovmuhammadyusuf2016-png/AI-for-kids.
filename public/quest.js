@@ -779,6 +779,9 @@
     q.beaten = q.beaten || {};
     q.skill = q.skill || {};
     q.mistakes = Array.isArray(q.mistakes) ? q.mistakes : [];
+    // Coins earned in total (for the leaderboard; spending on heroes does not lower it).
+    // Older saves: the balance plus what the bought heroes cost.
+    if (typeof q.earned !== 'number') q.earned = q.coins + HEROES.filter((x) => q.heroes.includes(x[0])).reduce((sum, x) => sum + x[2], 0);
     return q;
   }
   const save = () => K().save('quest');
@@ -1186,6 +1189,7 @@
         if (q.chest !== N.today()) { q.chest = N.today(); chest = true; coins += 30; }
       }
       q.coins += coins;
+      q.earned += coins;
       save();
       kit.markDay();
       (won ? SFX.win : SFX.lose)();
