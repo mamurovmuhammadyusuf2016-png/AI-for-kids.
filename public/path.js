@@ -34,13 +34,18 @@
       start: 'Начать',
       again: 'Повторить',
       locked: 'Сначала пройди предыдущий урок',
+      subLesson: 'Подписка',
+      subNote: 'Первый урок — бесплатно. Дальше «Путь знаний» открывается с подпиской или бесплатной неделей.',
+      nextSub: 'Следующий урок — с подпиской',
+      heroFree: 'Первый урок бесплатно',
+      heroPaid: 'С подпиской · без ИИ',
       today: (x) => `Сегодня ${x} / ${DAILY_GOAL} XP`,
       goalDone: 'Цель дня выполнена!',
       xpTotal: (x) => `${x} XP всего`,
       homeTitle: 'Путь знаний',
       homeDesc: (u, n) => `Раздел ${u} из ${n} · уроки без ИИ`,
       homeAll: 'Все разделы пройдены — можно повторять',
-      heroBadge: 'Бесплатно · без ИИ',
+      lessonsNoAi: 'Уроки без ИИ',
       heroUnit: (u, n) => `Раздел ${u} из ${n}`,
       heroGo: 'Продолжить урок',
       heroOf: `из ${DAILY_GOAL} XP`,
@@ -98,13 +103,18 @@
       start: 'Boshlash',
       again: 'Takrorlash',
       locked: 'Avval oldingi darsni tugat',
+      subLesson: 'Obuna',
+      subNote: "Birinchi dars — bepul. Keyin «Bilim yo'li» obuna yoki bepul hafta bilan ochiladi.",
+      nextSub: 'Keyingi dars — obuna bilan',
+      heroFree: 'Birinchi dars bepul',
+      heroPaid: 'Obuna bilan · SI siz',
       today: (x) => `Bugun ${x} / ${DAILY_GOAL} XP`,
       goalDone: 'Kunlik maqsad bajarildi!',
       xpTotal: (x) => `Jami ${x} XP`,
       homeTitle: "Bilim yo'li",
       homeDesc: (u, n) => `${n} ta bo'limdan ${u}-bo'lim · SI siz darslar`,
       homeAll: "Hamma bo'limlar tugadi — takrorlash mumkin",
-      heroBadge: 'Bepul · SI siz',
+      lessonsNoAi: 'SI siz darslar',
       heroUnit: (u, n) => `${n} ta bo'limdan ${u}-bo'lim`,
       heroGo: 'Darsni davom ettirish',
       heroOf: `/ ${DAILY_GOAL} XP`,
@@ -251,6 +261,10 @@
   }
   const courseKey = (c) => (c === 'math' ? `math:${grade()}` : c === 'en' ? `en:b${bank().enBand(grade())}` : SUBJ()[c] ? `sub:${c}` : `lang:${c}`);
   const unitsOf = (c) => (c === 'math' ? mathUnits() : c === 'en' ? englishUnits() : SUBJ()[c] ? subjectUnits(c) : vocabUnits(c));
+  // Without a subscription only the first lesson of each course is free (since 08.11.2026).
+  const freeLesson = (unitIndex, lessonIndex) => unitIndex === 0 && lessonIndex === 0;
+  const needsSub = (unitIndex, lessonIndex) => !freeLesson(unitIndex, lessonIndex) && !N.hasAccess();
+  const toSubscribe = () => window.NimiLearn?.openSubscribe('path');
   const doneMap = (c) => { const p = P(); p.done[courseKey(c)] = p.done[courseKey(c)] || {}; return p.done[courseKey(c)]; };
   // The first unit that still has lessons to take (or -1 when all are done).
   function position(c) {
@@ -398,6 +412,7 @@
     root.append(gradeLine(p.course));
 
     const pos = position(p.course);
+    if (!N.hasAccess()) root.append(H('p', { class: 'flex items-start gap-2 rounded-2xl bg-amber-400/10 px-4 py-3 text-sm text-amber-100 ring-1 ring-amber-400/30' }, ico('lock', 'icon mt-0.5'), t('subNote')));
     pos.units.forEach((u, ui) => {
       const doneN = pos.done[u.id] || 0;
       const finished = doneN >= LESSONS.length;
@@ -412,16 +427,16 @@
       const offsets = ['self-center', 'self-center -translate-x-12', 'self-center translate-x-12'];
       const nodes = H('div', { class: 'flex flex-col gap-3 pb-1' });
       LESSONS.forEach((lt, li) => {
-        const state = li < doneN ? 'done' : isCurrent && li === doneN ? 'current' : 'locked';
+        const state = li < doneN ? 'done' : isCurrent && li === doneN ? (needsSub(ui, li) ? 'sub' : 'current') : 'locked';
         const node = H('button', {
           type: 'button',
           'aria-label': `${u.name()}: ${t('lessons')[lt]}`,
           class: `flex h-16 w-16 items-center justify-center rounded-full border-b-4 transition active:translate-y-0.5 active:border-b-0 ${
-            state === 'done' ? 'border-amber-500 bg-amber-400 text-onfill' : state === 'current' ? 'border-brand-600 bg-brand-500 text-onfill ring-4 ring-brand-400/30' : 'border-night-700 bg-night-800 text-slate-500'}`,
-          onclick: () => (state === 'locked' ? hint(nodes, t('locked')) : startLesson(p.course, ui, li)),
+            state === 'done' ? 'border-amber-500 bg-amber-400 text-onfill' : state === 'current' ? 'border-brand-600 bg-brand-500 text-onfill ring-4 ring-brand-400/30' : state === 'sub' ? 'border-amber-400/40 bg-amber-400/15 text-amber-200 ring-4 ring-amber-400/20' : 'border-night-700 bg-night-800 text-slate-500'}`,
+          onclick: () => (state === 'locked' ? hint(nodes, t('locked')) : state === 'sub' ? toSubscribe() : startLesson(p.course, ui, li)),
         }, ico(state === 'done' ? 'check' : state === 'current' ? (lt === 'learn' ? 'book-open' : lt === 'check' ? 'trophy' : 'dumbbell') : 'lock', 'h-7 w-7'));
         nodes.append(H('div', { class: `flex flex-col items-center gap-1 ${offsets[li]}` }, node,
-          H('span', { class: `text-xs ${state === 'current' ? 'font-semibold text-white' : 'text-slate-400'}` }, state === 'current' ? `${t('lessons')[lt]} · ${t('start')}` : t('lessons')[lt])));
+          H('span', { class: `text-xs ${state === 'current' || state === 'sub' ? 'font-semibold text-white' : 'text-slate-400'}` }, state === 'current' ? `${t('lessons')[lt]} · ${t('start')}` : state === 'sub' ? `${t('lessons')[lt]} · ${t('subLesson')}` : t('lessons')[lt])));
       });
       if (isCurrent || finished || ui < pos.unit || pos.unit < 0) box.append(nodes);
       root.append(box);
@@ -461,6 +476,7 @@
 
   // ---------- a lesson ----------
   function startLesson(course, unitIndex, lessonIndex) {
+    if (needsSub(unitIndex, lessonIndex)) return toSubscribe();
     const units = unitsOf(course);
     const unit = units[unitIndex];
     const lessonType = LESSONS[lessonIndex];
@@ -717,7 +733,7 @@
       H('p', { class: 'text-sm text-slate-300' }, x >= DAILY_GOAL ? t('goalDone') : t('today')(x)),
       H('div', { class: 'h-3 overflow-hidden rounded-full bg-night-700' }, H('div', { class: 'h-full rounded-full bg-amber-400', style: `width:${Math.min(100, (x / DAILY_GOAL) * 100)}%` }))));
     const pos = position(state.course);
-    if (pos.unit >= 0) root.append(H('button', { type: 'button', class: k.BTN, onclick: () => startLesson(state.course, pos.unit, pos.lesson) }, t('nextLesson')));
+    if (pos.unit >= 0) root.append(H('button', { type: 'button', class: k.BTN, onclick: () => startLesson(state.course, pos.unit, pos.lesson) }, needsSub(pos.unit, pos.lesson) ? t('nextSub') : t('nextLesson')));
     root.append(H('button', { type: 'button', class: k.BTN2, onclick: open }, t('backToPath')));
   }
 
@@ -753,7 +769,7 @@
       H('span', { class: 'text-[11px] text-onfill/80' }, t('heroOf'))));
     return H('button', { type: 'button', class: 'flex w-full items-center gap-4 rounded-[28px] bg-brand-500 p-5 text-left text-onfill shadow-lg shadow-brand-500/30 transition hover:bg-brand-400 active:scale-[.99]', onclick: open },
       H('span', { class: 'flex min-w-0 flex-1 flex-col items-start gap-2' },
-        H('span', { class: 'rounded-full bg-onfill/15 px-2.5 py-1 text-[11px] font-semibold' }, t('heroBadge')),
+        H('span', { class: 'rounded-full bg-onfill/15 px-2.5 py-1 text-[11px] font-semibold' }, N.hasAccess() ? t('lessonsNoAi') : pos.unit === 0 && pos.lesson === 0 ? t('heroFree') : t('heroPaid')),
         H('span', { class: 'text-[22px] font-bold leading-tight tracking-tight' }, t('homeTitle')),
         H('span', { class: 'text-sm text-onfill/80' }, `${t('forGrade')(courseName(p.course), grade())} · ${pos.unit < 0 ? t('homeAll') : t('heroUnit')(pos.unit + 1, pos.units.length)}`),
         H('span', { class: 'mt-1.5 inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-onfill px-4 text-sm font-semibold text-brand-600' }, t('heroGo'), ico('chevron-right', 'h-4 w-4'))),
