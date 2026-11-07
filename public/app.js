@@ -1555,6 +1555,16 @@
   }
 
   // Shared with learn-ui.js.
+  // The question field on the home screen: opens the chat and sends the question.
+  function askText(text) {
+    if (!canUse('chat')) { window.NimiLearn?.openSubscribe('chat'); return; }
+    showScreen('chat');
+    if (!text) { $('input').focus(); return; }
+    $('input').value = text;
+    $('input').dispatchEvent(new Event('input'));
+    $('form').requestSubmit();
+  }
+
   window.Nimi = {
     t, icon, store, today, postJson, showScreen, openReport, openSetup, subjectName, gradeLabel, formatReply, speak, askWithPhoto,
     SUBJECTS,
@@ -1573,6 +1583,9 @@
     refreshUser,
     showAuth,
     prettyAccount,
+    askText,
+    remaining,
+    dailyLimit,
     get child() { return childEmail; },
     get sessions() { return sessions; },
   };

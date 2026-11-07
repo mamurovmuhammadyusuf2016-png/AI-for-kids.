@@ -82,16 +82,12 @@
           ['dumbbell', 'Тренировки', 'Каждый день новые задания по уровню'],
           ['clipboard-check', 'Тесты', '10 вопросов по теме и оценка'],
           ['graduation-cap', 'Экзамены и DTM', 'Пробная аттестация и вступительный тест'],
-          ['puzzle', 'Олимпиада', 'Задачи на смекалку'],
-          ['book-open', 'Чтение', 'Текст и вопросы на понимание'],
-          ['layers', 'Карточки слов', '17 языков: английский, русский, китайский, корейский и другие'],
+          ['route', 'Путь знаний', 'Уроки по шагам без ИИ — первый урок бесплатно'],
           ['gamepad-2', 'Игры', 'Битва с монстрами и устный счёт'],
-          ['notebook-pen', 'Дневник', 'Домашние задания'],
-          ['chart-no-axes-column', 'Прогресс', 'Темы, серии и награды'],
         ],
         parentsTitle: 'Для родителей',
         parents: [
-          ['users', 'Кабинет родителя', 'Регулярность занятий, темы, домашние задания и отчёт ИИ.'],
+          ['users', 'Кабинет родителя', 'Регулярность занятий, темы и отчёт ИИ.'],
           ['shield-check', 'Только учёба', 'Nimi не отвечает на посторонние темы и не спрашивает личные данные.'],
           ['clock', 'Бережёт глаза', 'После 25 минут занятий — перерыв 5 минут.'],
           ['lightbulb', 'Без списывания', 'Не пишет сочинения за ребёнка и не даёт готовый ответ сразу.'],
@@ -110,13 +106,13 @@
         ],
         faqTitle: 'Вопросы и ответы',
         faq: [
-          ['Это бесплатно?', (c) => `Регистрация бесплатная. Карточки слов, игры и дневник бесплатны всегда. Без подписки можно задать в чат ${c.chat} вопросов. Остальные разделы — по подписке от ${c.from} в месяц. Бесплатную неделю можно попросить у нас в Telegram.`],
+          ['Это бесплатно?', (c) => `Регистрация бесплатная. Игры и первый урок «Пути знаний» бесплатны всегда. Без подписки можно задать в чат ${c.chat} вопросов. Остальные разделы — по подписке от ${c.from} в месяц. Бесплатную неделю можно попросить у нас в Telegram.`],
           ['Nimi просто даёт готовые ответы?', 'Нет. Сначала Nimi спрашивает, что дано и что ребёнок уже попробовал, и даёт подсказки по шагам. Полное решение — только после трёх попыток ребёнка и с объяснением каждого шага. Сочинения и доклады за ребёнка не пишет: помогает составить план и находит ошибки.'],
           ['Для какого класса и каких предметов?', '1–11 класс. 12 предметов: математика, русский, узбекский и английский языки, литература, окружающий мир, физика, химия, биология, история, география и информатика. Объяснения подстраиваются под класс.'],
           ['Это по школьной программе?', 'Да. Тренировки, тесты и экзамены составляются по школьной программе Узбекистана. Есть пробная итоговая аттестация и вступительный тест в стиле DTM.'],
           ['На каком языке занимается ребёнок?', 'На русском или узбекском. Nimi отвечает на том языке, на котором пишет ребёнок.'],
           ['Это безопасно для ребёнка?', 'Nimi говорит только об учёбе: на посторонние и взрослые темы вежливо отказывает. Не спрашивает имя, адрес, школу и телефон, а если ребёнок напишет их сам — напомнит, что делиться ими не нужно. После 25 минут занятий Nimi просит сделать перерыв на 5 минут.'],
-          ['Как родителю следить за учёбой?', 'Вместе с аккаунтом ребёнка создаётся аккаунт родителя. Логин и пароль ребёнок найдёт в меню ⋮ → «Настройки». В кабинете родителя видно, как регулярно ребёнок занимается, какие темы получаются, домашние задания и отчёт ИИ. Переписку в чате родитель не видит.'],
+          ['Как родителю следить за учёбой?', 'Вместе с аккаунтом ребёнка создаётся аккаунт родителя. Логин и пароль ребёнок найдёт в меню ⋮ → «Настройки». В кабинете родителя видно, как регулярно ребёнок занимается, какие темы получаются, и отчёт ИИ. Переписку в чате родитель не видит.'],
           ['Какие данные вы храните?', 'Почту, пароль (в зашифрованном виде), прогресс, дневник и историю чатов без фотографий. Историю чатов видит только сам ученик. Чтобы получить ответ, текст вопроса отправляется ИИ-сервису. Подробно — на странице «Правила и конфиденциальность».'],
           ['Чем отличаются тарифы?', (c) => `Во всех тарифах все разделы. Отличаются глубина ответов и вопросы в день: ${c.levels}.`],
           ['Как оплатить?', 'Выберите тариф в Nimi (меню ⋮ → «Подписка») и создайте заявку. Потом напишите нам в Telegram или позвоните — подскажем, как оплатить, и включим подписку после проверки оплаты.'],
@@ -139,6 +135,12 @@
       levelOf: (n) => `Уровень ${n} из 5`,
       freeChat: (left, total) => (left >= total ? `Без подписки — ${total} вопросов в чат` : `Осталось ${left} из ${total} бесплатных вопросов в чат`),
       subLink: 'Подписка',
+      askLead: 'Разберём задачу вместе — без готовых ответов',
+      askPh: 'Напиши свой вопрос…',
+      askSend: 'Отправить',
+      freeChatLeft: (left, total) => `${left} из ${total} бесплатных вопросов`,
+      freeChatOver: 'Бесплатные вопросы закончились',
+      chatToday: (left, total) => `Сегодня осталось ${left} из ${total} вопросов`,
       start: 'Начать',
       again: 'Ещё раз',
       tiles: {
@@ -184,12 +186,12 @@
         title: 'Подписка Nimi',
         price: (p) => `${p} в месяц`,
         includes: ['Чат с учителем', 'Фото задачи и голос', 'Тренировки, тесты, чтение', 'Экзамены и олимпиада', 'Отчёт для родителей'],
-        freeLeft: 'Без подписки остаются карточки слов, игры на счёт и дневник.',
+        freeLeft: 'Без подписки остаются игры и первый урок «Пути знаний».',
         trial: (n) => `Бесплатная неделя: осталось ${n} ${plural(n, 'день', 'дня', 'дней')}`,
         active: (d) => `Подписка активна до ${d}`,
         ending: (n) => `Подписка закончится через ${n} ${plural(n, 'день', 'дня', 'дней')} — не забудь продлить`,
         expired: 'Подписка закончилась',
-        expiredText: 'Карточки, игры и дневник по-прежнему открыты. Чтобы снова пользоваться чатом и заданиями, продли подписку.',
+        expiredText: 'Игры по-прежнему открыты. Чтобы снова пользоваться чатом и заданиями, продли подписку.',
         none: 'Попробуй бесплатно',
         noneText: (n) => `Без подписки — ${n} вопросов в чат. Остальные разделы открываются с подпиской. Понравится — оформи подписку или попроси бесплатную неделю.`,
         trialAsk: 'Получить бесплатную неделю',
@@ -228,7 +230,7 @@
         freeUsed: (name, key) => (key === 'chat' ? 'Бесплатные вопросы в чате закончились. Чтобы продолжить, выбери тариф или попроси бесплатную неделю.' : `Раздел «${name}» открывается с подпиской. Выбери тариф или попроси бесплатную неделю.`),
         tileFree: 'Бесплатно',
         allUsed: 'Бесплатные попытки закончились',
-        allUsedText: 'Карточки, игры и дневник остаются открытыми. Чтобы продолжить, оформи подписку или попроси бесплатную неделю.',
+        allUsedText: 'Игры остаются открытыми. Чтобы продолжить, оформи подписку или попроси бесплатную неделю.',
         perMonthShort: 'сум/мес',
         inLabel: 'Вход',
         outLabel: 'Выход',
@@ -523,16 +525,12 @@
           ['dumbbell', 'Mashqlar', 'Har kuni darajaga mos yangi topshiriqlar'],
           ['clipboard-check', 'Testlar', "Mavzu bo'yicha 10 ta savol va baho"],
           ['graduation-cap', 'Imtihonlar va DTM', 'Sinov attestatsiyasi va kirish testi'],
-          ['puzzle', 'Olimpiada', 'Zukkolik masalalari'],
-          ['book-open', "O'qish", 'Matn va tushunish uchun savollar'],
-          ['layers', "So'z kartochkalari", "17 ta til: ingliz, rus, xitoy, koreys va boshqalar"],
+          ['route', "Bilim yo'li", 'SI siz bosqichma-bosqich darslar — birinchi dars bepul'],
           ['gamepad-2', "O'yinlar", "Maxluqlar jangi va og'zaki hisob"],
-          ['notebook-pen', 'Kundalik', 'Uy vazifalari'],
-          ['chart-no-axes-column', 'Natijalar', 'Mavzular, seriyalar va mukofotlar'],
         ],
         parentsTitle: 'Ota-onalar uchun',
         parents: [
-          ['users', 'Ota-ona kabineti', "Mashg'ulotlar muntazamligi, mavzular, uy vazifalari va AI hisoboti."],
+          ['users', 'Ota-ona kabineti', "Mashg'ulotlar muntazamligi, mavzular va AI hisoboti."],
           ['shield-check', "Faqat o'qish", "Nimi begona mavzularga javob bermaydi va shaxsiy ma'lumotlarni so'ramaydi."],
           ['clock', "Ko'zni asraydi", "25 daqiqa mashg'ulotdan keyin — 5 daqiqa tanaffus."],
           ['lightbulb', "Ko'chirishsiz", 'Bola uchun insho yozmaydi va darhol tayyor javob bermaydi.'],
@@ -551,13 +549,13 @@
         ],
         faqTitle: 'Savol va javoblar',
         faq: [
-          ['Bu bepulmi?', (c) => `Ro'yxatdan o'tish bepul. So'z kartochkalari, o'yinlar va kundalik doim bepul. Obunasiz chatga ${c.chat} ta savol berish mumkin. Qolgan bo'limlar — oyiga ${c.from}dan obuna bilan. Bepul haftani Telegramda bizdan so'rashingiz mumkin.`],
+          ['Bu bepulmi?', (c) => `Ro'yxatdan o'tish bepul. O'yinlar va «Bilim yo'li»ning birinchi darsi doim bepul. Obunasiz chatga ${c.chat} ta savol berish mumkin. Qolgan bo'limlar — oyiga ${c.from}dan obuna bilan. Bepul haftani Telegramda bizdan so'rashingiz mumkin.`],
           ['Nimi shunchaki tayyor javob beradimi?', "Yo'q. Avval Nimi nima berilganini va bola nimani sinab ko'rganini so'raydi, qadamma-qadam maslahat beradi. To'liq yechim — faqat bolaning uchta urinishidan keyin va har bir qadam tushuntirilgan holda. Bola uchun insho va ma'ruza yozmaydi: reja tuzishga yordam beradi va xatolarni topadi."],
           ['Qaysi sinf va qaysi fanlar uchun?', "1–11-sinflar. 12 ta fan: matematika, rus, o'zbek va ingliz tillari, adabiyot, tabiatshunoslik, fizika, kimyo, biologiya, tarix, geografiya va informatika. Tushuntirishlar sinfga moslashadi."],
           ["Bu maktab dasturi bo'yichami?", "Ha. Mashqlar, testlar va imtihonlar O'zbekiston maktab dasturi bo'yicha tuziladi. Sinov yakuniy attestatsiyasi va DTM uslubidagi kirish testi bor."],
           ["Bola qaysi tilda shug'ullanadi?", "Rus yoki o'zbek tilida. Nimi bola qaysi tilda yozsa, o'sha tilda javob beradi."],
           ['Bu bola uchun xavfsizmi?', "Nimi faqat o'qish haqida gapiradi: begona va kattalar mavzularini muloyimlik bilan rad etadi. Ism, manzil, maktab va telefonni so'ramaydi, agar bola o'zi yozsa — ularni ulashish kerak emasligini eslatadi. 25 daqiqa mashg'ulotdan keyin Nimi 5 daqiqa tanaffus qilishni so'raydi."],
-          ["Ota-ona o'qishni qanday kuzatadi?", "Farzand akkaunti bilan birga ota-ona akkaunti yaratiladi. Login va parolni farzandingiz ⋮ menyu → «Sozlamalar»da topadi. Ota-ona kabinetida bola qanchalik muntazam shug'ullanayotgani, qaysi mavzular yaxshi chiqayotgani, uy vazifalari va AI hisoboti ko'rinadi. Chatdagi yozishmalarni ota-ona ko'rmaydi."],
+          ["Ota-ona o'qishni qanday kuzatadi?", "Farzand akkaunti bilan birga ota-ona akkaunti yaratiladi. Login va parolni farzandingiz ⋮ menyu → «Sozlamalar»da topadi. Ota-ona kabinetida bola qanchalik muntazam shug'ullanayotgani, qaysi mavzular yaxshi chiqayotgani va AI hisoboti ko'rinadi. Chatdagi yozishmalarni ota-ona ko'rmaydi."],
           ["Qanday ma'lumotlarni saqlaysiz?", "Pochta, parol (shifrlangan holda), natijalar, kundalik va suratlarsiz chat tarixi. Chat tarixini faqat o'quvchining o'zi ko'radi. Javob olish uchun savol matni AI-xizmatga yuboriladi. Batafsil — «Qoidalar va maxfiylik» sahifasida."],
           ['Tariflar nimasi bilan farq qiladi?', (c) => `Barcha tariflarda hamma bo'limlar bor. Javoblar chuqurligi va kunlik savollar farq qiladi: ${c.levels}.`],
           ["Qanday to'lash mumkin?", "Nimi'da tarifni tanlang (⋮ menyu → «Obuna») va ariza yarating. Keyin bizga Telegramda yozing yoki qo'ng'iroq qiling — qanday to'lashni aytamiz va to'lov tekshirilgach obunani yoqamiz."],
@@ -580,6 +578,12 @@
       levelOf: (n) => `Daraja ${n} / 5`,
       freeChat: (left, total) => (left >= total ? `Obunasiz — chatga ${total} ta savol` : `${total} ta bepul savoldan ${left} tasi qoldi`),
       subLink: 'Obuna',
+      askLead: 'Masalani birga yechamiz — tayyor javobsiz',
+      askPh: 'Savolingni yoz…',
+      askSend: 'Yuborish',
+      freeChatLeft: (left, total) => `${total} ta bepul savoldan ${left} tasi`,
+      freeChatOver: 'Bepul savollar tugadi',
+      chatToday: (left, total) => `Bugun ${total} ta savoldan ${left} tasi qoldi`,
       start: 'Boshlash',
       again: 'Yana bir bor',
       tiles: {
@@ -625,12 +629,12 @@
         title: 'Nimi obunasi',
         price: (p) => `oyiga ${p}`,
         includes: ["O'qituvchi bilan chat", 'Masala surati va ovoz', 'Mashqlar, testlar, o\'qish', 'Imtihonlar va olimpiada', 'Ota-onalar uchun hisobot'],
-        freeLeft: "Obunasiz so'z kartochkalari, hisob o'yinlari va kundalik ochiq qoladi.",
+        freeLeft: "Obunasiz o'yinlar va «Bilim yo'li»ning birinchi darsi ochiq qoladi.",
         trial: (n) => `Bepul hafta: ${n} kun qoldi`,
         active: (d) => `Obuna ${d} gacha faol`,
         ending: (n) => `Obuna ${n} kundan keyin tugaydi — uzaytirishni unutma`,
         expired: 'Obuna tugadi',
-        expiredText: "Kartochkalar, o'yinlar va kundalik ochiq. Chat va topshiriqlardan yana foydalanish uchun obunani uzaytir.",
+        expiredText: "O'yinlar ochiq. Chat va topshiriqlardan yana foydalanish uchun obunani uzaytir.",
         none: "Bepul sinab ko'r",
         noneText: (n) => `Obunasiz — chatga ${n} ta savol. Qolgan bo'limlar obuna bilan ochiladi. Yoqsa — obuna rasmiylashtir yoki bepul haftani so'ra.`,
         trialAsk: 'Bepul hafta olish',
@@ -669,7 +673,7 @@
         freeUsed: (name, key) => (key === 'chat' ? "Chatdagi bepul savollar tugadi. Davom etish uchun tarifni tanla yoki bepul haftani so'ra." : `«${name}» bo'limi obuna bilan ochiladi. Tarifni tanla yoki bepul haftani so'ra.`),
         tileFree: 'Bepul',
         allUsed: 'Bepul urinishlar tugadi',
-        allUsedText: "Kartochkalar, o'yinlar va kundalik ochiq qoladi. Davom etish uchun obuna rasmiylashtir yoki bepul haftani so'ra.",
+        allUsedText: "O'yinlar ochiq qoladi. Davom etish uchun obuna rasmiylashtir yoki bepul haftani so'ra.",
         perMonthShort: "so'm/oy",
         inLabel: 'Kirish',
         outLabel: 'Chiqish',
@@ -2155,9 +2159,6 @@
     });
     root.append(topicsBox);
     // Homework
-    const diary = (r.diary || []).filter((d) => !d.done);
-    root.append(h('div', { class: `${CARD} flex flex-col gap-2` }, h('p', { class: 'font-semibold text-white' }, P.homework),
-      diary.length ? diary.map((d) => h('p', { class: 'text-sm text-slate-200' }, `• ${d.text} — ${N.subjectName(d.subject)}, ${t('until')(fmtDate(d.due))}`)) : h('p', { class: 'text-sm text-slate-400' }, P.noHomework)));
     // AI report
     const reportBox = h('div', { class: 'bubble whitespace-pre-wrap text-sm leading-relaxed text-slate-200' });
     const reportBtn = h('button', { type: 'button', class: BTN2 }, ico('file-text'), t('parentReport'));
@@ -2330,7 +2331,6 @@
     const p = data.progress;
     const n = streak();
     const daily = p.daily?.date === todayStr() ? p.daily : null;
-    const undone = data.diary.filter((d) => !d.done).length;
 
     root.append(h('div', { class: 'flex items-end justify-between gap-3' },
       h('div', { class: 'flex min-w-0 flex-col gap-1' },
@@ -2361,30 +2361,46 @@
     if (window.NimiPath) root.append(window.NimiPath.heroCard ? window.NimiPath.heroCard() : window.NimiPath.homeCard());
 
     const tiles = t('tiles');
+    // "Ask the teacher": the main section, with the question field right on the home screen.
+    const total = N.billing.freeTries?.chat || 20;
+    const freeQ = N.freeLeft('chat');
+    const field = h('input', { type: 'text', maxlength: '2000', class: 'min-w-0 flex-1 bg-transparent py-3 text-[15px] text-white outline-none placeholder:text-slate-500', placeholder: t('askPh'), 'aria-label': t('askPh') });
+    root.append(h('div', { class: 'flex flex-col gap-3.5 rounded-3xl bg-night-900/80 p-[18px] ring-1 ring-white/5' },
+      h('div', { class: 'flex items-center gap-3' },
+        h('span', { class: 'flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-mint text-brand-600' }, ico('message-circle', 'h-[22px] w-[22px]')),
+        h('div', { class: 'flex min-w-0 flex-col gap-0.5' },
+          h('span', { class: 'text-[17px] font-bold text-white' }, tiles.chat[0]),
+          h('span', { class: 'text-[13px] text-slate-400' }, t('askLead')))),
+      h('form', { class: 'flex min-h-[52px] items-center gap-2 rounded-2xl bg-night-800 pl-4 pr-1.5 ring-1 ring-transparent focus-within:ring-brand-400/60', onsubmit: (e) => { e.preventDefault(); N.askText(field.value.trim()); } },
+        field,
+        h('button', { type: 'submit', class: 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-500 text-onfill transition hover:bg-brand-400 active:scale-95', 'aria-label': t('askSend') }, ico('send', 'h-[18px] w-[18px]'))),
+      h('div', { class: 'flex items-center justify-between gap-2.5 text-[13px]' },
+        h('span', { class: locked ? (freeQ ? 'font-semibold text-emerald-300' : 'font-semibold text-amber-200') : 'text-slate-400' },
+          locked ? (freeQ ? t('freeChatLeft')(freeQ, total) : t('freeChatOver')) : t('chatToday')(N.remaining(), N.dailyLimit())),
+        locked ? h('button', { type: 'button', class: 'min-h-10 shrink-0 font-semibold text-brand-400 hover:underline', onclick: () => openSubscribe() }, t('subLink')) : null)));
+
     const lockDot = (place = 'absolute right-3 top-3') => h('span', { class: `${place} flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-amber-200`, title: S.locked, 'aria-label': S.locked }, ico('lock', 'h-3.5 w-3.5'));
     const circle = (icon, bg) => h('span', { class: `flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${bg} text-brand-400` }, ico(icon));
     const label = (key, extra) => h('span', { class: 'flex min-w-0 flex-col gap-0.5' },
       h('span', { class: 'text-[15px] font-semibold text-white' }, tiles[key][0]),
       h('span', { class: 'text-xs text-slate-400' }, extra || tiles[key][1]));
-    // soft: light green tile (a white circle inside); paid: opens with a subscription.
-    const square = (key, icon, onclick, { paid = true, soft = false, extra } = {}) => h('button', {
+    const freePill = () => (locked ? h('span', { class: 'shrink-0 rounded-full bg-night-900 px-2 py-0.5 text-[11px] font-semibold text-emerald-300' }, S.tileFree) : null);
+    const square = (key, icon, onclick) => h('button', {
       type: 'button',
-      class: `relative flex min-h-[124px] flex-col items-start justify-between gap-2.5 rounded-[22px] p-4 text-left transition active:scale-[.98] ${soft ? 'bg-night-800 hover:bg-night-700' : 'bg-night-900/80 ring-1 ring-white/5 hover:bg-night-800'}`,
-      onclick: paid ? guard(onclick, key) : onclick,
-    },
-    soft && !paid
-      ? h('span', { class: 'flex w-full items-center justify-between gap-2' }, circle(icon, 'bg-night-900'), locked ? h('span', { class: 'rounded-full bg-night-900 px-2 py-0.5 text-[11px] font-semibold text-emerald-300' }, S.tileFree) : null)
-      : circle(icon, soft ? 'bg-night-900' : 'bg-night-800'),
-    paid && !can(key) ? lockDot() : null,
-    label(key, extra));
-    const wide = (key, icon, onclick, { paid = true, extra } = {}) => h('button', {
+      class: 'relative flex min-h-[124px] flex-col items-start justify-between gap-2.5 rounded-[22px] bg-night-900/80 p-4 text-left ring-1 ring-white/5 transition hover:bg-night-800 active:scale-[.98]',
+      onclick: guard(onclick, key),
+    }, circle(icon, 'bg-night-800'), !can(key) ? lockDot() : null, label(key));
+    // Games are free for everyone: a light green tile, square or wide.
+    const games = (wideTile) => h('button', {
       type: 'button',
-      class: 'col-span-2 flex min-h-[76px] items-center gap-3.5 rounded-[22px] bg-night-900/80 px-4 py-3.5 text-left ring-1 ring-white/5 transition hover:bg-night-800 active:scale-[.98]',
-      onclick: paid ? guard(onclick, key) : onclick,
+      class: wideTile
+        ? 'col-span-2 flex min-h-[76px] items-center gap-3.5 rounded-[22px] bg-night-800 px-4 py-3.5 text-left transition hover:bg-night-700 active:scale-[.98]'
+        : 'flex min-h-[124px] flex-col items-start justify-between gap-2.5 rounded-[22px] bg-night-800 p-4 text-left transition hover:bg-night-700 active:scale-[.98]',
+      onclick: openGames,
     },
-    circle(icon, 'bg-night-800'),
-    h('span', { class: 'min-w-0 flex-1' }, label(key, extra)),
-    paid && !can(key) ? lockDot('') : ico('chevron-right', 'icon text-slate-500'));
+    wideTile ? circle('gamepad-2', 'bg-night-900') : h('span', { class: 'flex w-full items-center justify-between gap-2' }, circle('gamepad-2', 'bg-night-900'), freePill()),
+    wideTile ? h('span', { class: 'min-w-0 flex-1' }, label('games')) : label('games'),
+    wideTile ? (freePill() || ico('chevron-right', 'icon text-slate-500')) : null);
 
     const lvl = level();
     const training = h('button', {
@@ -2393,7 +2409,7 @@
       onclick: guard(() => startTraining(), 'training'),
     },
     !can('training') ? lockDot('absolute right-3.5 top-3.5') : null,
-    h('span', { class: 'flex h-[52px] w-[52px] items-center justify-center rounded-full bg-mint text-brand-600' }, ico(daily ? 'repeat' : 'dumbbell', 'h-6 w-6')),
+    h('span', { class: 'flex h-[52px] w-[52px] items-center justify-center rounded-full bg-night-800 text-brand-400' }, ico(daily ? 'repeat' : 'dumbbell', 'h-6 w-6')),
     h('span', { class: 'flex flex-col gap-1' },
       h('span', { class: 'text-[17px] font-bold text-white' }, t('dailyTitle')),
       h('span', { class: 'text-[13px] leading-snug text-slate-400' }, daily ? t('dailyDone')(daily.score) : t('dailyDescB'))),
@@ -2401,25 +2417,13 @@
       h('span', { class: 'text-xs text-slate-400' }, t('levelOf')(lvl)),
       h('span', { class: 'flex gap-1' }, [1, 2, 3, 4, 5].map((i) => h('span', { class: `h-1.5 flex-1 rounded-full ${i <= lvl ? 'bg-brand-500' : 'bg-night-700'}` })))));
 
-    // Older students get exams; younger ones keep the chat tile.
+    // Exams only for grades 8–11; younger students get games next to the test.
+    const older = grade() >= 8;
     root.append(h('div', { class: 'grid grid-cols-2 gap-3' },
       training,
-      square('photo', 'camera', N.askWithPhoto, { soft: true }),
       square('test', 'clipboard-check', openTestPicker),
-      grade() >= 8 ? wide('exam', 'graduation-cap', openExams) : wide('chat', 'message-circle', () => N.showScreen('chat')),
-      square('olympiad', 'puzzle', startOlympiad),
-      square('reading', 'book-open', startReading),
-      square('cards', 'layers', openCards, { paid: false, soft: true }),
-      square('games', 'gamepad-2', openGames, { paid: false, soft: true }),
-      wide('diary', 'notebook-pen', () => N.showScreen('diary'), { paid: false, extra: t('undone')(undone) })));
-
-    if (trying) {
-      const total = N.billing.freeTries?.chat || 20;
-      root.append(h('div', { class: 'flex items-center gap-2.5 rounded-2xl border border-dashed border-mint px-3.5 py-3 text-[13px] text-brand-400' },
-        ico('message-circle', 'h-[18px] w-[18px] shrink-0'),
-        h('span', { class: 'min-w-0 flex-1' }, t('freeChat')(N.freeLeft('chat'), total)),
-        h('button', { type: 'button', class: 'min-h-10 shrink-0 font-semibold text-brand-400 hover:underline', onclick: () => openSubscribe() }, t('subLink'))));
-    }
+      older ? square('exam', 'graduation-cap', openExams) : games(false),
+      older ? games(true) : null));
   }
 
   // ---------- progress ----------
@@ -2429,8 +2433,6 @@
     ['streak3', 'flame', (s, n) => n >= 3],
     ['streak7', 'flame', (s, n) => n >= 7],
     ['test5', 'star', (s) => s.best5 >= 1],
-    ['reader', 'book-open', (s) => s.reading >= 3],
-    ['words30', 'layers', () => learnedCount() >= 30],
     ['mult20', 'timer', (s) => (s.games.mult || 0) >= 20],
   ];
   function topicColor(st) {
