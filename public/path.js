@@ -179,22 +179,27 @@
   function mathUnits() {
     return bank().mathPool(grade()).map((tp) => ({ id: `m:${tp.id}`, kind: 'math', topic: tp, name: () => tp.name[N.lang === 'uz' ? 1 : 0] }));
   }
+  // English follows the grade: the words of the student's grade band first (with grammar of that
+  // level between them), then the words of earlier bands as review, nearest first.
   function englishUnits() {
-    const { WORDS, GRAMMAR, enLevel } = bank();
-    const lvl = enLevel(grade());
-    const words = chunk(WORDS.filter((w) => w[3] <= lvl), 6);
-    const grammar = chunk(GRAMMAR.filter((g) => g[0] <= lvl), 4);
+    const { WORDS, GRAMMAR, enLevel, enBand, BAND_TOP } = bank();
+    const band = enBand(grade()), lvl = enLevel(grade());
+    // Units of 6 words; a short remainder joins the unit before it.
+    const sixes = (list) => { const c = chunk(list, 6); if (c.length > 1 && c[c.length - 1].length < 4) c[c.length - 2].push(...c.pop()); return c; };
+    const wordUnits = (b, review) => sixes(WORDS.filter((w) => w[3] === b)).map((ws) => ({
+      id: `w:${ws[0][0]}`, kind: 'words', words: ws, tag: review ? t('review')(BAND_TOP[b]) : null,
+      name: () => t('wordsUnit')(ws.slice(0, 3).map((w) => w[0]).join(', ')),
+    }));
+    const grammar = [...chunk(GRAMMAR.filter((g) => g[0] === lvl), 4), ...chunk(GRAMMAR.filter((g) => g[0] < lvl && g[0] > 1), 4)];
     const units = [];
     let gi = 0;
-    words.forEach((ws, i) => {
-      units.push({ id: `w:${ws[0][0]}`, kind: 'words', words: ws, name: () => t('wordsUnit')(ws.slice(0, 3).map((w) => w[0]).join(', ')) });
-      if (i % 2 === 1 && gi < grammar.length) {
-        const gs = grammar[gi++];
-        const n = gi;
-        units.push({ id: `g:${n}`, kind: 'grammar', items: gs, name: () => t('grammarUnit')(n) });
-      }
+    const addGrammar = () => { const gs = grammar[gi++]; const n = gi; units.push({ id: `g:${lvl}:${n}`, kind: 'grammar', items: gs, name: () => t('grammarUnit')(n) }); };
+    wordUnits(band, false).forEach((u, i) => {
+      units.push(u);
+      if (i % 2 === 1 && gi < grammar.length) addGrammar();
     });
-    while (gi < grammar.length) { const gs = grammar[gi++]; const n = gi; units.push({ id: `g:${n}`, kind: 'grammar', items: gs, name: () => t('grammarUnit')(n) }); }
+    while (gi < grammar.length) addGrammar();
+    for (let b = band - 1; b >= 1; b--) units.push(...wordUnits(b, true));
     return units;
   }
   // A word of another language: shown with its pronunciation when the script is not Latin.
@@ -234,7 +239,7 @@
     });
     return [...now.map((tp) => unit(tp, false)), ...past.map((tp) => unit(tp, true))];
   }
-  const courseKey = (c) => (c === 'math' ? `math:${grade()}` : c === 'en' ? `en:${bank().enLevel(grade())}` : SUBJ()[c] ? `sub:${c}` : `lang:${c}`);
+  const courseKey = (c) => (c === 'math' ? `math:${grade()}` : c === 'en' ? `en:b${bank().enBand(grade())}` : SUBJ()[c] ? `sub:${c}` : `lang:${c}`);
   const unitsOf = (c) => (c === 'math' ? mathUnits() : c === 'en' ? englishUnits() : SUBJ()[c] ? subjectUnits(c) : vocabUnits(c));
   const doneMap = (c) => { const p = P(); p.done[courseKey(c)] = p.done[courseKey(c)] || {}; return p.done[courseKey(c)]; };
   // The first unit that still has lessons to take (or -1 when all are done).
@@ -251,8 +256,8 @@
     return { type: 'choice', q: x.q, a: x.a, opts: x.opts, rule: x.rule, explain: x.explain };
   }
   function wordExercise(unit, kind) {
-    const { WORDS, enLevel, strChoice } = bank();
-    const pool = WORDS.filter((w) => w[3] <= Math.max(1, enLevel(grade())));
+    const { WORDS, enBand, strChoice } = bank();
+    const pool = WORDS.filter((w) => w[3] <= enBand(grade()));
     const w = unit.words[Math.floor(Math.random() * unit.words.length)];
     const others = shuffle(pool.filter((x) => x !== w)).slice(0, 6);
     const explain = `**${w[0]}** — ${native(w)}. ${t('example')}: ${w[4]}`;

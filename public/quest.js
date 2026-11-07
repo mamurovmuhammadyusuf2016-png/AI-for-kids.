@@ -490,7 +490,7 @@
   };
 
   // ---------- English: words and grammar (no AI) ----------
-  // [english, russian, uzbek, level 1-3, example]
+  // [english, russian, uzbek, band, example]; band = grades 1: 1–2, 2: 3–4, 3: 5–6, 4: 7–8, 5: 9–11
   const WORDS = [
     ['cat', 'кошка', 'mushuk', 1, 'The cat is sleeping.'], ['dog', 'собака', 'it', 1, 'My dog can run fast.'], ['bird', 'птица', 'qush', 1, 'A bird can fly.'],
     ['fish', 'рыба', 'baliq', 1, 'The fish lives in water.'], ['horse', 'лошадь', 'ot', 1, 'The horse is big and strong.'], ['cow', 'корова', 'sigir', 1, 'The cow gives milk.'],
@@ -504,28 +504,59 @@
     ['house', 'дом', 'uy', 1, 'This is my house.'], ['sun', 'солнце', 'quyosh', 1, 'The sun is hot.'], ['tree', 'дерево', 'daraxt', 1, 'The tree is tall.'],
     ['flower', 'цветок', 'gul', 1, 'This flower is beautiful.'], ['hand', 'рука', "qo'l", 1, 'Raise your hand.'], ['eye', 'глаз', "ko'z", 1, 'I have two eyes.'],
     ['big', 'большой', 'katta', 1, 'An elephant is big.'], ['small', 'маленький', 'kichik', 1, 'A mouse is small.'], ['happy', 'счастливый', 'xursand', 1, 'I am happy today.'],
-    ['run', 'бегать', 'yugurmoq', 2, 'I run in the park.'], ['swim', 'плавать', 'suzmoq', 2, 'Fish can swim.'], ['read', 'читать', "o'qimoq", 2, 'I like to read books.'],
-    ['write', 'писать', 'yozmoq', 2, 'Write your name here.'], ['sleep', 'спать', 'uxlamoq', 2, 'Babies sleep a lot.'], ['buy', 'покупать', 'sotib olmoq', 2, 'I want to buy a ball.'],
-    ['help', 'помогать', 'yordam bermoq', 2, 'Can you help me?'], ['open', 'открывать', 'ochmoq', 2, 'Open the door, please.'], ['close', 'закрывать', 'yopmoq', 2, 'Close the window.'],
-    ['answer', 'ответ', 'javob', 2, 'Your answer is correct.'], ['question', 'вопрос', 'savol', 2, 'I have a question.'], ['weather', 'погода', 'ob-havo', 2, 'The weather is nice today.'],
-    ['winter', 'зима', 'qish', 2, 'It is cold in winter.'], ['summer', 'лето', 'yoz', 2, 'We swim in summer.'], ['river', 'река', 'daryo', 2, 'The river is long.'],
-    ['mountain', 'гора', "tog'", 2, 'This mountain is very high.'], ['city', 'город', 'shahar', 2, 'Tashkent is a big city.'], ['village', 'деревня', 'qishloq', 2, 'My grandparents live in a village.'],
-    ['kitchen', 'кухня', 'oshxona', 2, 'Mom is in the kitchen.'], ['window', 'окно', 'deraza', 2, 'Look out of the window.'], ['door', 'дверь', 'eshik', 2, 'Please close the door.'],
-    ['breakfast', 'завтрак', 'nonushta', 2, 'I have breakfast at seven.'], ['hungry', 'голодный', 'och', 2, 'I am hungry.'], ['tired', 'уставший', 'charchagan', 2, 'I am tired after school.'],
-    ['quickly', 'быстро', 'tez', 2, 'He runs quickly.'], ['always', 'всегда', 'doim', 2, 'I always do my homework.'], ['yesterday', 'вчера', 'kecha', 2, 'I was at home yesterday.'],
-    ['tomorrow', 'завтра', 'ertaga', 2, 'See you tomorrow!'], ['beautiful', 'красивый', 'chiroyli', 2, 'What a beautiful day!'], ['difficult', 'трудный', 'qiyin', 2, 'This task is difficult.'],
-    ['easy', 'лёгкий', 'oson', 2, 'The test was easy.'], ['knowledge', 'знания', 'bilim', 3, 'Knowledge is power.'], ['experience', 'опыт', 'tajriba', 3, 'She has a lot of experience.'],
-    ['environment', 'окружающая среда', 'atrof-muhit', 3, 'We must protect the environment.'], ['achieve', 'достигать', 'erishmoq', 3, 'You can achieve your goals.'],
-    ['improve', 'улучшать', 'yaxshilamoq', 3, 'I want to improve my English.'], ['explain', 'объяснять', 'tushuntirmoq', 3, 'Can you explain this rule?'],
-    ['compare', 'сравнивать', 'solishtirmoq', 3, 'Compare these two pictures.'], ['believe', 'верить', 'ishonmoq', 3, 'I believe in you.'],
-    ['opportunity', 'возможность', 'imkoniyat', 3, 'This is a great opportunity.'], ['important', 'важный', 'muhim', 3, 'Sleep is important for health.'],
-    ['necessary', 'необходимый', 'zarur', 3, 'Water is necessary for life.'], ['healthy', 'здоровый', "sog'lom", 3, 'Eat healthy food.'],
-    ['patient', 'терпеливый', 'sabrli', 3, 'Be patient with your little brother.'], ['future', 'будущее', 'kelajak', 3, 'I often think about my future.'],
-    ['success', 'успех', 'muvaffaqiyat', 3, 'Hard work leads to success.'], ['science', 'наука', 'fan', 3, 'I am interested in science.'],
-    ['develop', 'развивать', 'rivojlantirmoq', 3, 'Reading develops your mind.'], ['suddenly', 'вдруг', "to'satdan", 3, 'Suddenly, it started to rain.'],
-    ['skill', 'навык', "ko'nikma", 3, 'Reading is an important skill.'], ['advice', 'совет', 'maslahat', 3, 'Thank you for your advice.'],
-    ['journey', 'путешествие', 'sayohat', 3, 'The journey was long but fun.'], ['neighbour', 'сосед', "qo'shni", 3, 'My neighbour has a dog.'],
-    ['however', 'однако', 'biroq', 3, 'It was late. However, we continued.'], ['increase', 'увеличивать', 'oshirmoq', 3, 'We need to increase our speed.'],
+    ['run', 'бегать', 'yugurmoq', 3, 'I run in the park.'], ['swim', 'плавать', 'suzmoq', 3, 'Fish can swim.'], ['read', 'читать', "o'qimoq", 3, 'I like to read books.'],
+    ['write', 'писать', 'yozmoq', 3, 'Write your name here.'], ['sleep', 'спать', 'uxlamoq', 3, 'Babies sleep a lot.'], ['buy', 'покупать', 'sotib olmoq', 3, 'I want to buy a ball.'],
+    ['help', 'помогать', 'yordam bermoq', 3, 'Can you help me?'], ['open', 'открывать', 'ochmoq', 3, 'Open the door, please.'], ['close', 'закрывать', 'yopmoq', 3, 'Close the window.'],
+    ['answer', 'ответ', 'javob', 3, 'Your answer is correct.'], ['question', 'вопрос', 'savol', 3, 'I have a question.'], ['weather', 'погода', 'ob-havo', 3, 'The weather is nice today.'],
+    ['winter', 'зима', 'qish', 3, 'It is cold in winter.'], ['summer', 'лето', 'yoz', 3, 'We swim in summer.'], ['river', 'река', 'daryo', 3, 'The river is long.'],
+    ['mountain', 'гора', "tog'", 3, 'This mountain is very high.'], ['city', 'город', 'shahar', 3, 'Tashkent is a big city.'], ['village', 'деревня', 'qishloq', 3, 'My grandparents live in a village.'],
+    ['kitchen', 'кухня', 'oshxona', 3, 'Mom is in the kitchen.'], ['window', 'окно', 'deraza', 3, 'Look out of the window.'], ['door', 'дверь', 'eshik', 3, 'Please close the door.'],
+    ['breakfast', 'завтрак', 'nonushta', 3, 'I have breakfast at seven.'], ['hungry', 'голодный', 'och', 3, 'I am hungry.'], ['tired', 'уставший', 'charchagan', 3, 'I am tired after school.'],
+    ['quickly', 'быстро', 'tez', 3, 'He runs quickly.'], ['always', 'всегда', 'doim', 3, 'I always do my homework.'], ['yesterday', 'вчера', 'kecha', 3, 'I was at home yesterday.'],
+    ['tomorrow', 'завтра', 'ertaga', 3, 'See you tomorrow!'], ['beautiful', 'красивый', 'chiroyli', 3, 'What a beautiful day!'], ['difficult', 'трудный', 'qiyin', 3, 'This task is difficult.'],
+    ['easy', 'лёгкий', 'oson', 3, 'The test was easy.'], ['knowledge', 'знания', 'bilim', 5, 'Knowledge is power.'], ['experience', 'опыт', 'tajriba', 5, 'She has a lot of experience.'],
+    ['environment', 'окружающая среда', 'atrof-muhit', 5, 'We must protect the environment.'], ['achieve', 'достигать', 'erishmoq', 5, 'You can achieve your goals.'],
+    ['improve', 'улучшать', 'yaxshilamoq', 5, 'I want to improve my English.'], ['explain', 'объяснять', 'tushuntirmoq', 5, 'Can you explain this rule?'],
+    ['compare', 'сравнивать', 'solishtirmoq', 5, 'Compare these two pictures.'], ['believe', 'верить', 'ishonmoq', 5, 'I believe in you.'],
+    ['opportunity', 'возможность', 'imkoniyat', 5, 'This is a great opportunity.'], ['important', 'важный', 'muhim', 5, 'Sleep is important for health.'],
+    ['necessary', 'необходимый', 'zarur', 5, 'Water is necessary for life.'], ['healthy', 'здоровый', "sog'lom", 5, 'Eat healthy food.'],
+    ['patient', 'терпеливый', 'sabrli', 5, 'Be patient with your little brother.'], ['future', 'будущее', 'kelajak', 5, 'I often think about my future.'],
+    ['success', 'успех', 'muvaffaqiyat', 5, 'Hard work leads to success.'], ['science', 'наука', 'fan', 5, 'I am interested in science.'],
+    ['develop', 'развивать', 'rivojlantirmoq', 5, 'Reading develops your mind.'], ['suddenly', 'вдруг', "to'satdan", 5, 'Suddenly, it started to rain.'],
+    ['skill', 'навык', "ko'nikma", 5, 'Reading is an important skill.'], ['advice', 'совет', 'maslahat', 5, 'Thank you for your advice.'],
+    ['journey', 'путешествие', 'sayohat', 5, 'The journey was long but fun.'], ['neighbour', 'сосед', "qo'shni", 5, 'My neighbour has a dog.'],
+    ['however', 'однако', 'biroq', 5, 'It was late. However, we continued.'], ['increase', 'увеличивать', 'oshirmoq', 5, 'We need to increase our speed.'],
+    // Grades 3–4: clothes, home, seasons, time, jobs, food, simple verbs and adjectives.
+    ['shirt', 'рубашка', "ko'ylak", 2, 'I wear a white shirt.'], ['shoes', 'обувь', 'poyabzal', 2, 'Put on your shoes.'], ['jacket', 'куртка', 'kurtka', 2, 'Take your jacket, it is cold.'],
+    ['ball', 'мяч', "to'p", 2, "Let's play with the ball."], ['doll', 'кукла', "qo'g'irchoq", 2, 'My sister has a new doll.'], ['bedroom', 'спальня', 'yotoqxona', 2, 'My bedroom is small and cosy.'],
+    ['table', 'стол', 'stol', 2, 'The book is on the table.'], ['chair', 'стул', 'stul', 2, 'Sit on the chair, please.'], ['bed', 'кровать', 'karavot', 2, 'I go to bed at nine.'],
+    ['rain', 'дождь', "yomg'ir", 2, 'I like the sound of rain.'], ['snow', 'снег', 'qor', 2, 'Children play in the snow.'], ['spring', 'весна', 'bahor', 2, 'Flowers grow in spring.'],
+    ['autumn', 'осень', 'kuz', 2, 'Leaves fall in autumn.'], ['morning', 'утро', 'ertalab', 2, 'I brush my teeth in the morning.'], ['evening', 'вечер', 'kechqurun', 2, 'We watch TV in the evening.'],
+    ['week', 'неделя', 'hafta', 2, 'There are seven days in a week.'], ['doctor', 'врач', 'shifokor', 2, 'The doctor helps sick people.'], ['driver', 'водитель', 'haydovchi', 2, 'My uncle is a bus driver.'],
+    ['cook', 'повар', 'oshpaz', 2, 'The cook makes tasty plov.'], ['tea', 'чай', 'choy', 2, 'Grandma drinks green tea.'], ['rice', 'рис', 'guruch', 2, 'We make plov with rice.'],
+    ['meat', 'мясо', "go'sht", 2, 'We buy meat at the bazaar.'], ['vegetables', 'овощи', 'sabzavotlar', 2, 'Vegetables are good for you.'], ['head', 'голова', 'bosh', 2, 'Nod your head.'],
+    ['leg', 'нога', 'oyoq', 2, 'A spider has eight legs.'], ['jump', 'прыгать', 'sakramoq', 2, 'Kangaroos can jump very high.'], ['play', 'играть', "o'ynamoq", 2, 'We play football after school.'],
+    ['sing', 'петь', "qo'shiq aytmoq", 2, 'Birds sing in the morning.'], ['cold', 'холодный', 'sovuq', 2, 'The water is cold.'], ['hot', 'горячий', 'issiq', 2, 'Be careful, the tea is hot.'],
+    ['old', 'старый', 'eski', 2, 'This is an old house.'], ['new', 'новый', 'yangi', 2, 'I have a new bag.'],
+    // Grades 7–8: travel, shopping, health, places, everyday verbs and adverbs.
+    ['country', 'страна', 'mamlakat', 4, 'Uzbekistan is a beautiful country.'], ['language', 'язык', 'til', 4, 'English is an international language.'], ['holiday', 'каникулы', "ta'til", 4, 'We go to the mountains on holiday.'],
+    ['invite', 'приглашать', 'taklif qilmoq', 4, 'I want to invite you to my birthday party.'], ['prepare', 'готовиться', 'tayyorlanmoq', 4, 'I prepare for the exam every day.'], ['borrow', 'брать взаймы', 'qarzga olmoq', 4, 'Can I borrow your pen?'],
+    ['forget', 'забывать', 'unutmoq', 4, "Don't forget your homework."], ['choose', 'выбирать', 'tanlamoq', 4, 'Choose the correct answer.'], ['describe', 'описывать', 'tasvirlamoq', 4, 'Describe your best friend.'],
+    ['travel', 'путешествовать', 'sayohat qilmoq', 4, 'I want to travel around the world.'], ['health', 'здоровье', 'salomatlik', 4, 'Sport is good for your health.'], ['medicine', 'лекарство', 'dori', 4, 'Take this medicine twice a day.'],
+    ['market', 'рынок', 'bozor', 4, 'Mom buys fruit at the market.'], ['price', 'цена', 'narx', 4, 'What is the price of this book?'], ['cheap', 'дешёвый', 'arzon', 4, 'These apples are cheap.'],
+    ['expensive', 'дорогой', 'qimmat', 4, 'This phone is too expensive.'], ['dangerous', 'опасный', 'xavfli', 4, 'Crossing the road on red is dangerous.'], ['careful', 'осторожный', 'ehtiyotkor', 4, 'Be careful on the road.'],
+    ['friendly', 'дружелюбный', "do'stona", 4, 'Our neighbours are very friendly.'], ['famous', 'знаменитый', 'mashhur', 4, 'Samarkand is a famous city.'], ['museum', 'музей', 'muzey', 4, 'We visited a history museum.'],
+    ['library', 'библиотека', 'kutubxona', 4, 'I take books from the library.'], ['newspaper', 'газета', 'gazeta', 4, 'My grandfather reads the newspaper.'], ['invention', 'изобретение', 'ixtiro', 4, 'The telephone is a great invention.'],
+    ['planet', 'планета', 'sayyora', 4, 'Earth is our planet.'], ['weekend', 'выходные', 'dam olish kunlari', 4, 'What do you do at the weekend?'], ['usually', 'обычно', 'odatda', 4, 'I usually walk to school.'],
+    ['sometimes', 'иногда', "ba'zan", 4, 'Sometimes we eat out.'], ['already', 'уже', 'allaqachon', 4, 'I have already finished my homework.'], ['enough', 'достаточно', 'yetarli', 4, 'We have enough time.'],
+    // Grades 9–11, more: society, science, work.
+    ['responsibility', 'ответственность', "mas'uliyat", 5, 'Taking care of a pet is a big responsibility.'], ['pollution', 'загрязнение', 'ifloslanish', 5, 'Air pollution is a problem in big cities.'],
+    ['solution', 'решение', 'yechim', 5, 'We need to find a solution.'], ['research', 'исследование', 'tadqiqot', 5, 'Scientists do research every day.'], ['economy', 'экономика', 'iqtisodiyot', 5, 'Tourism helps the economy grow.'],
+    ['society', 'общество', 'jamiyat', 5, 'Education is important for society.'], ['average', 'средний', "o'rtacha", 5, 'The average temperature in July is 30 degrees.'], ['reduce', 'сокращать', 'kamaytirmoq', 5, 'We should reduce plastic waste.'],
+    ['require', 'требовать', 'talab qilmoq', 5, 'This job requires good English.'], ['consequence', 'последствие', 'oqibat', 5, 'Every action has a consequence.'], ['evidence', 'доказательство', 'dalil', 5, 'There is no evidence for that idea.'],
+    ['influence', 'влияние', "ta'sir", 5, 'Friends have a strong influence on teenagers.'], ['attitude', 'отношение', 'munosabat', 5, 'A positive attitude helps you learn.'], ['achievement', 'достижение', 'yutuq', 5, 'Winning the olympiad was a great achievement.'],
+    ['career', 'карьера', 'martaba', 5, 'She wants a career in medicine.'], ['employee', 'сотрудник', 'xodim', 5, 'The company has fifty employees.'], ['deadline', 'крайний срок', 'muddat', 5, 'The deadline for the project is Friday.'],
+    ['confident', 'уверенный', "o'ziga ishongan", 5, 'Practice makes you more confident.'],
   ];
   // [level, sentence, right, wrong options, rule ru, rule uz]
   const GRAMMAR = [
@@ -554,7 +585,11 @@
     [3, 'This is the boy ___ won the prize.', 'who', ['which', 'what', 'where'], 'who — о людях, which — о предметах и животных.', "who — odamlar haqida, which — narsalar va hayvonlar haqida."],
     [3, 'You ___ wear a helmet when you ride a bike.', 'should', ['shouldn\'t', 'can\'t', 'mustn\'t'], 'should — «следует, стоит» (совет). Отрицательные формы здесь меняют смысл на противоположный.', "should — «kerak, ma'qul» (maslahat). Inkor shakllar ma'noni teskari qiladi."],
   ];
-  const enLevel = (g) => (g <= 4 ? 1 : g <= 7 ? 2 : 3);
+  // Words follow the grade (English is taught from grade 1, so a 4th grader no longer gets cat and dog).
+  const enBand = (g) => (g <= 2 ? 1 : g <= 4 ? 2 : g <= 6 ? 3 : g <= 8 ? 4 : 5);
+  const BAND_TOP = [0, 2, 4, 6, 8, 11]; // the last grade of each band, for "Review · N grade"
+  // Grammar level: basic tenses and forms from grade 3, perfect, passive and conditionals from grade 7.
+  const enLevel = (g) => (g <= 2 ? 1 : g <= 6 ? 2 : 3);
   const EN_TOPICS = [
     { id: 'en-words', name: ['Слова', "So'zlar"] },
     { id: 'en-grammar', name: ['Грамматика', 'Grammatika'], minLevel: 2 },
@@ -566,9 +601,10 @@
       return { q: `${tr('Вставь пропущенное слово', "Tushib qolgan so'zni qo'y")}:\n**${s}**`, ...strChoice(right, wrong), rule: tr(ru, uz),
         explain: `**${s.replace('___', right)}**`, speak: s.replace('___', right) };
     }
-    const fresh = WORDS.filter((w) => w[3] === lvl);
-    const pool = WORDS.filter((w) => w[3] <= lvl);
-    const w = pick(Math.random() < 0.6 && fresh.length ? fresh : pool);
+    const band = enBand(g);
+    const fresh = WORDS.filter((w) => w[3] === band);
+    const pool = WORDS.filter((w) => w[3] <= band);
+    const w = pick(Math.random() < 0.75 && fresh.length ? fresh : pool);
     const native = (x) => tr(x[1], x[2]);
     const others = shuffle(pool.filter((x) => x !== w)).slice(0, 6);
     const explain = `**${w[0]}** — ${native(w)}. ${tr('Пример', 'Misol')}: ${w[4]}`;
@@ -1241,6 +1277,6 @@
 
   const TEST = { MATH, mathPool, englishQuestion, q: null }; // for automated checks
   // The question bank is shared with the learning path (path.js).
-  const bank = { MATH, mathPool, WORDS, GRAMMAR, enLevel, shuffle, strChoice };
+  const bank = { MATH, mathPool, WORDS, GRAMMAR, enLevel, enBand, BAND_TOP, shuffle, strChoice };
   window.NimiQuest = { open, card: () => t('card'), bank, _test: TEST };
 })();
