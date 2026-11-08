@@ -8,18 +8,42 @@
 const crypto = require('crypto');
 
 const DEVSMS_API_KEY = process.env.DEVSMS_API_KEY || '';
+// Free alternative: an Android phone with the owner's SIM card sends the SMS through the app
+// "SMS Gateway for Android" (sms-gate.app, free cloud server). Login and password come from the app.
+const SMSGATE_LOGIN = process.env.SMSGATE_LOGIN || '';
+const SMSGATE_PASSWORD = process.env.SMSGATE_PASSWORD || '';
 const DEVSMS_SERVICE = (process.env.DEVSMS_SERVICE_NAME || 'Nimi AI').slice(0, 50);
 const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
 const MAIL_FROM = process.env.MAIL_FROM || '';
 const MAIL_FROM_NAME = process.env.MAIL_FROM_NAME || 'Nimi AI';
 
-const smsEnabled = () => !!DEVSMS_API_KEY;
+const smsGate = () => !!(SMSGATE_LOGIN && SMSGATE_PASSWORD);
+const smsEnabled = () => !!DEVSMS_API_KEY || smsGate();
 const emailEnabled = () => !!(BREVO_API_KEY && MAIL_FROM);
 
 // DevSMS "universal OTP" needs no template of our own. Types: 2 — password reset, 3 — sign up.
 const OTP_TYPE = { register: 3, reset: 2 };
 
+// The owner's phone sends a short text (one SMS: Latin and Cyrillic together fit 70 characters).
+async function sendViaPhone(phone, code) {
+  const text = `Nimi AI: ${code} — tasdiqlash kodi / код подтверждения`;
+  const r = await fetch('https://api.sms-gate.app/3rdparty/v1/messages', {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${SMSGATE_LOGIN}:${SMSGATE_PASSWORD}`).toString('base64')}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ textMessage: { text }, phoneNumbers: [`+${phone}`] }),
+    signal: AbortSignal.timeout(15000),
+  }).catch(() => null);
+  if (r && r.ok) return;
+  // Only the status goes to the log: never the phone number, the code or the password.
+  console.warn(`SMS gateway (phone): ${r ? r.status : 'network error'}`);
+  throw new Error('sms_failed');
+}
+
 async function sendSmsCode(phone, code, purpose) {
+  if (smsGate() && !DEVSMS_API_KEY) return sendViaPhone(phone, code);
   const body = JSON.stringify({ phone, otp: { template_type: OTP_TYPE[purpose] || 1, service_name: DEVSMS_SERVICE, code } });
   // The same Idempotency-Key on a retry never sends or charges twice.
   const key = crypto.randomUUID();
