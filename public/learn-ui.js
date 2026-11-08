@@ -2431,7 +2431,7 @@
         h('div', { class: 'min-w-0' }, h('p', { class: 'font-semibold text-white' }, title), h('p', { class: 'text-sm text-slate-400' }, text))))),
       h('div', { class: 'flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between' },
         h('p', { class: 'text-sm text-slate-400' }, W.parentLoginText),
-        h('button', { type: 'button', class: `${BTN2} sm:w-auto sm:shrink-0`, onclick: () => N.showAuth('login') }, ico('users'), W.parentLogin))));
+        h('button', { type: 'button', class: `${BTN2} sm:w-auto sm:shrink-0`, onclick: () => N.showAuth('login', 'email') }, ico('users'), W.parentLogin))));
 
     // Plans
     root.append(block(W.priceTitle,

@@ -149,6 +149,8 @@
       newPasswordPh: 'Новый пароль',
       viaEmail: 'Зарегистрироваться через почту',
       viaPhone: 'Зарегистрироваться по номеру телефона',
+      loginViaEmail: 'Войти через почту или логин',
+      loginViaPhone: 'Войти по номеру телефона',
       resetByCode: 'Получить код и поставить новый пароль',
       consentTitle: 'Ещё один шаг',
       consentText: 'Чтобы продолжить, отметь согласие с правилами. Второй пункт — по желанию.',
@@ -273,6 +275,8 @@
       newPasswordPh: 'Yangi parol',
       viaEmail: "Pochta orqali ro'yxatdan o'tish",
       viaPhone: "Telefon raqam orqali ro'yxatdan o'tish",
+      loginViaEmail: 'Pochta yoki login orqali kirish',
+      loginViaPhone: 'Telefon raqam orqali kirish',
       resetByCode: "Kod olib, yangi parol qo'yish",
       consentTitle: 'Yana bir qadam',
       consentText: "Davom etish uchun qoidalarga roziligingni belgila. Ikkinchi band — xohishga ko'ra.",
@@ -356,6 +360,7 @@
   let config = { googleClientId: '', accounts: false };
   let authMode = 'login'; // 'login', 'register' or 'reset' (a new password with a code)
   let regMethod = 'phone'; // sign-up by 'phone' (SMS code) or 'email'
+  let loginMethod = 'phone'; // sign-in by 'phone' (+998 field) or 'email' (email or login)
   let authStep = 'form'; // 'form' or 'code'
   let codeCtx = null; // { channel: 'sms' | 'email', to, purpose }
   let resendTimer = null;
@@ -1159,6 +1164,7 @@
   const verify = () => config.verify || {};
   // Phone sign-up shows only once SMS sending is set up on the server.
   const regBy = () => (verify().sms ? regMethod : 'email');
+  const loginBy = () => (verify().sms ? loginMethod : 'email');
   const PHONE_RE = /^[\d\s+()-]{9,20}$/;
   const phoneDigits = (v) => { const d = String(v || '').replace(/\D/g, ''); return d.length === 9 ? `998${d}` : d; };
   const isPhone = (v) => PHONE_RE.test(String(v || '').trim()) && /^998\d{9}$/.test(phoneDigits(v));
@@ -1177,7 +1183,8 @@
         (on ? 'bg-brand-500 text-onfill shadow-lg shadow-brand-500/30' : 'text-slate-300 hover:text-white');
       b.setAttribute('aria-selected', on);
     });
-    const byPhone = reg && regBy() === 'phone';
+    const login = authMode === 'login';
+    const byPhone = (reg && regBy() === 'phone') || (login && loginBy() === 'phone');
     show('codeStep', code);
     show('phoneWrap', byPhone && !code);
     show('emailWrap', !code && !byPhone);
@@ -1186,7 +1193,7 @@
     show('passwordHint', reset ? code : reg && !code, 'block');
     show('consentBox', reg && !code);
     show('forgotLink', authMode === 'login', 'block');
-    show('methodSwitch', reg && !code && !!verify().sms);
+    show('methodSwitch', (reg || login) && !code && !!verify().sms);
     if (!reg || code) $('forgotBox').classList.add('hidden');
     $('authEmail').placeholder = t(reg ? 'emailOnlyPh' : reset ? (verify().sms ? 'resetPh' : 'emailOnlyPh') : 'emailPh');
     $('authEmail').inputMode = reg ? 'email' : 'text';
@@ -1194,8 +1201,10 @@
     $('authPassword').autocomplete = reg || reset ? 'new-password' : 'current-password';
     const needsCode = reg && (byPhone || verify().email);
     $('authSubmit').textContent = t(code ? (reset ? 'savePassword' : 'registerBtn') : reset || needsCode ? 'getCode' : reg ? 'registerBtn' : 'loginBtn');
-    $('methodSwitch').innerHTML = icon(regBy() === 'phone' ? 'mail' : 'phone') + '<span></span>';
-    $('methodSwitch').lastChild.textContent = t(regBy() === 'phone' ? 'viaEmail' : 'viaPhone');
+    const way = reg ? regBy() : loginBy();
+    $('methodSwitch').innerHTML = icon(way === 'phone' ? 'mail' : 'phone') + '<span></span>';
+    $('methodSwitch').lastChild.textContent = t(reg ? (way === 'phone' ? 'viaEmail' : 'viaPhone') : (way === 'phone' ? 'loginViaEmail' : 'loginViaPhone'));
+    $('authPhone').autocomplete = login ? 'username' : 'tel-national';
     if (reg) renderConsentBox($('consentBox'));
     if ($('consentGate')) renderConsentBox($('consentGate').querySelector('.flex.flex-col.gap-2'), 'gate');
     // Google sign-in sits under the email way of signing up.
@@ -1356,9 +1365,10 @@
     renderGoogleButton();
   }
 
-  // Opens the sign-in form: mode 'login' or 'register'.
-  function showAuth(mode = 'login') {
+  // Opens the sign-in form: mode 'login' or 'register'; way 'email' for logins like parent-123456.
+  function showAuth(mode = 'login', way) {
     authMode = mode;
+    if (way) loginMethod = way;
     resetAuthFlow();
     renderAuthMode();
     showAuthError(null);
@@ -1419,7 +1429,12 @@
   document.querySelectorAll('.auth-tab').forEach((b) => {
     b.onclick = () => { authMode = b.dataset.mode; resetAuthFlow(); showAuthError(null); renderAuthMode(); };
   });
-  $('methodSwitch').onclick = () => { regMethod = regMethod === 'phone' ? 'email' : 'phone'; showAuthError(null); renderAuthMode(); };
+  $('methodSwitch').onclick = () => {
+    if (authMode === 'login') loginMethod = loginMethod === 'phone' ? 'email' : 'phone';
+    else regMethod = regMethod === 'phone' ? 'email' : 'phone';
+    showAuthError(null);
+    renderAuthMode();
+  };
   $('codeBack').onclick = () => { resetAuthFlow(); showAuthError(null); renderAuthMode(); };
   $('codeResend').onclick = () => { if (codeCtx) requestCode(codeCtx); };
   $('authCode').addEventListener('input', () => { $('authCode').value = $('authCode').value.replace(/\D/g, '').slice(0, 6); });
@@ -1465,6 +1480,11 @@
       if (!$('consentTerms')?.checked) return showAuthError('terms_required');
       if (byPhone || verify().email) return requestCode({ channel: byPhone ? 'sms' : 'email', to, purpose: 'register' });
       return finishAuth(postJson('/api/auth/register', { email: to, password, terms: true, marketing: !!$('consentMarketing')?.checked, lang }));
+    }
+    if (loginBy() === 'phone') {
+      if (!isPhone($('authPhone').value)) return showAuthError('invalid_phone');
+      if (!password) return showAuthError('invalid_credentials');
+      return finishAuth(postJson('/api/auth/login', { email: phoneDigits($('authPhone').value), password }));
     }
     const isLogin = /^[a-z0-9][a-z0-9-]{2,31}$/i.test(id);
     if (!isEmailAddr(id) && !isLogin && !isPhone(id)) return showAuthError('invalid_email');
