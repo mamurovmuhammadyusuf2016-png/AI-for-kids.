@@ -128,4 +128,27 @@ async function sendEmailCode(email, code, purpose, lang) {
   throw new Error('email_failed');
 }
 
-module.exports = { smsEnabled, smsGate, emailEnabled, sendSmsCode, sendText, sendEmailCode };
+// A news email from the admin panel. A footer always says how to stop the news (law on advertising).
+const escapeHtml = (t) => t.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const NEWS_FOOTER = 'Nimi AI · Отказаться от новостей: Nimi → меню ⋮ → «Настройки» → «Новости и акции».\nYangiliklardan voz kechish: Nimi → ⋮ menyu → «Sozlamalar» → «Yangiliklar va aksiyalar».';
+async function sendEmailText(email, subject, text) {
+  const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: { 'api-key': BREVO_API_KEY, Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      sender: { name: MAIL_FROM_NAME, email: MAIL_FROM },
+      to: [{ email }],
+      subject,
+      textContent: `${text}\n\n—\n${NEWS_FOOTER}`,
+      htmlContent: `<div style="font-family:Arial,sans-serif;font-size:16px;line-height:1.55;color:#303b35;max-width:560px">` +
+        `<p style="white-space:pre-line;margin:0 0 24px">${escapeHtml(text)}</p>` +
+        `<p style="white-space:pre-line;color:#78847c;font-size:12px;border-top:1px solid #e7e9e1;padding-top:12px;margin:0">${escapeHtml(NEWS_FOOTER)}</p></div>`,
+    }),
+    signal: AbortSignal.timeout(15000),
+  }).catch(() => null);
+  if (r && r.ok) return;
+  console.warn(`Brevo news email: ${r ? r.status : 'network error'}`);
+  throw new Error('email_failed');
+}
+
+module.exports = { smsEnabled, smsGate, emailEnabled, sendSmsCode, sendText, sendEmailCode, sendEmailText };

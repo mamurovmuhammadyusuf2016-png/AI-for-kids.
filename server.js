@@ -591,10 +591,18 @@ async function handleAdmin(req, res, body, user, action) {
   }
   if (action === 'stats') return sendJson(res, 200, await auth.adminStats(today(), month()));
   if (action === 'consents') return sendJson(res, 200, await auth.listMarketing());
-  if (action === 'sms-info') return sendJson(res, 200, await auth.smsBroadcastInfo());
-  if (action === 'sms-test') return sendJson(res, 200, await auth.testSms(cleanText(body.phone, 30), body.text));
-  if (action === 'sms-send') return sendJson(res, 200, await auth.createBroadcast(body.text, ['all', 'paid', 'trial', 'free', 'pick'].includes(body.group) ? body.group : 'all', body.phones));
-  if (action === 'sms-cancel') return sendJson(res, 200, await auth.cancelBroadcast(parseInt(body.id, 10) || 0));
+  // Broadcasts: /api/admin/sms-* (owner's phone) and /api/admin/email-* (Brevo).
+  const bc = /^(sms|email)-(info|test|send|cancel)$/.exec(action || '');
+  if (bc) {
+    const [, channel, step] = bc;
+    if (step === 'info') return sendJson(res, 200, await auth.broadcastInfo(channel));
+    if (step === 'test') return sendJson(res, 200, await auth.testBroadcast(channel, cleanText(body.to ?? body.phone, 254), body.text, body.subject));
+    if (step === 'send') {
+      const group = ['all', 'paid', 'trial', 'free', 'pick'].includes(body.group) ? body.group : 'all';
+      return sendJson(res, 200, await auth.createBroadcast(channel, { text: body.text, subject: body.subject, group, picks: body.picks ?? body.phones }));
+    }
+    return sendJson(res, 200, await auth.cancelBroadcast(parseInt(body.id, 10) || 0));
+  }
   if (action === 'revoke') return sendJson(res, 200, await auth.revokeSubscription(cleanText(body.email, 254)));
   // Without "apply" it only lists who would lose access; "apply" is that list, confirmed.
   if (action === 'revoke-except') {
@@ -871,7 +879,7 @@ auth.init()
       // Admin SMS broadcasts go out slowly, one message per tick, from the owner's phone.
       if (auth.enabled()) {
         auth.checkActiveBroadcast();
-        setInterval(() => auth.broadcastTick(), auth.SMS_BROADCAST_EVERY_SEC * 1000).unref();
+        for (const [channel, c] of Object.entries(auth.CHANNELS)) setInterval(() => auth.broadcastTick(channel), c.everySec * 1000).unref();
       }
     });
   });

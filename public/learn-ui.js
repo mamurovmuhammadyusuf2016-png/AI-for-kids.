@@ -316,6 +316,24 @@
           smsProgress: (sent, total, failed) => `${sent} из ${total}${failed ? ` · ошибок ${failed}` : ''}`,
           smsStop: 'Остановить',
           smsLegal: 'Пишите в начале «Nimi AI:» и в конце, как отказаться. Это требование закона о рекламе.',
+          badPhone: 'Проверьте номер: нужен узбекский, например 90 123 45 67.',
+          mail: {
+            smsTitle: 'Рассылка писем на почту',
+            smsText: (n) => `Получат только согласившиеся на новости и зарегистрированные по почте: ${n}. Отправляется через Brevo с адреса nimikids.ai@gmail.com.`,
+            smsLimits: (sec, day, today) => `1 письмо каждые ${sec} с, не больше ${day} в день — бесплатный лимит Brevo 300 (сегодня отправлено ${today}). Остаток уйдёт завтра.`,
+            subjectPh: 'Тема письма, например: Новые уроки в Nimi',
+            smsPh: 'Текст письма. В конце мы сами добавим, как отказаться от новостей.',
+            count: (n) => `${n} знаков`,
+            smsTestPh: 'Почта для пробы, например вы@gmail.com',
+            smsTest: 'Отправить пробное письмо',
+            smsTestDone: 'Пробное письмо отправлено. Проверьте почту и папку «Спам».',
+            smsConfirm: (n) => `Отправить это письмо ${n} людям? Отменить можно будет только неотправленные.`,
+            smsStarted: (n) => `Рассылка началась: ${n} писем в очереди.`,
+            smsNoGate: 'Почта не подключена: в Render нужны BREVO_API_KEY и MAIL_FROM.',
+            smsFailed: 'Не получилось отправить письмо. Проверьте адрес и попробуйте ещё раз.',
+            smsLegal: 'Внизу каждого письма автоматически написано, как отказаться от новостей.',
+            badEmail: 'Проверьте адрес почты.',
+          },
         },
         marketingBadge: 'согласен на рассылку',
         one: 'Снять подписку',
@@ -794,6 +812,24 @@
           smsProgress: (sent, total, failed) => `${sent} / ${total}${failed ? ` · xatolar ${failed}` : ''}`,
           smsStop: "To'xtatish",
           smsLegal: "Boshida «Nimi AI:» va oxirida qanday voz kechishni yozing — bu reklama qonuni talabi.",
+          badPhone: "Raqamni tekshiring: O'zbekiston raqami kerak, masalan 90 123 45 67.",
+          mail: {
+            smsTitle: 'Pochtaga xat yuborish',
+            smsText: (n) => `Faqat yangiliklarga rozi bo'lgan va pochta orqali ro'yxatdan o'tganlar oladi: ${n}. Brevo orqali nimikids.ai@gmail.com manzilidan yuboriladi.`,
+            smsLimits: (sec, day, today) => `Har ${sec} soniyada 1 xat, kuniga ${day} tadan ko'p emas — Brevo bepul limiti 300 (bugun ${today} ta yuborildi). Qolgani ertaga ketadi.`,
+            subjectPh: "Xat mavzusi, masalan: Nimi'da yangi darslar",
+            smsPh: "Xat matni. Oxiriga yangiliklardan qanday voz kechishni o'zimiz qo'shamiz.",
+            count: (n) => `${n} belgi`,
+            smsTestPh: 'Sinov uchun pochta, masalan siz@gmail.com',
+            smsTest: 'Sinov xat yuborish',
+            smsTestDone: "Sinov xat yuborildi. Pochtani va «Spam» papkasini tekshiring.",
+            smsConfirm: (n) => `Bu xat ${n} kishiga yuborilsinmi? Faqat yuborilmaganlarini bekor qilish mumkin.`,
+            smsStarted: (n) => `Xabarnoma boshlandi: navbatda ${n} ta xat.`,
+            smsNoGate: "Pochta ulanmagan: Render'da BREVO_API_KEY va MAIL_FROM kerak.",
+            smsFailed: "Xatni yuborib bo'lmadi. Manzilni tekshirib, qayta urinib ko'ring.",
+            smsLegal: "Har bir xatning pastida yangiliklardan qanday voz kechish avtomatik yoziladi.",
+            badEmail: 'Pochta manzilini tekshiring.',
+          },
         },
         marketingBadge: 'xabarnomaga rozi',
         one: 'Obunani bekor qilish',
@@ -2006,21 +2042,29 @@
         btn(C.emails(emails.length), () => download(`nimi-emails-${day}.csv`, ['email', 'consent_at'], emails.map((u) => [u.email, u.at])), emails.length)),
       h('p', { class: 'text-xs text-slate-400' }, C.csvHint),
       list));
-    root.append(await smsBlock(C));
+    root.append(await broadcastBlock(C, 'sms'), await broadcastBlock(C, 'email'));
   }
 
-  // Admin: an SMS to everyone who agreed to news, sent slowly from the owner's phone (SMSGate).
-  async function smsBlock(C) {
+  // Admin: a broadcast to students who agreed to news — SMS from the owner's phone (SMSGate) or an
+  // email through Brevo. Same steps for both: text (and a subject for email), a test to yourself,
+  // who gets it (a group or picked by hand), send; the server sends slowly from a queue.
+  async function broadcastBlock(C, channel) {
+    const email = channel === 'email';
+    const E = email ? C.mail : {};
+    const L = (k) => (email && E[k] !== undefined ? E[k] : C[k]);
     const box = h('div', { class: `${CARD} flex flex-col gap-3` });
-    const info = await N.postJson('/api/admin/sms-info', {}).catch(() => ({}));
-    box.append(h('p', { class: 'text-lg font-semibold text-white' }, C.smsTitle));
-    if (!info.gateway) { box.append(h('p', { class: 'text-sm text-amber-200' }, C.smsNoGate)); return box; }
-    box.append(h('p', { class: 'text-sm text-slate-300' }, C.smsText(info.recipients)),
-      h('p', { class: 'text-xs text-slate-400' }, C.smsLimits(info.everySec, info.dailyLimit, info.sentToday)));
-    const text = h('textarea', { rows: '4', maxlength: '300', class: `${INPUT} min-h-28 resize-y py-3`, placeholder: C.smsPh });
+    const api = (step, body = {}) => N.postJson(`/api/admin/${channel}-${step}`, body).catch(() => ({}));
+    const info = await api('info');
+    box.append(h('p', { class: 'text-lg font-semibold text-white' }, L('smsTitle')));
+    if (!info.gateway) { box.append(h('p', { class: 'text-sm text-amber-200' }, L('smsNoGate'))); return box; }
+    box.append(h('p', { class: 'text-sm text-slate-300' }, L('smsText')(info.recipients)),
+      h('p', { class: 'text-xs text-slate-400' }, L('smsLimits')(info.everySec, info.dailyLimit, info.sentToday)));
+    const subject = email ? h('input', { type: 'text', maxlength: '150', class: INPUT, placeholder: E.subjectPh }) : null;
+    const text = h('textarea', { rows: email ? '7' : '4', maxlength: email ? '3000' : '300', class: `${INPUT} min-h-28 resize-y py-3`, placeholder: L('smsPh') });
     const counter = h('p', { class: 'px-1 text-xs text-slate-400' });
     const count = () => {
       const v = text.value.trim();
+      if (email) { counter.textContent = E.count(v.length); return; }
       const gsm = /^[\x20-\x7E\n]*$/.test(v);
       const parts = !v.length ? 0 : gsm ? (v.length <= 160 ? 1 : Math.ceil(v.length / 153)) : (v.length <= 70 ? 1 : Math.ceil(v.length / 67));
       counter.textContent = C.smsCount(v.length, parts);
@@ -2029,14 +2073,14 @@
     count();
     const msg = h('p', { class: 'text-sm' });
     const say = (txt, ok) => { msg.textContent = txt; msg.className = `text-sm ${ok ? 'text-emerald-200' : 'text-rose-200'}`; };
-    const fail = (r) => say(r.code === 'broadcast_busy' ? C.smsBusy : r.code === 'sms_unavailable' ? C.smsNoGate : C.smsFailed, false);
-    const phone = h('input', { type: 'tel', inputmode: 'tel', class: INPUT, placeholder: C.smsTestPh });
-    const testBtn = h('button', { type: 'button', class: `${BTN2} sm:w-auto` }, ico('send'), C.smsTest);
+    const fail = (r) => say(r.code === 'broadcast_busy' ? C.smsBusy : r.code === 'sms_unavailable' ? L('smsNoGate') : r.code === 'invalid_email' ? E.badEmail : r.code === 'invalid_phone' ? C.badPhone : L('smsFailed'), false);
+    const testTo = h('input', { type: email ? 'email' : 'tel', inputmode: email ? 'email' : 'tel', class: INPUT, placeholder: L('smsTestPh') });
+    const testBtn = h('button', { type: 'button', class: `${BTN2} sm:w-auto` }, ico('send'), L('smsTest'));
     testBtn.onclick = async () => {
       testBtn.disabled = true;
-      const r = await N.postJson('/api/admin/sms-test', { phone: phone.value, text: text.value }).catch(() => ({}));
+      const r = await api('test', { to: testTo.value, text: text.value, subject: subject?.value });
       testBtn.disabled = false;
-      if (r.ok) say(C.smsTestDone, true); else fail(r);
+      if (r.ok) say(L('smsTestDone'), true); else fail(r);
     };
     // Who gets it: a group (all / with subscription / free week / without) or people picked by hand.
     let group = 'all';
@@ -2046,6 +2090,7 @@
     const whoRow = h('div', { class: 'flex flex-wrap gap-2', role: 'group', 'aria-label': C.smsWho });
     const pickBox = h('div', { class: 'hidden flex-col gap-2' });
     const sendBtn = h('button', { type: 'button', class: BTN }, ico('users'), h('span', {}));
+    const confirmBox = h('div', { class: 'flex flex-col gap-2' });
     const refresh = () => {
       whoRow.replaceChildren(...Object.keys(C.smsGroups).map((g) => h('button', {
         type: 'button', 'aria-pressed': String(group === g),
@@ -2059,46 +2104,47 @@
     };
     const people = info.people || [];
     const checks = people.map((u) => {
-      const box = h('input', { type: 'checkbox', class: 'h-5 w-5 shrink-0 accent-brand-500' });
-      box.onchange = () => { if (box.checked) picked.add(u.phone); else picked.delete(u.phone); refresh(); };
+      const tick = h('input', { type: 'checkbox', class: 'h-5 w-5 shrink-0 accent-brand-500' });
+      tick.onchange = () => { if (tick.checked) picked.add(u.addr); else picked.delete(u.addr); refresh(); };
       const active = u.until && new Date(u.until) > new Date();
-      return { box, row: h('label', { class: 'flex cursor-pointer items-center gap-3 rounded-xl bg-night-800 px-3 py-2' }, box,
-        h('span', { class: 'min-w-0 flex-1 break-all text-sm font-medium text-white' }, N.prettyAccount(u.phone)),
+      return { tick, row: h('label', { class: 'flex cursor-pointer items-center gap-3 rounded-xl bg-night-800 px-3 py-2' }, tick,
+        h('span', { class: 'min-w-0 flex-1 break-all text-sm font-medium text-white' }, N.prettyAccount(u.addr)),
         h('span', { class: 'shrink-0 text-xs text-slate-400' }, active ? (u.kind === 'trial' ? t('admin').week : planById(u.tier).name) : t('admin').noAccess)) };
     });
-    const setAll = (on) => { checks.forEach((c, i) => { c.box.checked = on; if (on) picked.add(people[i].phone); else picked.delete(people[i].phone); }); refresh(); };
+    const setAll = (on) => { checks.forEach((c, i) => { c.tick.checked = on; if (on) picked.add(people[i].addr); else picked.delete(people[i].addr); }); refresh(); };
     pickBox.append(h('div', { class: 'flex gap-2' },
       h('button', { type: 'button', class: 'min-h-9 rounded-lg bg-night-700 px-3 text-sm text-white', onclick: () => setAll(true) }, C.smsPickAll),
       h('button', { type: 'button', class: 'min-h-9 rounded-lg bg-night-700 px-3 text-sm text-white', onclick: () => setAll(false) }, C.smsPickNone)),
       h('div', { class: 'flex max-h-72 flex-col gap-1.5 overflow-y-auto' }, checks.map((c) => c.row)));
-    const confirmBox = h('div', { class: 'flex flex-col gap-2' });
     sendBtn.onclick = () => {
+      if (email && subject.value.trim().length < 2) { subject.focus(); return; }
       if (text.value.trim().length < 2) { text.focus(); return; }
       const n = howMany();
-      confirmBox.replaceChildren(h('p', { class: 'text-sm text-amber-200' }, C.smsConfirm(n)),
+      confirmBox.replaceChildren(h('p', { class: 'text-sm text-amber-200' }, L('smsConfirm')(n)),
         h('div', { class: 'grid grid-cols-2 gap-2' },
           h('button', { type: 'button', class: 'min-h-11 rounded-xl bg-brand-500 px-3 text-sm font-semibold text-onfill', onclick: async () => {
             confirmBox.replaceChildren();
-            const r = await N.postJson('/api/admin/sms-send', { text: text.value, group, phones: [...picked] }).catch(() => ({}));
-            if (r.id) { say(C.smsStarted(r.total), true); text.value = ''; count(); history(); } else fail(r);
+            const r = await api('send', { text: text.value, subject: subject?.value, group, picks: [...picked] });
+            if (r.id) { say(L('smsStarted')(r.total), true); text.value = ''; if (subject) subject.value = ''; count(); history(); } else fail(r);
           } }, C.smsYes),
           h('button', { type: 'button', class: 'min-h-11 rounded-xl bg-night-700 px-3 text-sm text-white', onclick: () => confirmBox.replaceChildren() }, t('admin').cancel)));
     };
     const list = h('div', { class: 'flex flex-col gap-2' });
     const history = async () => {
-      const r = await N.postJson('/api/admin/sms-info', {}).catch(() => ({}));
+      const r = await api('info');
       list.replaceChildren();
       if (!r.broadcasts?.length) return;
       list.append(h('p', { class: 'text-sm font-semibold text-white' }, C.smsHistory));
       r.broadcasts.forEach((b) => list.append(h('div', { class: 'flex flex-col gap-1.5 rounded-2xl bg-night-800 p-3 ring-1 ring-white/5' },
-        h('p', { class: 'text-sm text-slate-200' }, b.text),
+        b.subject ? h('p', { class: 'text-sm font-semibold text-white' }, b.subject) : null,
+        h('p', { class: 'line-clamp-3 whitespace-pre-line text-sm text-slate-200' }, b.text),
         h('div', { class: 'flex items-center justify-between gap-2 text-xs text-slate-400' },
           h('span', {}, `${dateStr(b.at)} · ${C.smsStatus[b.status] || b.status} · ${C.smsProgress(b.sent, b.total, b.failed)}`),
-          b.status === 'sending' ? h('button', { type: 'button', class: 'min-h-9 rounded-lg bg-rose-500/15 px-3 text-rose-200 ring-1 ring-rose-400/30', onclick: async () => { await N.postJson('/api/admin/sms-cancel', { id: b.id }).catch(() => {}); history(); } }, C.smsStop) : null))));
+          b.status === 'sending' ? h('button', { type: 'button', class: 'min-h-9 rounded-lg bg-rose-500/15 px-3 text-rose-200 ring-1 ring-rose-400/30', onclick: async () => { await api('cancel', { id: b.id }); history(); } }, C.smsStop) : null))));
     };
     refresh();
-    box.append(text, counter, h('p', { class: 'text-xs text-amber-200' }, C.smsLegal),
-      h('div', { class: 'flex flex-col gap-2 sm:flex-row' }, phone, testBtn),
+    box.append(...(email ? [subject] : []), text, counter, h('p', { class: 'text-xs text-amber-200' }, L('smsLegal')),
+      h('div', { class: 'flex flex-col gap-2 sm:flex-row' }, testTo, testBtn),
       h('p', { class: 'text-sm font-semibold text-white' }, C.smsWho), whoRow, h('p', { class: 'text-xs text-slate-400' }, C.smsOnly), pickBox,
       sendBtn, confirmBox, msg, list);
     history();
