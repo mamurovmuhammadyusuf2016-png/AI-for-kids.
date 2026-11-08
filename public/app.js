@@ -1163,8 +1163,10 @@
   // ---------- accounts ----------
   const verify = () => config.verify || {};
   // Phone sign-up shows only once SMS sending is set up on the server.
-  const regBy = () => (verify().sms ? regMethod : 'email');
-  const loginBy = () => (verify().sms ? loginMethod : 'email');
+  const regBy = () => regMethod;
+  const loginBy = () => loginMethod;
+  // A code at sign-up only when it is turned on (REGISTER_CODES) and that channel can send it.
+  const signupCode = (byPhone) => !!verify().register && (byPhone ? !!verify().sms : !!verify().email);
   const PHONE_RE = /^[\d\s+()-]{9,20}$/;
   const phoneDigits = (v) => { const d = String(v || '').replace(/\D/g, ''); return d.length === 9 ? `998${d}` : d; };
   const isPhone = (v) => PHONE_RE.test(String(v || '').trim()) && /^998\d{9}$/.test(phoneDigits(v));
@@ -1193,13 +1195,13 @@
     show('passwordHint', reset ? code : reg && !code, 'block');
     show('consentBox', reg && !code);
     show('forgotLink', authMode === 'login', 'block');
-    show('methodSwitch', (reg || login) && !code && !!verify().sms);
+    show('methodSwitch', (reg || login) && !code);
     if (!reg || code) $('forgotBox').classList.add('hidden');
     $('authEmail').placeholder = t(reg ? 'emailOnlyPh' : reset ? (verify().sms ? 'resetPh' : 'emailOnlyPh') : 'emailPh');
     $('authEmail').inputMode = reg ? 'email' : 'text';
     $('authPassword').placeholder = t(reset ? 'newPasswordPh' : 'passwordPh');
     $('authPassword').autocomplete = reg || reset ? 'new-password' : 'current-password';
-    const needsCode = reg && (byPhone || verify().email);
+    const needsCode = reg && signupCode(byPhone);
     $('authSubmit').textContent = t(code ? (reset ? 'savePassword' : 'registerBtn') : reset || needsCode ? 'getCode' : reg ? 'registerBtn' : 'loginBtn');
     const way = reg ? regBy() : loginBy();
     $('methodSwitch').innerHTML = icon(way === 'phone' ? 'mail' : 'phone') + '<span></span>';
@@ -1478,8 +1480,9 @@
       const problem = passwordProblem();
       if (problem) return showAuthError(problem);
       if (!$('consentTerms')?.checked) return showAuthError('terms_required');
-      if (byPhone || verify().email) return requestCode({ channel: byPhone ? 'sms' : 'email', to, purpose: 'register' });
-      return finishAuth(postJson('/api/auth/register', { email: to, password, terms: true, marketing: !!$('consentMarketing')?.checked, lang }));
+      if (signupCode(byPhone)) return requestCode({ channel: byPhone ? 'sms' : 'email', to, purpose: 'register' });
+      const fields = byPhone ? { phone: to } : { email: to };
+      return finishAuth(postJson('/api/auth/register', { ...fields, password, terms: true, marketing: !!$('consentMarketing')?.checked, lang }));
     }
     if (loginBy() === 'phone') {
       if (!isPhone($('authPhone').value)) return showAuthError('invalid_phone');

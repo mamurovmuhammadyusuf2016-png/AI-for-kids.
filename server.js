@@ -823,7 +823,7 @@ async function route(req, res) {
         googleClientId: auth.GOOGLE_CLIENT_ID,
         accounts: auth.enabled(),
         // Which codes the site can send: SMS (phone sign-up) and email. Off until the keys are set on Render.
-        verify: { sms: notify.smsEnabled(), email: notify.emailEnabled() },
+        verify: { sms: notify.smsEnabled(), email: notify.emailEnabled(), register: auth.registerCodes() },
         consent: { version: auth.CONSENT_VERSION, texts: auth.CONSENT_TEXTS },
         billing: {
           plans: Object.entries(PLANS).map(([id, p]) => ({ id, name: p.name, price: p.price, input: p.input, output: p.output, questions: p.questions })),

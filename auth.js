@@ -657,16 +657,21 @@ async function checkCode(target, purpose, code) {
 // ---------- actions ----------
 // Sign-up by phone (always with an SMS code) or by email (with an email code when email sending
 // is set up). The rules must be accepted; news by SMS / email / calls is a separate choice.
+// Codes at sign-up are off by default (the owner's choice, 08.11.2026): phone and email are kept
+// for news and password resets. REGISTER_CODES=on on Render turns them back on.
+function registerCodes() {
+  return process.env.REGISTER_CODES === 'on';
+}
+
 async function register(req, body) {
   const db = requirePool();
   if (body.terms !== true) throw new AuthError('terms_required');
   const byPhone = body.phone != null;
   const account = byPhone ? normalizePhone(body.phone) : normalizeEmail(body.email);
   const password = validatePassword(body.password);
-  if (byPhone && !notify.smsEnabled()) throw new AuthError('auth_unavailable', 503);
   const exists = await db.query(`SELECT 1 FROM users WHERE email = $1`, [account]);
   if (exists.rows.length) throw new AuthError(byPhone ? 'phone_taken' : 'email_taken', 409);
-  const verify = byPhone || notify.emailEnabled();
+  const verify = registerCodes() && (byPhone ? notify.smsEnabled() : notify.emailEnabled());
   if (verify) await checkCode(account, 'register', body.code);
   const hash = await hashPassword(password);
   const { rows } = await db.query(
@@ -1273,6 +1278,7 @@ module.exports = {
   getUser,
   publicUser,
   register,
+  registerCodes,
   sendCode,
   resetPassword,
   applyConsents,
