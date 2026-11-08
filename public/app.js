@@ -155,6 +155,9 @@
       consentTitle: 'Ещё один шаг',
       consentText: 'Чтобы продолжить, отметь согласие с правилами. Второй пункт — по желанию.',
       consentContinue: 'Продолжить',
+      passkeyTitle: 'Подтвердите вход',
+      passkeyText: 'Пароль верный. Теперь подтвердите, что это вы: Face ID, отпечаток пальца или Windows Hello.',
+      passkeyBtn: 'Войти по Face ID',
       forgot: 'Забыли пароль?',
       forgotText: 'Не переживай! Вот как вернуть вход:',
       forgotParent: 'Если у тебя есть аккаунт родителя — мама или папа могут поставить новый пароль в своём кабинете.',
@@ -194,6 +197,9 @@
         google_failed: 'Не получилось войти через Google. Попробуй ещё раз.',
         auth_unavailable: 'Вход временно недоступен. Попробуй позже.',
         offline: 'Нет связи с сервером. Проверь интернет и попробуй ещё раз.',
+        passkey_failed: 'Не получилось подтвердить Face ID. Попробуйте ещё раз.',
+        passkey_expired: 'Время вышло. Войдите с паролем ещё раз.',
+        passkey_unsupported: 'Этот браузер не умеет Face ID. Откройте сайт в Safari или Chrome (не в приложении Nimi).',
       },
     },
     uz: {
@@ -281,6 +287,9 @@
       consentTitle: 'Yana bir qadam',
       consentText: "Davom etish uchun qoidalarga roziligingni belgila. Ikkinchi band — xohishga ko'ra.",
       consentContinue: 'Davom etish',
+      passkeyTitle: 'Kirishni tasdiqlang',
+      passkeyText: "Parol to'g'ri. Endi bu siz ekaningizni tasdiqlang: Face ID, barmoq izi yoki Windows Hello.",
+      passkeyBtn: 'Face ID orqali kirish',
       forgot: 'Parolni unutdingmi?',
       forgotText: "Xavotir olma! Kirishni shunday qaytarish mumkin:",
       forgotParent: "Agar ota-ona akkaunting bo'lsa — onang yoki otang o'z kabinetida yangi parol qo'yishi mumkin.",
@@ -320,6 +329,9 @@
         google_failed: "Google orqali kirib bo'lmadi. Qayta urinib ko'r.",
         auth_unavailable: "Kirish vaqtincha ishlamayapti. Keyinroq urinib ko'r.",
         offline: "Server bilan aloqa yo'q. Internetni tekshirib, qayta urinib ko'r.",
+        passkey_failed: "Face ID tasdiqlanmadi. Qayta urinib ko'ring.",
+        passkey_expired: 'Vaqt tugadi. Parol bilan qayta kiring.',
+        passkey_unsupported: "Bu brauzer Face ID'ni bilmaydi. Saytni Safari yoki Chrome'da oching (Nimi ilovasida emas).",
       },
     },
   };
@@ -1260,6 +1272,75 @@
     };
     out.onclick = () => { gate.remove(); logout(); };
   }
+  // ---------- Face ID / fingerprint (WebAuthn passkeys): the second sign-in step for admins ----------
+  const b64u = {
+    toBuf: (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(s.length / 4) * 4, '=')), (c) => c.charCodeAt(0)).buffer,
+    from: (buf) => (buf ? btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') : undefined),
+  };
+  const passkeysSupported = () => !!window.PublicKeyCredential && !!navigator.credentials;
+  // Registration: options from the server -> Face ID -> the answer for the server.
+  async function passkeyCreate(o) {
+    const cred = await navigator.credentials.create({ publicKey: {
+      ...o,
+      challenge: b64u.toBuf(o.challenge),
+      user: { ...o.user, id: b64u.toBuf(o.user.id) },
+      excludeCredentials: (o.excludeCredentials || []).map((c) => ({ ...c, id: b64u.toBuf(c.id) })),
+    } });
+    const r = cred.response;
+    return { id: cred.id, rawId: b64u.from(cred.rawId), type: cred.type, clientExtensionResults: cred.getClientExtensionResults(),
+      authenticatorAttachment: cred.authenticatorAttachment || undefined,
+      response: { clientDataJSON: b64u.from(r.clientDataJSON), attestationObject: b64u.from(r.attestationObject), transports: r.getTransports ? r.getTransports() : [] } };
+  }
+  async function passkeyGet(o) {
+    const cred = await navigator.credentials.get({ publicKey: {
+      ...o,
+      challenge: b64u.toBuf(o.challenge),
+      allowCredentials: (o.allowCredentials || []).map((c) => ({ ...c, id: b64u.toBuf(c.id) })),
+    } });
+    const r = cred.response;
+    return { id: cred.id, rawId: b64u.from(cred.rawId), type: cred.type, clientExtensionResults: cred.getClientExtensionResults(),
+      authenticatorAttachment: cred.authenticatorAttachment || undefined,
+      response: { clientDataJSON: b64u.from(r.clientDataJSON), authenticatorData: b64u.from(r.authenticatorData), signature: b64u.from(r.signature), userHandle: b64u.from(r.userHandle) } };
+  }
+  // The password was right and the account has Face ID: one more tap (Safari needs a tap to start it).
+  function askPasskey() {
+    $('passkeyGate')?.remove();
+    const err = h2('p', { className: 'hidden text-sm text-rose-200' });
+    const fail = (code) => { err.textContent = t('errors')[code] || t('errors').passkey_failed; err.classList.remove('hidden'); };
+    const go = h2('button', { type: 'button', textContent: t('passkeyBtn'), className: 'min-h-14 rounded-2xl bg-brand-500 text-lg font-semibold text-onfill disabled:bg-night-700' });
+    const out = h2('button', { type: 'button', textContent: t('logout'), className: 'min-h-10 text-sm text-slate-400 hover:text-white' });
+    const card = h2('div', { className: 'flex max-h-full w-full max-w-md flex-col gap-3 overflow-y-auto rounded-3xl bg-night-900 p-5 ring-1 ring-white/10' });
+    card.append(h2('p', { className: 'text-xl font-semibold text-white', textContent: t('passkeyTitle') }),
+      h2('p', { className: 'text-sm text-slate-300', textContent: t('passkeyText') }), err, go, out);
+    const gate = h2('div', { id: 'passkeyGate', className: 'fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4' });
+    gate.setAttribute('role', 'dialog');
+    gate.setAttribute('aria-modal', 'true');
+    gate.append(card);
+    document.body.append(gate);
+    if (!passkeysSupported()) fail('passkey_unsupported');
+    go.onclick = async () => {
+      if (!passkeysSupported()) return fail('passkey_unsupported');
+      go.disabled = true;
+      err.classList.add('hidden');
+      try {
+        const opts = await postJson('/api/auth/passkey/options', {});
+        if (!opts.challenge) return fail(opts.code);
+        let response;
+        try { response = await passkeyGet(opts); } catch { return fail('passkey_failed'); }
+        const data = await postJson('/api/auth/passkey/verify', { response });
+        if (!data.user) return fail(data.code);
+        const me = await fetch('/api/auth/me').then((r) => r.json());
+        gate.remove();
+        childEmail = me.child || null;
+        signedIn(me.user || data.user, me.remaining);
+      } catch {
+        fail('offline');
+      } finally {
+        go.disabled = false;
+      }
+    };
+    out.onclick = () => { gate.remove(); logout(); };
+  }
   const googleVisible = () => !(authStep === 'code' || authMode === 'reset' || (authMode === 'register' && regBy() === 'phone'));
   function h2(tag, props) { return Object.assign(document.createElement(tag), props); }
 
@@ -1388,6 +1469,7 @@
     $('authSubmit').disabled = true;
     try {
       const data = await promise;
+      if (data.twoFactor === 'passkey') return askPasskey();
       if (!data.user) return showAuthError(data.code);
       const me = await fetch('/api/auth/me').then((r) => r.json());
       childEmail = me.child || null;
@@ -1607,6 +1689,8 @@
     showAuth,
     prettyAccount,
     askText,
+    passkeyCreate,
+    passkeysSupported,
     remaining,
     dailyLimit,
     get child() { return childEmail; },
@@ -1627,6 +1711,7 @@
       const me = await fetch('/api/auth/me').then((r) => r.json());
       childEmail = me.child || null;
       if (me.user) return signedIn(me.user, me.remaining);
+      if (me.twoFactor === 'passkey') { signedOut(); return askPasskey(); }
     } catch {}
     signedOut();
   })();

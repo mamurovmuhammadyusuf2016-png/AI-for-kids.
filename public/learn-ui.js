@@ -258,6 +258,19 @@
       },
       admin: {
         title: 'Админка',
+        faceTitle: 'Вход по Face ID',
+        faceOff: 'Сейчас в админку входят только по паролю. Добавьте телефон или компьютер — тогда после пароля нужно будет ещё подтвердить Face ID, отпечаток пальца или Windows Hello. Бесплатно.',
+        faceOn: (n) => `Включено: после пароля нужен Face ID или отпечаток. Устройств: ${n}.`,
+        faceAdd: 'Добавить это устройство',
+        faceNamePh: 'Название, например «iPhone Мухаммадюсуфа»',
+        faceAdded: 'Готово! В следующий раз после пароля сайт попросит Face ID.',
+        faceDelete: 'Убрать',
+        faceDeleteAsk: 'Убрать это устройство? Если устройств не останется, вход будет снова только по паролю.',
+        faceUsed: (d) => `последний вход ${d}`,
+        faceNever: 'ещё не использовали',
+        faceNoSupport: 'Этот браузер не умеет Face ID. Откройте сайт в Safari или Chrome (не в приложении Nimi).',
+        faceFailed: 'Не получилось. Попробуйте ещё раз — и подтвердите Face ID или отпечаток, когда телефон попросит.',
+        faceLost: 'Потеряли телефон? Напишите Claude в чат «сбрось Face ID для <логин>» — вход снова будет по паролю.',
         pending: 'Заявки',
         none: 'Новых заявок нет.',
         grant: (m) => (m ? `Включить ${m} мес.` : 'Включить неделю'),
@@ -754,6 +767,19 @@
       },
       admin: {
         title: 'Admin panel',
+        faceTitle: 'Face ID orqali kirish',
+        faceOff: "Hozir adminkaga faqat parol bilan kiriladi. Telefon yoki kompyuterni qo'shing — shunda paroldan keyin Face ID, barmoq izi yoki Windows Hello bilan ham tasdiqlash kerak bo'ladi. Bepul.",
+        faceOn: (n) => `Yoqilgan: paroldan keyin Face ID yoki barmoq izi kerak. Qurilmalar: ${n}.`,
+        faceAdd: "Shu qurilmani qo'shish",
+        faceNamePh: 'Nomi, masalan «Muhammadyusufning iPhone»',
+        faceAdded: "Tayyor! Keyingi safar paroldan keyin sayt Face ID so'raydi.",
+        faceDelete: 'Olib tashlash',
+        faceDeleteAsk: "Bu qurilmani olib tashlaysizmi? Qurilma qolmasa, yana faqat parol bilan kiriladi.",
+        faceUsed: (d) => `oxirgi kirish ${d}`,
+        faceNever: 'hali ishlatilmagan',
+        faceNoSupport: "Bu brauzer Face ID'ni bilmaydi. Saytni Safari yoki Chrome'da oching (Nimi ilovasida emas).",
+        faceFailed: "Bo'lmadi. Qayta urinib ko'ring — telefon so'raganda Face ID yoki barmoq izini tasdiqlang.",
+        faceLost: "Telefon yo'qoldimi? Claude'ga chatda «<login> uchun Face ID'ni o'chir» deb yozing — yana parol bilan kirasiz.",
         pending: 'Arizalar',
         none: "Yangi arizalar yo'q.",
         grant: (m) => (m ? `${m} oyga yoqish` : 'Haftani yoqish'),
@@ -1920,6 +1946,7 @@
       msg));
     root.append(studentsBlock(A, grant));
     root.append(revokeBlock(A));
+    root.append(faceIdBlock(A));
     root.append(h('p', { class: 'font-semibold text-white' }, A.pending));
     const list = h('div', { class: 'flex flex-col gap-2' }, loading(t('loadingTopics')));
     root.append(list);
@@ -1938,6 +1965,54 @@
           h('button', { type: 'button', class: BTN, onclick: () => grant(q.email, Number(q.months), q.id, q.plan) }, A.grant(Number(q.months))),
           h('button', { type: 'button', class: BTN2, onclick: async () => { await N.postJson('/api/admin/reject', { requestId: q.id }); openAdmin(); } }, A.reject)) : null));
     });
+  }
+
+  // Admin: Face ID / fingerprint as the second sign-in step (WebAuthn passkeys, passkeys.js on the server).
+  function faceIdBlock(A) {
+    const box = h('div', { class: `${CARD} flex flex-col gap-2` });
+    const render = (keys, note) => {
+      const name = h('input', { type: 'text', class: INPUT, placeholder: A.faceNamePh, maxlength: 40 });
+      const msg = h('p', { class: 'text-sm' }, note || '');
+      if (note) msg.className = 'rounded-xl bg-emerald-500/10 p-3 text-sm text-emerald-100';
+      const add = h('button', { type: 'button', class: BTN }, A.faceAdd);
+      add.onclick = async () => {
+        if (!N.passkeysSupported()) { msg.className = 'text-sm text-rose-200'; msg.textContent = A.faceNoSupport; return; }
+        add.disabled = true;
+        try {
+          const opts = await N.postJson('/api/admin/passkey-options', {});
+          if (!opts.challenge) throw new Error(opts.code);
+          const response = await N.passkeyCreate(opts);
+          const r = await N.postJson('/api/admin/passkey-add', { response, name: name.value.trim() });
+          if (!r.ok) throw new Error(r.code);
+          load(A.faceAdded);
+        } catch {
+          msg.className = 'text-sm text-rose-200';
+          msg.textContent = A.faceFailed;
+          add.disabled = false;
+        }
+      };
+      box.replaceChildren(
+        h('p', { class: 'font-semibold text-white' }, A.faceTitle),
+        h('p', { class: 'text-sm text-slate-300' }, keys.length ? A.faceOn(keys.length) : A.faceOff),
+        ...keys.map((k) => h('div', { class: 'flex items-center justify-between gap-2 rounded-2xl bg-night-800 p-3 ring-1 ring-white/10' },
+          h('div', { class: 'min-w-0' },
+            h('p', { class: 'break-words text-sm font-semibold text-white' }, k.name || A.faceTitle),
+            h('p', { class: 'text-xs text-slate-400' }, `${dateStr(k.created)} · ${k.used ? A.faceUsed(dateStr(k.used)) : A.faceNever}`)),
+          h('button', { type: 'button', class: 'min-h-11 shrink-0 rounded-xl bg-night-700 px-3 text-sm text-rose-200', onclick: async () => {
+            if (!confirm(A.faceDeleteAsk)) return;
+            const r = await N.postJson('/api/admin/passkey-delete', { id: k.id }).catch(() => ({}));
+            render(r.keys || keys);
+          } }, A.faceDelete))),
+        name, add, msg,
+        h('p', { class: 'text-xs text-slate-400' }, A.faceLost));
+    };
+    const load = async (note) => {
+      const r = await N.postJson('/api/admin/passkeys', {}).catch(() => ({}));
+      render(r.keys || [], note);
+    };
+    box.append(loading(t('loadingTopics')));
+    load();
+    return box;
   }
 
   // Admin: take access away from every student except the listed emails. First it shows who

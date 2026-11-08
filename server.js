@@ -4,6 +4,7 @@ const path = require('path');
 const { buildSystemPrompt, REPORT_PROMPT } = require('./prompt');
 const { verifyStudentMessages, findWrongClaims, fmt } = require('./math');
 const auth = require('./auth');
+const passkeys = require('./passkeys');
 const notify = require('./notify');
 const learn = require('./learn');
 const { PLANS, planId, FREE_TRIES } = require('./plans');
@@ -549,7 +550,7 @@ function hasAdminKey(req) {
 
 async function handleMe(req, res) {
   const user = await auth.getUser(req);
-  if (!user) return sendJson(res, 200, { user: null });
+  if (!user) return sendJson(res, 200, { user: null, twoFactor: (await auth.pendingUser(req)) ? 'passkey' : undefined });
   const used = await auth.usedToday(user.id, today());
   const tokens = user.role === 'student' ? await auth.tokensThisMonth(user.id, month()) : undefined;
   sendJson(res, 200, {
@@ -610,6 +611,16 @@ async function handleAdmin(req, res, body, user, action) {
     return sendJson(res, 200, await auth.revokeAllExcept(list(body.keep, 100), Array.isArray(body.apply) ? list(body.apply, 20000) : null));
   }
   // Staff accounts are created only with the admin key (from the chat with Claude).
+  // Face ID / fingerprint for the admin's own account (passkeys.js); not through the admin key.
+  if (action === 'passkeys' && !user.apiAdmin) return sendJson(res, 200, { keys: await passkeys.list(user) });
+  if (action === 'passkey-options' && !user.apiAdmin) return sendJson(res, 200, await passkeys.registrationOptions(req, user));
+  if (action === 'passkey-add' && !user.apiAdmin) return sendJson(res, 200, await passkeys.register(req, user, body));
+  if (action === 'passkey-delete' && !user.apiAdmin) {
+    await auth.deletePasskey(user.id, cleanText(body.id, 1024));
+    return sendJson(res, 200, { keys: await passkeys.list(user) });
+  }
+  // Lost phone: the owner asks Claude, Claude removes the passkeys with the admin key.
+  if (action === 'passkey-reset' && user.apiAdmin) return sendJson(res, 200, { removed: await auth.resetPasskeys(cleanText(body.login, 254)) });
   if (action === 'create-admin' && user.apiAdmin) return sendJson(res, 200, await auth.createAdminAccount(cleanText(body.login, 32), cleanText(body.password, 128)));
   sendJson(res, 404, { code: 'not_found' });
 }
@@ -754,7 +765,10 @@ async function handleAppExchange(req, res) {
     res.writeHead(302, { Location: '/?source=android' });
     return res.end();
   }
-  res.writeHead(302, { Location: '/?source=android', 'Set-Cookie': await auth.startSession(req, entry.userId), 'Cache-Control': 'no-store' });
+  const cookie = await auth.startSession(req, entry.userId);
+  // An account with Face ID still has to pass it; the page shows that step after the redirect.
+  if ((await auth.listPasskeys(entry.userId)).length) await auth.holdSession(cookie);
+  res.writeHead(302, { Location: '/?source=android', 'Set-Cookie': cookie, 'Cache-Control': 'no-store' });
   res.end();
 }
 
@@ -783,9 +797,21 @@ async function handleApiPost(req, res, urlPath) {
   }
   if (urlPath === '/api/auth/app-code') return handleAppCode(req, res, body);
   if (urlPath === '/api/auth/send-code') return sendJson(res, 200, await auth.sendCode(req, body));
+  // Second step after the password for accounts with Face ID (admins): /api/auth/passkey/options|verify.
+  if (urlPath === '/api/auth/passkey/options' || urlPath === '/api/auth/passkey/verify') {
+    const pending = auth.enabled() ? await auth.pendingUser(req) : null;
+    if (!pending) return sendJson(res, 401, { code: 'passkey_expired' });
+    if (urlPath.endsWith('/options')) return sendJson(res, 200, await passkeys.loginOptions(req, pending));
+    await passkeys.login(req, pending, body);
+    return sendJson(res, 200, { user: auth.publicUser(await auth.getUser(req)) });
+  }
   const action = AUTH_ACTIONS[urlPath];
   if (action) {
     const { user, cookie } = await action(req, body);
+    if ((await auth.listPasskeys(user.id)).length) {
+      await auth.holdSession(cookie);
+      return sendJson(res, 200, { twoFactor: 'passkey' }, { 'Set-Cookie': cookie });
+    }
     return sendJson(res, 200, { user: auth.publicUser(user) }, { 'Set-Cookie': cookie });
   }
   const learnKind = urlPath.startsWith('/api/learn/') && urlPath.slice('/api/learn/'.length);
