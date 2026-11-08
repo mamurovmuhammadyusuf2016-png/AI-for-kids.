@@ -170,6 +170,25 @@ async function init() {
       PRIMARY KEY (user_id, board, day)
     );
     CREATE INDEX IF NOT EXISTS leader_points_board_day ON leader_points (board, day);
+    -- Admin SMS broadcasts (to students who agreed to news), sent slowly from the owner's phone.
+    CREATE TABLE IF NOT EXISTS sms_broadcasts (
+      id BIGSERIAL PRIMARY KEY,
+      text TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      total INT NOT NULL DEFAULT 0,
+      sent INT NOT NULL DEFAULT 0,
+      failed INT NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'sending'
+    );
+    CREATE TABLE IF NOT EXISTS sms_outbox (
+      id BIGSERIAL PRIMARY KEY,
+      broadcast_id BIGINT NOT NULL REFERENCES sms_broadcasts(id) ON DELETE CASCADE,
+      user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+      phone TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      at TIMESTAMPTZ
+    );
+    CREATE INDEX IF NOT EXISTS sms_outbox_pending ON sms_outbox (status, id);
   `);
   console.log('Accounts database ready');
 }
@@ -872,6 +891,140 @@ async function leaderboard(board, period, userId) {
   return { board: b, period: week ? 'week' : 'all', top, me: mine ? row(mine) : { ...nickOf(userId), value: 0, rank: null, me: true } };
 }
 
+// ---------- admin SMS broadcasts ----------
+// Only to students who agreed to news (checked again right before each SMS), one SMS every
+// SMS_BROADCAST_EVERY_SEC seconds and at most SMS_BROADCAST_DAILY a day: a personal SIM card
+// that sends hundreds of messages at once can be blocked by the operator as spam.
+const SMS_BROADCAST_DAILY = Number(process.env.SMS_BROADCAST_DAILY) || 100;
+const SMS_BROADCAST_EVERY_SEC = Number(process.env.SMS_BROADCAST_EVERY_SEC) || 20;
+const SMS_TEXT_MAX = 300;
+const cleanSmsText = (v) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, SMS_TEXT_MAX);
+const TODAY_TASHKENT = `date_trunc('day', now() AT TIME ZONE 'Asia/Tashkent') AT TIME ZONE 'Asia/Tashkent'`;
+
+// Who can get an SMS: students who agreed to news and have a phone; groups narrow it down.
+const SMS_BASE = `role = 'student' AND marketing AND phone IS NOT NULL`;
+const SMS_GROUPS = {
+  all: 'TRUE',
+  paid: `premium_until > now() AND plan_kind = 'paid'`,
+  trial: `premium_until > now() AND plan_kind = 'trial'`,
+  free: `(premium_until IS NULL OR premium_until <= now())`,
+};
+
+async function smsBroadcastInfo() {
+  const db = requirePool();
+  const [{ rows: [n] }, { rows: list }, { rows: [today] }, { rows: people }] = await Promise.all([
+    db.query(`SELECT count(*)::int AS n,
+                     count(*) FILTER (WHERE ${SMS_GROUPS.paid})::int AS paid,
+                     count(*) FILTER (WHERE ${SMS_GROUPS.trial})::int AS trial,
+                     count(*) FILTER (WHERE ${SMS_GROUPS.free})::int AS free
+                FROM users WHERE ${SMS_BASE}`),
+    db.query(`SELECT id, text, created_at, total, sent, failed, status FROM sms_broadcasts ORDER BY id DESC LIMIT 10`),
+    db.query(`SELECT count(*)::int AS n FROM sms_outbox WHERE status = 'sent' AND at >= ${TODAY_TASHKENT}`),
+    db.query(`SELECT phone, premium_until, plan_kind, plan_tier FROM users WHERE ${SMS_BASE} ORDER BY created_at DESC LIMIT 1000`),
+  ]);
+  return {
+    gateway: notify.smsGate(), recipients: n.n, sentToday: today.n, dailyLimit: SMS_BROADCAST_DAILY, everySec: SMS_BROADCAST_EVERY_SEC,
+    groups: { all: n.n, paid: n.paid, trial: n.trial, free: n.free },
+    people: people.map((u) => ({ phone: u.phone, until: u.premium_until, kind: u.plan_kind, tier: u.plan_tier })),
+    broadcasts: list.map((b) => ({ id: Number(b.id), text: b.text, at: b.created_at, total: b.total, sent: b.sent, failed: b.failed, status: b.status })),
+  };
+}
+
+async function createBroadcast(text, group = 'all', phones = []) {
+  const db = requirePool();
+  const t = cleanSmsText(text);
+  const pick = group === 'pick';
+  const picked = pick ? [...new Set((Array.isArray(phones) ? phones : []).slice(0, 2000).map((p) => { try { return normalizePhone(String(p)); } catch { return null; } }).filter(Boolean))] : [];
+  if (pick && !picked.length) throw new AuthError('bad_request');
+  const where = pick ? 'phone = ANY($2::text[])' : SMS_GROUPS[group] || SMS_GROUPS.all;
+  if (t.length < 2) throw new AuthError('bad_request');
+  if (!notify.smsGate()) throw new AuthError('sms_unavailable', 503);
+  const busy = await db.query(`SELECT 1 FROM sms_broadcasts WHERE status = 'sending' LIMIT 1`);
+  if (busy.rows.length) throw new AuthError('broadcast_busy', 409);
+  const { rows: [b] } = await db.query(`INSERT INTO sms_broadcasts (text) VALUES ($1) RETURNING id`, [t]);
+  const { rowCount } = await db.query(
+    `INSERT INTO sms_outbox (broadcast_id, user_id, phone)
+     SELECT $1, id, phone FROM users WHERE ${SMS_BASE} AND ${where} ORDER BY id`, pick ? [b.id, picked] : [b.id]);
+  await db.query(`UPDATE sms_broadcasts SET total = $2, status = CASE WHEN $2 = 0 THEN 'done' ELSE 'sending' END WHERE id = $1`, [b.id, rowCount]);
+  if (rowCount) { broadcastActive = true; pausedUntil = 0; }
+  return { id: Number(b.id), total: rowCount };
+}
+
+async function cancelBroadcast(id) {
+  const db = requirePool();
+  await db.query(`UPDATE sms_outbox SET status = 'cancelled' WHERE broadcast_id = $1 AND status = 'pending'`, [id]);
+  await db.query(`UPDATE sms_broadcasts SET status = 'cancelled' WHERE id = $1 AND status = 'sending'`, [id]);
+  return { ok: true };
+}
+
+// One test SMS to a number the admin types (e.g. their own) before sending to everyone.
+const smsTests = [];
+async function testSms(phone, text) {
+  const t = cleanSmsText(text);
+  if (t.length < 2) throw new AuthError('bad_request');
+  if (!notify.smsGate()) throw new AuthError('sms_unavailable', 503);
+  const target = normalizePhone(phone);
+  const now = Date.now();
+  while (smsTests.length && now - smsTests[0] > 3600 * 1000) smsTests.shift();
+  if (smsTests.length >= 10) throw new AuthError('code_limit', 429);
+  smsTests.push(now);
+  try {
+    await notify.sendText(target, t);
+  } catch {
+    throw new AuthError('code_send_failed', 502);
+  }
+  return { ok: true };
+}
+
+// Sends the next waiting SMS (called every SMS_BROADCAST_EVERY_SEC seconds by the server).
+// The database is asked only while a broadcast is going on, so Neon can still sleep between
+// visits (its free plan counts the hours it is awake). After the daily limit it waits for
+// midnight in Tashkent (UTC+5).
+let ticking = false;
+let broadcastActive = false;
+let pausedUntil = 0;
+const nextTashkentMidnight = () => {
+  const d = new Date(Date.now() + 5 * 3600 * 1000);
+  d.setUTCHours(24, 0, 0, 0);
+  return d.getTime() - 5 * 3600 * 1000;
+};
+async function checkActiveBroadcast() {
+  if (!pool) return;
+  const { rows } = await pool.query(`SELECT 1 FROM sms_broadcasts WHERE status = 'sending' LIMIT 1`).catch(() => ({ rows: [] }));
+  broadcastActive = rows.length > 0;
+}
+async function broadcastTick() {
+  if (!pool || ticking || !broadcastActive || Date.now() < pausedUntil || !notify.smsGate()) return;
+  ticking = true;
+  try {
+    const db = pool;
+    const { rows: [today] } = await db.query(`SELECT count(*)::int AS n FROM sms_outbox WHERE status = 'sent' AND at >= ${TODAY_TASHKENT}`);
+    if (today.n >= SMS_BROADCAST_DAILY) { pausedUntil = nextTashkentMidnight(); return; }
+    const { rows: [m] } = await db.query(
+      `UPDATE sms_outbox SET status = 'sending' WHERE id = (
+         SELECT o.id FROM sms_outbox o JOIN sms_broadcasts b ON b.id = o.broadcast_id
+          WHERE o.status = 'pending' AND b.status = 'sending' ORDER BY o.id LIMIT 1 FOR UPDATE OF o SKIP LOCKED)
+       RETURNING id, broadcast_id, user_id, phone`);
+    if (!m) { broadcastActive = false; return; }
+    const { rows: [u] } = await db.query('SELECT marketing FROM users WHERE id = $1', [m.user_id]);
+    const { rows: [b] } = await db.query('SELECT text FROM sms_broadcasts WHERE id = $1', [m.broadcast_id]);
+    let status = 'skipped';
+    if (u?.marketing) {
+      try { await notify.sendText(m.phone, b.text); status = 'sent'; } catch { status = 'failed'; }
+    }
+    await db.query('UPDATE sms_outbox SET status = $2, at = now() WHERE id = $1', [m.id, status]);
+    await db.query(
+      `UPDATE sms_broadcasts SET sent = sent + $2, failed = failed + $3,
+              status = CASE WHEN status = 'sending' AND NOT EXISTS (SELECT 1 FROM sms_outbox WHERE broadcast_id = $1 AND status IN ('pending', 'sending')) THEN 'done' ELSE status END
+        WHERE id = $1`,
+      [m.broadcast_id, status === 'sent' ? 1 : 0, status === 'failed' ? 1 : 0]);
+  } catch (err) {
+    console.warn(`SMS broadcast: ${err.message}`);
+  } finally {
+    ticking = false;
+  }
+}
+
 async function cachedTopics(subject, grade, lang) {
   if (!pool) return null;
   const { rows } = await pool.query('SELECT topics FROM topic_cache WHERE subject = $1 AND grade = $2 AND lang = $3', [subject, grade, lang]);
@@ -1126,6 +1279,13 @@ module.exports = {
   listMarketing,
   leaderboard,
   addLeaderPoints,
+  smsBroadcastInfo,
+  createBroadcast,
+  cancelBroadcast,
+  testSms,
+  broadcastTick,
+  checkActiveBroadcast,
+  SMS_BROADCAST_EVERY_SEC,
   CONSENT_VERSION,
   CONSENT_TEXTS,
   login,

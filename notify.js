@@ -42,6 +42,24 @@ async function sendViaPhone(phone, code) {
   throw new Error('sms_failed');
 }
 
+// Any text through the owner's phone (admin SMS broadcasts and tests). Only the phone gateway:
+// DevSMS needs a moderated advertising template for such texts.
+async function sendText(phone, text) {
+  if (!smsGate()) throw new Error('sms_failed');
+  const r = await fetch('https://api.sms-gate.app/3rdparty/v1/messages', {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${SMSGATE_LOGIN}:${SMSGATE_PASSWORD}`).toString('base64')}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ textMessage: { text }, phoneNumbers: [`+${phone}`] }),
+    signal: AbortSignal.timeout(15000),
+  }).catch(() => null);
+  if (r && r.ok) return;
+  console.warn(`SMS gateway (text): ${r ? r.status : 'network error'}`);
+  throw new Error('sms_failed');
+}
+
 async function sendSmsCode(phone, code, purpose) {
   if (smsGate() && !DEVSMS_API_KEY) return sendViaPhone(phone, code);
   const body = JSON.stringify({ phone, otp: { template_type: OTP_TYPE[purpose] || 1, service_name: DEVSMS_SERVICE, code } });
@@ -110,4 +128,4 @@ async function sendEmailCode(email, code, purpose, lang) {
   throw new Error('email_failed');
 }
 
-module.exports = { smsEnabled, emailEnabled, sendSmsCode, sendEmailCode };
+module.exports = { smsEnabled, smsGate, emailEnabled, sendSmsCode, sendText, sendEmailCode };

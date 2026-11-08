@@ -291,6 +291,31 @@
           none: 'Пока никто не дал согласие.',
           since: (d) => `согласие с ${d}`,
           csvHint: 'Файл с телефонами можно загрузить в DevSMS → «Guruhli SMS» для рассылки (нужен одобренный рекламный шаблон).',
+          smsTitle: 'SMS-рассылка с вашего телефона',
+          smsText: (n) => `Получат только согласившиеся на новости и указавшие телефон: ${n}. Отправляется с телефона-шлюза SMSGate.`,
+          smsLimits: (sec, day, today) => `Медленно, чтобы оператор не заблокировал SIM-карту: 1 SMS каждые ${sec} с, не больше ${day} в день (сегодня отправлено ${today}). Остаток уйдёт завтра.`,
+          smsPh: 'Текст SMS. Например: Nimi AI: новые уроки по математике! Отказаться от новостей — в Nimi → Настройки.',
+          smsCount: (chars, parts) => `${chars} знаков · ${parts} SMS на человека`,
+          smsTestPh: 'Номер для пробы, например 90 123 45 67',
+          smsTest: 'Отправить пробное SMS',
+          smsTestDone: 'Пробное SMS отправлено. Проверьте телефон.',
+          smsSend: (n) => `Отправить (${n})`,
+          smsWho: 'Кому отправить',
+          smsGroups: { all: 'Всем', paid: 'С подпиской', trial: 'На бесплатной неделе', free: 'Без подписки', pick: 'Выбрать вручную' },
+          smsPickAll: 'Выбрать всех',
+          smsPickNone: 'Снять все',
+          smsOnly: 'В списках только те, кто согласился получать новости.',
+          smsConfirm: (n) => `Отправить это SMS ${n} людям? Отменить можно будет только неотправленные.`,
+          smsYes: 'Да, отправить',
+          smsStarted: (n) => `Рассылка началась: ${n} SMS в очереди.`,
+          smsNoGate: 'Телефон-шлюз не подключён: в Render нужны SMSGATE_LOGIN и SMSGATE_PASSWORD.',
+          smsBusy: 'Предыдущая рассылка ещё идёт — дождитесь её или остановите.',
+          smsFailed: 'Не получилось отправить. Проверьте, что телефон включён, в интернете и приложение SMSGate запущено.',
+          smsHistory: 'Последние рассылки',
+          smsStatus: { sending: 'идёт', done: 'готово', cancelled: 'остановлена' },
+          smsProgress: (sent, total, failed) => `${sent} из ${total}${failed ? ` · ошибок ${failed}` : ''}`,
+          smsStop: 'Остановить',
+          smsLegal: 'Пишите в начале «Nimi AI:» и в конце, как отказаться. Это требование закона о рекламе.',
         },
         marketingBadge: 'согласен на рассылку',
         one: 'Снять подписку',
@@ -744,6 +769,31 @@
           none: "Hozircha hech kim rozilik bermagan.",
           since: (d) => `${d} dan rozi`,
           csvHint: "Telefonlar faylini DevSMS → «Guruhli SMS»ga yuklab, xabar yuborish mumkin (tasdiqlangan reklama shabloni kerak).",
+          smsTitle: 'Telefoningizdan SMS xabarnoma',
+          smsText: (n) => `Faqat yangiliklarga rozi bo'lgan va telefon ko'rsatganlar oladi: ${n}. SMSGate telefon-shlyuzidan yuboriladi.`,
+          smsLimits: (sec, day, today) => `Operator SIM-kartani bloklamasligi uchun sekin: har ${sec} soniyada 1 SMS, kuniga ${day} tadan ko'p emas (bugun ${today} ta yuborildi). Qolgani ertaga ketadi.`,
+          smsPh: "SMS matni. Masalan: Nimi AI: matematikadan yangi darslar! Yangiliklardan voz kechish — Nimi → Sozlamalar.",
+          smsCount: (chars, parts) => `${chars} belgi · har bir odamga ${parts} SMS`,
+          smsTestPh: 'Sinov uchun raqam, masalan 90 123 45 67',
+          smsTest: 'Sinov SMS yuborish',
+          smsTestDone: 'Sinov SMS yuborildi. Telefonni tekshiring.',
+          smsSend: (n) => `Yuborish (${n})`,
+          smsWho: 'Kimga yuborish',
+          smsGroups: { all: 'Hammaga', paid: 'Obunasi borlarga', trial: 'Bepul haftadagilarga', free: 'Obunasizlarga', pick: "Qo'lda tanlash" },
+          smsPickAll: 'Hammasini tanlash',
+          smsPickNone: 'Hammasini olib tashlash',
+          smsOnly: "Ro'yxatlarda faqat yangiliklarga rozi bo'lganlar.",
+          smsConfirm: (n) => `Bu SMS ${n} kishiga yuborilsinmi? Faqat yuborilmaganlarini bekor qilish mumkin.`,
+          smsYes: 'Ha, yuborish',
+          smsStarted: (n) => `Xabarnoma boshlandi: navbatda ${n} ta SMS.`,
+          smsNoGate: "Telefon-shlyuz ulanmagan: Render'da SMSGATE_LOGIN va SMSGATE_PASSWORD kerak.",
+          smsBusy: "Oldingi xabarnoma hali ketyapti — tugashini kuting yoki to'xtating.",
+          smsFailed: "Yuborib bo'lmadi. Telefon yoniqligini, internetga ulanganini va SMSGate ishlayotganini tekshiring.",
+          smsHistory: 'Oxirgi xabarnomalar',
+          smsStatus: { sending: 'ketyapti', done: 'tayyor', cancelled: "to'xtatilgan" },
+          smsProgress: (sent, total, failed) => `${sent} / ${total}${failed ? ` · xatolar ${failed}` : ''}`,
+          smsStop: "To'xtatish",
+          smsLegal: "Boshida «Nimi AI:» va oxirida qanday voz kechishni yozing — bu reklama qonuni talabi.",
         },
         marketingBadge: 'xabarnomaga rozi',
         one: 'Obunani bekor qilish',
@@ -1845,7 +1895,7 @@
       const pending = q.status === 'pending';
       list.append(h('div', { class: `${CARD} flex flex-col gap-2 ${pending ? '' : 'opacity-60'}` },
         h('div', { class: 'flex items-center justify-between gap-2' },
-          h('p', { class: 'min-w-0 truncate font-semibold text-white' }, `№${q.id} · ${q.email}`),
+          h('p', { class: 'min-w-0 break-all font-semibold text-white' }, `№${q.id} · ${N.prettyAccount(q.email)}`),
           h('span', { class: `shrink-0 rounded-full px-2.5 py-1 text-xs ${pending ? 'bg-amber-400/15 text-amber-200' : ['paid', 'granted'].includes(q.status) ? 'bg-emerald-500/15 text-emerald-200' : 'bg-night-700 text-slate-400'}` }, A.status[q.status] || q.status)),
         h('p', { class: 'text-sm text-slate-400' }, `${Number(q.months) ? `${planById(q.plan).name} · ${t('sub').monthLabel(q.months)} · ${sum(planById(q.plan).price * q.months)}` : A.week} · ${dateStr(q.created_at)}${q.premium_until ? ` · ${t('sub').active(dateStr(q.premium_until))}` : ''}`),
         pending ? h('div', { class: 'grid grid-cols-2 gap-2' },
@@ -1879,7 +1929,7 @@
         h('p', { class: 'text-sm font-semibold text-rose-200' }, A.willRevoke(emails.length)),
         h('ul', { class: 'flex max-h-64 flex-col gap-1 overflow-y-auto rounded-xl bg-night-800 p-3 text-sm text-slate-200' },
           r.users.map((u) => h('li', { class: 'flex items-baseline justify-between gap-2' },
-            h('span', { class: 'min-w-0 truncate' }, u.email),
+            h('span', { class: 'min-w-0 break-all' }, N.prettyAccount(u.email)),
             h('span', { class: 'shrink-0 text-xs text-slate-400' }, `${u.plan_kind === 'trial' ? A.week : planById(u.plan_tier).name} ${A.until(dateStr(u.premium_until))}`)))),
         h('p', { class: `text-xs ${kept.length ? 'text-slate-400' : 'text-amber-200'}` }, kept.length ? A.keeping(kept.join(', ')) : A.keepNone),
         h('div', { class: 'grid grid-cols-2 gap-2' }, yes,
@@ -1945,7 +1995,7 @@
     const list = h('div', { class: 'flex flex-col gap-2' });
     if (!r.users.length) list.append(h('p', { class: 'text-sm text-slate-400' }, C.none));
     r.users.slice(0, 300).forEach((u) => list.append(h('div', { class: 'flex items-center justify-between gap-3 rounded-2xl bg-night-800 px-3 py-2 ring-1 ring-white/5' },
-      h('p', { class: 'truncate font-medium text-white' }, u.phone ? N.prettyAccount(u.phone) : u.email),
+      h('p', { class: 'min-w-0 break-all font-medium text-white' }, u.phone ? N.prettyAccount(u.phone) : u.email),
       h('p', { class: 'shrink-0 text-xs text-slate-400' }, C.since(dateStr(u.at))))));
     root.append(h('div', { class: `${CARD} flex flex-col gap-3` },
       h('p', { class: 'text-lg font-semibold text-white' }, C.title),
@@ -1956,6 +2006,103 @@
         btn(C.emails(emails.length), () => download(`nimi-emails-${day}.csv`, ['email', 'consent_at'], emails.map((u) => [u.email, u.at])), emails.length)),
       h('p', { class: 'text-xs text-slate-400' }, C.csvHint),
       list));
+    root.append(await smsBlock(C));
+  }
+
+  // Admin: an SMS to everyone who agreed to news, sent slowly from the owner's phone (SMSGate).
+  async function smsBlock(C) {
+    const box = h('div', { class: `${CARD} flex flex-col gap-3` });
+    const info = await N.postJson('/api/admin/sms-info', {}).catch(() => ({}));
+    box.append(h('p', { class: 'text-lg font-semibold text-white' }, C.smsTitle));
+    if (!info.gateway) { box.append(h('p', { class: 'text-sm text-amber-200' }, C.smsNoGate)); return box; }
+    box.append(h('p', { class: 'text-sm text-slate-300' }, C.smsText(info.recipients)),
+      h('p', { class: 'text-xs text-slate-400' }, C.smsLimits(info.everySec, info.dailyLimit, info.sentToday)));
+    const text = h('textarea', { rows: '4', maxlength: '300', class: `${INPUT} min-h-28 resize-y py-3`, placeholder: C.smsPh });
+    const counter = h('p', { class: 'px-1 text-xs text-slate-400' });
+    const count = () => {
+      const v = text.value.trim();
+      const gsm = /^[\x20-\x7E\n]*$/.test(v);
+      const parts = !v.length ? 0 : gsm ? (v.length <= 160 ? 1 : Math.ceil(v.length / 153)) : (v.length <= 70 ? 1 : Math.ceil(v.length / 67));
+      counter.textContent = C.smsCount(v.length, parts);
+    };
+    text.addEventListener('input', count);
+    count();
+    const msg = h('p', { class: 'text-sm' });
+    const say = (txt, ok) => { msg.textContent = txt; msg.className = `text-sm ${ok ? 'text-emerald-200' : 'text-rose-200'}`; };
+    const fail = (r) => say(r.code === 'broadcast_busy' ? C.smsBusy : r.code === 'sms_unavailable' ? C.smsNoGate : C.smsFailed, false);
+    const phone = h('input', { type: 'tel', inputmode: 'tel', class: INPUT, placeholder: C.smsTestPh });
+    const testBtn = h('button', { type: 'button', class: `${BTN2} sm:w-auto` }, ico('send'), C.smsTest);
+    testBtn.onclick = async () => {
+      testBtn.disabled = true;
+      const r = await N.postJson('/api/admin/sms-test', { phone: phone.value, text: text.value }).catch(() => ({}));
+      testBtn.disabled = false;
+      if (r.ok) say(C.smsTestDone, true); else fail(r);
+    };
+    // Who gets it: a group (all / with subscription / free week / without) or people picked by hand.
+    let group = 'all';
+    const picked = new Set();
+    const groups = { ...(info.groups || { all: info.recipients }), pick: 0 };
+    const howMany = () => (group === 'pick' ? picked.size : groups[group] || 0);
+    const whoRow = h('div', { class: 'flex flex-wrap gap-2', role: 'group', 'aria-label': C.smsWho });
+    const pickBox = h('div', { class: 'hidden flex-col gap-2' });
+    const sendBtn = h('button', { type: 'button', class: BTN }, ico('users'), h('span', {}));
+    const refresh = () => {
+      whoRow.replaceChildren(...Object.keys(C.smsGroups).map((g) => h('button', {
+        type: 'button', 'aria-pressed': String(group === g),
+        class: `min-h-10 rounded-full px-3.5 text-sm font-semibold ring-1 ${group === g ? 'bg-brand-500 text-onfill ring-brand-500' : 'bg-night-800 text-slate-200 ring-white/10 hover:bg-night-700'}`,
+        onclick: () => { group = g; confirmBox.replaceChildren(); refresh(); },
+      }, g === 'pick' ? C.smsGroups[g] : `${C.smsGroups[g]} · ${groups[g] || 0}`)));
+      pickBox.classList.toggle('hidden', group !== 'pick');
+      pickBox.classList.toggle('flex', group === 'pick');
+      sendBtn.lastChild.textContent = C.smsSend(howMany());
+      sendBtn.disabled = !howMany();
+    };
+    const people = info.people || [];
+    const checks = people.map((u) => {
+      const box = h('input', { type: 'checkbox', class: 'h-5 w-5 shrink-0 accent-brand-500' });
+      box.onchange = () => { if (box.checked) picked.add(u.phone); else picked.delete(u.phone); refresh(); };
+      const active = u.until && new Date(u.until) > new Date();
+      return { box, row: h('label', { class: 'flex cursor-pointer items-center gap-3 rounded-xl bg-night-800 px-3 py-2' }, box,
+        h('span', { class: 'min-w-0 flex-1 break-all text-sm font-medium text-white' }, N.prettyAccount(u.phone)),
+        h('span', { class: 'shrink-0 text-xs text-slate-400' }, active ? (u.kind === 'trial' ? t('admin').week : planById(u.tier).name) : t('admin').noAccess)) };
+    });
+    const setAll = (on) => { checks.forEach((c, i) => { c.box.checked = on; if (on) picked.add(people[i].phone); else picked.delete(people[i].phone); }); refresh(); };
+    pickBox.append(h('div', { class: 'flex gap-2' },
+      h('button', { type: 'button', class: 'min-h-9 rounded-lg bg-night-700 px-3 text-sm text-white', onclick: () => setAll(true) }, C.smsPickAll),
+      h('button', { type: 'button', class: 'min-h-9 rounded-lg bg-night-700 px-3 text-sm text-white', onclick: () => setAll(false) }, C.smsPickNone)),
+      h('div', { class: 'flex max-h-72 flex-col gap-1.5 overflow-y-auto' }, checks.map((c) => c.row)));
+    const confirmBox = h('div', { class: 'flex flex-col gap-2' });
+    sendBtn.onclick = () => {
+      if (text.value.trim().length < 2) { text.focus(); return; }
+      const n = howMany();
+      confirmBox.replaceChildren(h('p', { class: 'text-sm text-amber-200' }, C.smsConfirm(n)),
+        h('div', { class: 'grid grid-cols-2 gap-2' },
+          h('button', { type: 'button', class: 'min-h-11 rounded-xl bg-brand-500 px-3 text-sm font-semibold text-onfill', onclick: async () => {
+            confirmBox.replaceChildren();
+            const r = await N.postJson('/api/admin/sms-send', { text: text.value, group, phones: [...picked] }).catch(() => ({}));
+            if (r.id) { say(C.smsStarted(r.total), true); text.value = ''; count(); history(); } else fail(r);
+          } }, C.smsYes),
+          h('button', { type: 'button', class: 'min-h-11 rounded-xl bg-night-700 px-3 text-sm text-white', onclick: () => confirmBox.replaceChildren() }, t('admin').cancel)));
+    };
+    const list = h('div', { class: 'flex flex-col gap-2' });
+    const history = async () => {
+      const r = await N.postJson('/api/admin/sms-info', {}).catch(() => ({}));
+      list.replaceChildren();
+      if (!r.broadcasts?.length) return;
+      list.append(h('p', { class: 'text-sm font-semibold text-white' }, C.smsHistory));
+      r.broadcasts.forEach((b) => list.append(h('div', { class: 'flex flex-col gap-1.5 rounded-2xl bg-night-800 p-3 ring-1 ring-white/5' },
+        h('p', { class: 'text-sm text-slate-200' }, b.text),
+        h('div', { class: 'flex items-center justify-between gap-2 text-xs text-slate-400' },
+          h('span', {}, `${dateStr(b.at)} · ${C.smsStatus[b.status] || b.status} · ${C.smsProgress(b.sent, b.total, b.failed)}`),
+          b.status === 'sending' ? h('button', { type: 'button', class: 'min-h-9 rounded-lg bg-rose-500/15 px-3 text-rose-200 ring-1 ring-rose-400/30', onclick: async () => { await N.postJson('/api/admin/sms-cancel', { id: b.id }).catch(() => {}); history(); } }, C.smsStop) : null))));
+    };
+    refresh();
+    box.append(text, counter, h('p', { class: 'text-xs text-amber-200' }, C.smsLegal),
+      h('div', { class: 'flex flex-col gap-2 sm:flex-row' }, phone, testBtn),
+      h('p', { class: 'text-sm font-semibold text-white' }, C.smsWho), whoRow, h('p', { class: 'text-xs text-slate-400' }, C.smsOnly), pickBox,
+      sendBtn, confirmBox, msg, list);
+    history();
+    return box;
   }
 
   async function renderDashboard(root, A) {
@@ -1977,7 +2124,7 @@
     const topList = T.top.length
       ? h('div', { class: 'flex flex-col gap-2' }, T.top.map((r) => h('div', { class: 'flex flex-col gap-1.5 rounded-2xl bg-night-800 p-3 ring-1 ring-white/5' },
           h('div', { class: 'flex items-baseline justify-between gap-2' },
-            h('p', { class: 'min-w-0 truncate text-sm font-semibold text-white' }, r.email),
+            h('p', { class: 'min-w-0 break-all text-sm font-semibold text-white' }, N.prettyAccount(r.email)),
             h('p', { class: 'shrink-0 text-xs text-slate-400' }, tierName(r.tier))),
           h('p', { class: 'text-xs tabular-nums text-slate-400' }, `${tok(r.input)} / ${tok(r.output)} · ${D.share(r.share)}`),
           h('div', { class: 'h-1.5 overflow-hidden rounded-full bg-night-700' },
@@ -2052,7 +2199,7 @@
             : h('p', { class: 'text-sm text-rose-200' }, t('errors').default));
         };
         list.append(h('div', { class: 'flex flex-col gap-2 rounded-2xl bg-night-800 p-3 ring-1 ring-white/5' },
-          h('p', { class: 'truncate font-semibold text-white' }, N.prettyAccount(u.email)), info,
+          h('p', { class: 'break-all font-semibold text-white' }, N.prettyAccount(u.email)), info,
           h('div', { class: 'flex flex-wrap gap-2' },
             h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500 px-3 text-sm font-semibold text-onfill', onclick: () => grant(u.email, 0) }, A.grant(0)),
             h('button', { type: 'button', class: 'min-h-10 rounded-xl bg-brand-500/20 px-3 text-sm text-white ring-1 ring-brand-400/40', onclick: () => grant(u.email, 1, null, userPlan.id) }, `${A.grant(1)} · ${userPlan.name}`),

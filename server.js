@@ -591,6 +591,10 @@ async function handleAdmin(req, res, body, user, action) {
   }
   if (action === 'stats') return sendJson(res, 200, await auth.adminStats(today(), month()));
   if (action === 'consents') return sendJson(res, 200, await auth.listMarketing());
+  if (action === 'sms-info') return sendJson(res, 200, await auth.smsBroadcastInfo());
+  if (action === 'sms-test') return sendJson(res, 200, await auth.testSms(cleanText(body.phone, 30), body.text));
+  if (action === 'sms-send') return sendJson(res, 200, await auth.createBroadcast(body.text, ['all', 'paid', 'trial', 'free', 'pick'].includes(body.group) ? body.group : 'all', body.phones));
+  if (action === 'sms-cancel') return sendJson(res, 200, await auth.cancelBroadcast(parseInt(body.id, 10) || 0));
   if (action === 'revoke') return sendJson(res, 200, await auth.revokeSubscription(cleanText(body.email, 254)));
   // Without "apply" it only lists who would lose access; "apply" is that list, confirmed.
   if (action === 'revoke-except') {
@@ -864,5 +868,10 @@ auth.init()
     http.createServer(route).listen(PORT, () => {
       console.log(`Nimi AI listening on port ${PORT}, model ${MODEL}`);
       keepAwake();
+      // Admin SMS broadcasts go out slowly, one message per tick, from the owner's phone.
+      if (auth.enabled()) {
+        auth.checkActiveBroadcast();
+        setInterval(() => auth.broadcastTick(), auth.SMS_BROADCAST_EVERY_SEC * 1000).unref();
+      }
     });
   });
