@@ -268,7 +268,9 @@
         faceDeleteAsk: 'Убрать это устройство? Если устройств не останется, вход будет снова только по паролю.',
         faceUsed: (d) => `последний вход ${d}`,
         faceNever: 'ещё не использовали',
-        faceNoSupport: 'Этот браузер не умеет Face ID. Откройте сайт в Safari или Chrome (не в приложении Nimi).',
+        faceNoSupport: 'Этот браузер не умеет Face ID. Откройте сайт в Safari или Chrome.',
+        faceInApp: 'Открылся Chrome: подтвердите там Face ID или отпечаток — потом вернётесь сюда.',
+        faceUpdateApp: 'Для Face ID нужна новая версия приложения Nimi — скачайте её на сайте (кнопка «Скачать приложение для Android»).',
         faceFailed: 'Не получилось. Попробуйте ещё раз — и подтвердите Face ID или отпечаток, когда телефон попросит.',
         faceLost: 'Потеряли телефон? Напишите Claude в чат «сбрось Face ID для <логин>» — вход снова будет по паролю.',
         pending: 'Заявки',
@@ -777,7 +779,9 @@
         faceDeleteAsk: "Bu qurilmani olib tashlaysizmi? Qurilma qolmasa, yana faqat parol bilan kiriladi.",
         faceUsed: (d) => `oxirgi kirish ${d}`,
         faceNever: 'hali ishlatilmagan',
-        faceNoSupport: "Bu brauzer Face ID'ni bilmaydi. Saytni Safari yoki Chrome'da oching (Nimi ilovasida emas).",
+        faceNoSupport: "Bu brauzer Face ID'ni bilmaydi. Saytni Safari yoki Chrome'da oching.",
+        faceInApp: "Chrome ochildi: u yerda Face ID yoki barmoq izini tasdiqlang — keyin bu yerga qaytasiz.",
+        faceUpdateApp: "Face ID uchun Nimi ilovasining yangi versiyasi kerak — uni saytdan yuklab oling («Android uchun ilovani yuklab olish» tugmasi).",
         faceFailed: "Bo'lmadi. Qayta urinib ko'ring — telefon so'raganda Face ID yoki barmoq izini tasdiqlang.",
         faceLost: "Telefon yo'qoldimi? Claude'ga chatda «<login> uchun Face ID'ni o'chir» deb yozing — yana parol bilan kirasiz.",
         pending: 'Arizalar',
@@ -1976,6 +1980,15 @@
       if (note) msg.className = 'rounded-xl bg-emerald-500/10 p-3 text-sm text-emerald-100';
       const add = h('button', { type: 'button', class: BTN }, A.faceAdd);
       add.onclick = async () => {
+        if (N.inApp) {
+          // The app opens Chrome for Face ID and comes back; the list is fresh after that.
+          add.disabled = true;
+          const code = await N.passkeyViaApp(true, name.value.trim());
+          add.disabled = false;
+          msg.className = code ? 'text-sm text-rose-200' : 'text-sm text-slate-300';
+          msg.textContent = code ? (code === 'passkey_update_app' ? A.faceUpdateApp : A.faceFailed) : A.faceInApp;
+          return;
+        }
         if (!N.passkeysSupported()) { msg.className = 'text-sm text-rose-200'; msg.textContent = A.faceNoSupport; return; }
         add.disabled = true;
         try {

@@ -751,11 +751,51 @@ const APP_CODES = new Map(); // code -> { userId, exp }
 const APP_CODE_TTL_MS = 5 * 60 * 1000;
 async function handleAppCode(req, res, body) {
   const user = await auth.googleUser(body);
+  sendJson(res, 200, { code: newAppCode(user.id) });
+}
+function newAppCode(userId, passkeyChecked = false) {
   const now = Date.now();
   for (const [k, v] of APP_CODES) if (v.exp < now) APP_CODES.delete(k);
   const code = require('crypto').randomBytes(24).toString('base64url');
-  APP_CODES.set(code, { userId: user.id, exp: now + APP_CODE_TTL_MS });
-  sendJson(res, 200, { code });
+  APP_CODES.set(code, { userId, passkeyChecked, exp: now + APP_CODE_TTL_MS });
+  return code;
+}
+
+// Face ID inside the Android app: the WebView cannot use passkeys, so the app opens
+// /app-passkey.html in Chrome with a one-time ticket. The page checks Face ID there and goes back
+// to the app with the same one-time code as Google sign-in (already past the second step).
+//   ticket  — from the app's WebView: a session waiting for Face ID ('login') or an admin adding a device ('enroll')
+//   options — from Chrome: what to ask the phone
+//   verify  — from Chrome: checks the answer, returns the code for the app
+const APP_TICKETS = new Map(); // ticket -> { kind, user, exp }
+async function handleAppPasskey(req, res, body, step) {
+  if (!auth.enabled()) return sendJson(res, 503, { code: 'auth_unavailable' });
+  const now = Date.now();
+  for (const [k, v] of APP_TICKETS) if (v.exp < now) APP_TICKETS.delete(k);
+  if (step === 'ticket') {
+    let kind = 'login';
+    let user = await auth.pendingUser(req);
+    if (!user && body.enroll) {
+      const full = await auth.getUser(req);
+      if (full && isAdmin(full)) [kind, user] = ['enroll', full];
+    }
+    if (!user) return sendJson(res, 401, { code: 'passkey_expired' });
+    const ticket = require('crypto').randomBytes(24).toString('base64url');
+    APP_TICKETS.set(ticket, { kind, user: { id: user.id, email: user.email }, exp: now + APP_CODE_TTL_MS });
+    return sendJson(res, 200, { ticket, kind });
+  }
+  const ticket = String(body.ticket || '');
+  const entry = APP_TICKETS.get(ticket);
+  if (!entry || entry.exp < now) return sendJson(res, 400, { code: 'passkey_expired' });
+  if (step === 'options') {
+    return sendJson(res, 200, { kind: entry.kind, options: entry.kind === 'enroll' ? await passkeys.registrationOptions(req, entry.user) : await passkeys.loginOptions(req, entry.user) });
+  }
+  if (step !== 'verify') return sendJson(res, 404, { code: 'not_found' });
+  // A failed try keeps the ticket: the page asks for new options and tries again.
+  if (entry.kind === 'enroll') await passkeys.register(req, entry.user, body);
+  else await passkeys.login(req, entry.user, body);
+  APP_TICKETS.delete(ticket);
+  sendJson(res, 200, { appCode: newAppCode(entry.user.id, true) });
 }
 async function handleAppExchange(req, res) {
   const code = new URL(req.url, 'http://x').searchParams.get('code') || '';
@@ -767,7 +807,7 @@ async function handleAppExchange(req, res) {
   }
   const cookie = await auth.startSession(req, entry.userId);
   // An account with Face ID still has to pass it; the page shows that step after the redirect.
-  if ((await auth.listPasskeys(entry.userId)).length) await auth.holdSession(cookie);
+  if (!entry.passkeyChecked && (await auth.listPasskeys(entry.userId)).length) await auth.holdSession(cookie);
   res.writeHead(302, { Location: '/?source=android', 'Set-Cookie': cookie, 'Cache-Control': 'no-store' });
   res.end();
 }
@@ -796,6 +836,7 @@ async function handleApiPost(req, res, urlPath) {
     return sendJson(res, 200, { ok: true }, { 'Set-Cookie': await auth.logout(req) });
   }
   if (urlPath === '/api/auth/app-code') return handleAppCode(req, res, body);
+  if (urlPath.startsWith('/api/auth/passkey/app-')) return handleAppPasskey(req, res, body, urlPath.slice('/api/auth/passkey/app-'.length));
   if (urlPath === '/api/auth/send-code') return sendJson(res, 200, await auth.sendCode(req, body));
   // Second step after the password for accounts with Face ID (admins): /api/auth/passkey/options|verify.
   if (urlPath === '/api/auth/passkey/options' || urlPath === '/api/auth/passkey/verify') {
@@ -803,6 +844,7 @@ async function handleApiPost(req, res, urlPath) {
     if (!pending) return sendJson(res, 401, { code: 'passkey_expired' });
     if (urlPath.endsWith('/options')) return sendJson(res, 200, await passkeys.loginOptions(req, pending));
     await passkeys.login(req, pending, body);
+    await auth.releaseSession(req);
     return sendJson(res, 200, { user: auth.publicUser(await auth.getUser(req)) });
   }
   const action = AUTH_ACTIONS[urlPath];

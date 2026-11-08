@@ -158,6 +158,7 @@
       passkeyTitle: 'Подтвердите вход',
       passkeyText: 'Пароль верный. Теперь подтвердите, что это вы: Face ID, отпечаток пальца или Windows Hello.',
       passkeyBtn: 'Войти по Face ID',
+      passkeyInApp: 'Откроется Chrome: подтвердите там Face ID или отпечаток — и вернётесь в приложение.',
       forgot: 'Забыли пароль?',
       forgotText: 'Не переживай! Вот как вернуть вход:',
       forgotParent: 'Если у тебя есть аккаунт родителя — мама или папа могут поставить новый пароль в своём кабинете.',
@@ -199,7 +200,8 @@
         offline: 'Нет связи с сервером. Проверь интернет и попробуй ещё раз.',
         passkey_failed: 'Не получилось подтвердить Face ID. Попробуйте ещё раз.',
         passkey_expired: 'Время вышло. Войдите с паролем ещё раз.',
-        passkey_unsupported: 'Этот браузер не умеет Face ID. Откройте сайт в Safari или Chrome (не в приложении Nimi).',
+        passkey_unsupported: 'Этот браузер не умеет Face ID. Откройте сайт в Safari или Chrome.',
+        passkey_update_app: 'Для Face ID нужна новая версия приложения Nimi. Скачайте её на сайте nimi-ai.onrender.com (кнопка «Скачать приложение для Android») или войдите через Safari/Chrome.',
       },
     },
     uz: {
@@ -290,6 +292,7 @@
       passkeyTitle: 'Kirishni tasdiqlang',
       passkeyText: "Parol to'g'ri. Endi bu siz ekaningizni tasdiqlang: Face ID, barmoq izi yoki Windows Hello.",
       passkeyBtn: 'Face ID orqali kirish',
+      passkeyInApp: "Chrome ochiladi: u yerda Face ID yoki barmoq izini tasdiqlang — keyin ilovaga qaytasiz.",
       forgot: 'Parolni unutdingmi?',
       forgotText: "Xavotir olma! Kirishni shunday qaytarish mumkin:",
       forgotParent: "Agar ota-ona akkaunting bo'lsa — onang yoki otang o'z kabinetida yangi parol qo'yishi mumkin.",
@@ -331,7 +334,8 @@
         offline: "Server bilan aloqa yo'q. Internetni tekshirib, qayta urinib ko'r.",
         passkey_failed: "Face ID tasdiqlanmadi. Qayta urinib ko'ring.",
         passkey_expired: 'Vaqt tugadi. Parol bilan qayta kiring.',
-        passkey_unsupported: "Bu brauzer Face ID'ni bilmaydi. Saytni Safari yoki Chrome'da oching (Nimi ilovasida emas).",
+        passkey_unsupported: "Bu brauzer Face ID'ni bilmaydi. Saytni Safari yoki Chrome'da oching.",
+        passkey_update_app: "Face ID uchun Nimi ilovasining yangi versiyasi kerak. Uni nimi-ai.onrender.com saytidan yuklab oling («Android uchun ilovani yuklab olish» tugmasi) yoki Safari/Chrome orqali kiring.",
       },
     },
   };
@@ -1278,6 +1282,16 @@
     from: (buf) => (buf ? btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') : undefined),
   };
   const passkeysSupported = () => !!window.PublicKeyCredential && !!navigator.credentials;
+  // Inside the Android app the WebView cannot use passkeys: the app opens /app-passkey.html in Chrome
+  // with a one-time ticket and comes back signed in (app 1.2+, Bridge.openPasskey).
+  // Returns an error code, or '' when Chrome was opened.
+  async function passkeyViaApp(enroll, name) {
+    if (!AndroidApp?.openPasskey) return 'passkey_update_app';
+    const r = await postJson('/api/auth/passkey/app-ticket', { enroll: !!enroll }).catch(() => ({ code: 'offline' }));
+    if (!r.ticket) return r.code || 'passkey_failed';
+    AndroidApp.openPasskey(`/app-passkey.html?mode=${enroll ? 'enroll' : 'login'}&lang=${lang}&t=${encodeURIComponent(r.ticket)}${name ? `&name=${encodeURIComponent(name)}` : ''}`);
+    return '';
+  }
   // Registration: options from the server -> Face ID -> the answer for the server.
   async function passkeyCreate(o) {
     const cred = await navigator.credentials.create({ publicKey: {
@@ -1317,8 +1331,15 @@
     gate.setAttribute('aria-modal', 'true');
     gate.append(card);
     document.body.append(gate);
-    if (!passkeysSupported()) fail('passkey_unsupported');
+    if (AndroidApp) card.insertBefore(h2('p', { className: 'text-xs text-slate-400', textContent: t('passkeyInApp') }), err);
+    else if (!passkeysSupported()) fail('passkey_unsupported');
     go.onclick = async () => {
+      if (AndroidApp) {
+        go.disabled = true;
+        const code = await passkeyViaApp(false);
+        go.disabled = false;
+        return code ? fail(code) : undefined;
+      }
       if (!passkeysSupported()) return fail('passkey_unsupported');
       go.disabled = true;
       err.classList.add('hidden');
@@ -1691,6 +1712,8 @@
     askText,
     passkeyCreate,
     passkeysSupported,
+    passkeyViaApp,
+    get inApp() { return !!AndroidApp; },
     remaining,
     dailyLimit,
     get child() { return childEmail; },

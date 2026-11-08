@@ -306,6 +306,21 @@ public class MainActivity extends ComponentActivity {
             });
         }
 
+        /** Face ID / fingerprint for the admin panel: passkeys do not work in the WebView, so the
+         *  check runs in Chrome (/app-passkey.html) and comes back as nimi://auth?code=... */
+        @JavascriptInterface
+        public void openPasskey(String path) {
+            if (path == null || !path.startsWith("/app-passkey.html?")) return;
+            Uri uri = Uri.parse(SITE + path);
+            runOnUiThread(() -> {
+                try {
+                    new CustomTabsIntent.Builder().build().launchUrl(MainActivity.this, uri);
+                } catch (Exception e) {
+                    openOutside(uri);
+                }
+            });
+        }
+
         @JavascriptInterface
         public boolean speak(String text, String langTag) {
             if (!ttsReady) return false;

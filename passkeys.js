@@ -101,7 +101,6 @@ async function login(req, user, body) {
   }
   if (!result.verified) throw new auth.AuthError('passkey_failed', 400);
   await auth.usePasskey(key.id, result.authenticationInfo.newCounter);
-  await auth.releaseSession(req);
 }
 
 // The admin panel list: no keys, only names and dates.
