@@ -160,6 +160,16 @@ async function init() {
       at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS verify_sends_at ON verify_sends (at);
+    -- Leaderboard points counted by the server (per day, Tashkent time), not taken from the browser.
+    CREATE TABLE IF NOT EXISTS leader_points (
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      board TEXT NOT NULL,
+      day DATE NOT NULL,
+      points INT NOT NULL DEFAULT 0,
+      last_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (user_id, board, day)
+    );
+    CREATE INDEX IF NOT EXISTS leader_points_board_day ON leader_points (board, day);
   `);
   console.log('Accounts database ready');
 }
@@ -807,36 +817,59 @@ async function setData(userId, key, value) {
   );
 }
 
-// ---------- leaderboards: games (coins earned) and the learning path (XP) ----------
-// Names are made up from a hash of the account id (an animal and a number), so no real name,
-// phone or email is ever shown. Values come from the student's saved data, capped for sanity.
+// ---------- leaderboards: games (coins) and the learning path (XP) ----------
+// The server keeps its own count: after each lesson or battle the page reports "+N", and the server
+// accepts at most what one lesson/battle can give, not more often than a real one can end, and not
+// more than a daily cap. Editing numbers in the browser does not move anyone up.
+// Names are made up from a hash of the account id (an animal and a number): no name, phone or email.
 const LEADER_LIMIT = 20;
-// Above these a value is treated as tampered with and not counted (XP is ~10–25 per lesson).
-const LEADER_MAX = { path: 50000, games: 200000 };
+const LEADER_RULES = {
+  path: { max: 20, gapMs: 30 * 1000, perDay: 300 },   // a lesson: 10–15 XP + 5 for no mistakes
+  games: { max: 100, gapMs: 15 * 1000, perDay: 1000 }, // a battle: up to 50 coins + 30 for the daily chest
+};
 function nickOf(userId) {
   const h = crypto.createHmac('sha256', SECRET).update(`nick:${userId}`).digest();
   return { a: h[0] % 12, n: 100 + (h.readUInt16BE(1) % 900) };
 }
-async function leaderboard(board, userId) {
-  const path = board === 'path';
+
+async function addLeaderPoints(userId, board, amount) {
+  const rule = LEADER_RULES[board];
+  if (!rule) return { added: 0 };
+  const n = Math.min(rule.max, Math.max(0, Math.floor(Number(amount) || 0)));
+  if (!n) return { added: 0 };
+  const db = requirePool();
+  const { rows: [last] } = await db.query('SELECT max(last_at) AS at FROM leader_points WHERE user_id = $1 AND board = $2', [userId, board]);
+  if (last.at && Date.now() - new Date(last.at).getTime() < rule.gapMs) return { added: 0 };
+  const { rows: [r] } = await db.query(
+    `INSERT INTO leader_points (user_id, board, day, points, last_at)
+       VALUES ($1, $2, (now() AT TIME ZONE 'Asia/Tashkent')::date, LEAST($3::int, $4::int), now())
+     ON CONFLICT (user_id, board, day) DO UPDATE SET points = LEAST(leader_points.points + EXCLUDED.points, $4::int), last_at = now()
+     RETURNING points`,
+    [userId, board, n, rule.perDay],
+  );
+  return { added: n, today: r.points };
+}
+
+// period: 'week' (since Monday, Tashkent time) or 'all'.
+async function leaderboard(board, period, userId) {
+  const b = board === 'path' ? 'path' : 'games';
+  const week = period !== 'all';
   const { rows } = await requirePool().query(
     `WITH s AS (
-       SELECT u.id,
-              CASE WHEN jsonb_typeof(d.value->$2) = 'number' THEN (d.value->>$2)::numeric
-                   WHEN jsonb_typeof(d.value->$3) = 'number' THEN (d.value->>$3)::numeric
-                   ELSE 0 END AS v
-         FROM users u JOIN user_data d ON d.user_id = u.id AND d.key = $1
-        WHERE u.role = 'student'
+       SELECT p.user_id AS id, sum(p.points)::bigint AS v
+         FROM leader_points p JOIN users u ON u.id = p.user_id AND u.role = 'student'
+        WHERE p.board = $1 AND ($2::boolean IS FALSE OR p.day >= date_trunc('week', now() AT TIME ZONE 'Asia/Tashkent')::date)
+        GROUP BY p.user_id
      ), r AS (
-       SELECT id, floor(v)::bigint AS v, RANK() OVER (ORDER BY v DESC) AS rk FROM s WHERE v > 0 AND v <= $4
+       SELECT id, v, RANK() OVER (ORDER BY v DESC) AS rk FROM s WHERE v > 0
      )
-     SELECT id, v, rk FROM r WHERE rk <= $5 OR id = $6 ORDER BY rk, id LIMIT $5 + 1`,
-    [path ? 'path' : 'quest', path ? 'xp' : 'earned', path ? 'xp' : 'coins', LEADER_MAX[path ? 'path' : 'games'], LEADER_LIMIT, userId],
+     SELECT id, v, rk FROM r WHERE rk <= $3 OR id = $4 ORDER BY rk, id LIMIT $3 + 1`,
+    [b, week, LEADER_LIMIT, userId],
   );
   const row = (r) => ({ ...nickOf(r.id), value: Number(r.v), rank: Number(r.rk), me: String(r.id) === String(userId) });
   const top = rows.filter((r) => Number(r.rk) <= LEADER_LIMIT).slice(0, LEADER_LIMIT).map(row);
   const mine = rows.find((r) => String(r.id) === String(userId));
-  return { board: path ? 'path' : 'games', top, me: mine ? row(mine) : { ...nickOf(userId), value: 0, rank: null, me: true } };
+  return { board: b, period: week ? 'week' : 'all', top, me: mine ? row(mine) : { ...nickOf(userId), value: 0, rank: null, me: true } };
 }
 
 async function cachedTopics(subject, grade, lang) {
@@ -1092,6 +1125,7 @@ module.exports = {
   applyConsents,
   listMarketing,
   leaderboard,
+  addLeaderPoints,
   CONSENT_VERSION,
   CONSENT_TEXTS,
   login,

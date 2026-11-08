@@ -713,6 +713,8 @@
     const perfect = state.mistakes === 0;
     const xp = XP[state.lessonType] + (perfect ? PERFECT_BONUS : 0);
     p.xp += xp;
+    // The leaderboard is counted by the server (it checks the amount and how often lessons end).
+    if (N.accounts) N.postJson('/api/leaderboard/add', { board: 'path', amount: xp }).catch(() => {});
     const day = N.today();
     p.days[day] = (p.days[day] || 0) + xp;
     for (const key of Object.keys(p.days)) if (key < new Date(Date.now() - 60 * 86400000).toLocaleDateString('en-CA')) delete p.days[key];

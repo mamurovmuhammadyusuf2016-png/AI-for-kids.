@@ -143,6 +143,8 @@
       lbEmpty: 'Пока здесь никого нет — стань первым!',
       lbNotYet: 'Тебя пока нет в рейтинге: сыграй в игру или пройди урок «Пути знаний».',
       lbNote: 'Имена придуманы автоматически: настоящие имена, телефоны и почты мы не показываем.',
+      lbPeriods: { week: 'Эта неделя', all: 'Всё время' },
+      lbRules: 'Очки считает сервер: за урок — до 20 XP, за бой — до 100 монеток, в день — не больше 300 XP и 1000 монеток. Счёт идёт с 8 ноября 2026.',
       lbAnimals: ['Лиса', 'Панда', 'Сова', 'Тигр', 'Коала', 'Лягушка', 'Пингвин', 'Лев', 'Медведь', 'Кролик', 'Дельфин', 'Кит'],
       askPh: 'Напиши свой вопрос…',
       askSend: 'Отправить',
@@ -594,6 +596,8 @@
       lbEmpty: "Hozircha hech kim yo'q — birinchi bo'l!",
       lbNotYet: "Sen hali reytingda yo'qsan: o'yin o'yna yoki «Bilim yo'li» darsini o't.",
       lbNote: "Ismlar avtomatik o'ylab topilgan: haqiqiy ism, telefon va pochtani ko'rsatmaymiz.",
+      lbPeriods: { week: 'Shu hafta', all: 'Butun vaqt' },
+      lbRules: "Ochkolarni server hisoblaydi: dars uchun — 20 XP gacha, jang uchun — 100 tangagacha, kuniga — 300 XP va 1000 tangadan oshmaydi. Hisob 2026-yil 8-noyabrdan.",
       lbAnimals: ['Tulki', 'Panda', 'Boyqush', "Yo'lbars", 'Koala', 'Baqa', 'Pingvin', 'Sher', 'Ayiq', 'Quyon', 'Delfin', 'Kit'],
       askPh: 'Savolingni yoz…',
       askSend: 'Yuborish',
@@ -2462,17 +2466,23 @@
 
   // ---------- leaderboards: games by coins, the learning path by XP ----------
   const LB_EMOJI = ['🦊', '🐼', '🦉', '🐯', '🐨', '🐸', '🐧', '🦁', '🐻', '🐰', '🐬', '🐳'];
-  async function openLeaderboard(board = 'path', back = () => N.showScreen('progress')) {
+  async function openLeaderboard(board = 'path', back = () => N.showScreen('progress'), period = 'week') {
     const root = screen('activity');
     root.append(titleBar(t('lbTitle'), back));
     root.append(h('div', { class: 'grid grid-cols-2 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5', role: 'tablist' },
       ['path', 'games'].map((id) => h('button', {
         type: 'button', role: 'tab', 'aria-selected': String(board === id),
         class: `min-h-11 rounded-xl px-3 text-sm font-semibold ${board === id ? 'bg-brand-500 text-onfill' : 'text-slate-300 hover:bg-night-700'}`,
-        onclick: () => openLeaderboard(id, back),
+        onclick: () => openLeaderboard(id, back, period),
       }, t('lbTabs')[id]))));
+    root.append(h('div', { class: 'flex gap-2', role: 'group' },
+      ['week', 'all'].map((id) => h('button', {
+        type: 'button', 'aria-pressed': String(period === id),
+        class: `min-h-10 rounded-full px-4 text-sm font-semibold ring-1 ${period === id ? 'bg-night-900 text-white ring-brand-400/50' : 'text-slate-400 ring-white/10 hover:text-white'}`,
+        onclick: () => openLeaderboard(board, back, id),
+      }, t('lbPeriods')[id]))));
     root.append(loading(t('loadingTopics')));
-    const r = await N.postJson('/api/leaderboard', { board }).catch(() => ({}));
+    const r = await N.postJson('/api/leaderboard', { board, period }).catch(() => ({}));
     root.lastChild.remove();
     if (!r.top) { root.append(h('p', { class: 'text-rose-200' }, t('errors').default)); return; }
     const unit = board === 'games' ? h('span', { class: 'q-emoji text-base', 'aria-hidden': 'true' }, '🪙') : h('span', { class: 'text-xs font-semibold text-slate-400' }, 'XP');
@@ -2492,7 +2502,7 @@
       root.append(r.me.rank ? h('div', { class: 'flex flex-col gap-2' }, h('p', { class: 'text-center text-slate-500' }, '···'), row(r.me))
         : h('p', { class: 'rounded-2xl bg-night-800 px-4 py-3 text-sm text-slate-300' }, t('lbNotYet')));
     }
-    root.append(h('p', { class: 'flex items-start gap-2 px-1 text-xs text-slate-400' }, ico('shield-check', 'h-4 w-4 shrink-0'), t('lbNote')));
+    root.append(h('p', { class: 'flex items-start gap-2 px-1 text-xs text-slate-400' }, ico('shield-check', 'h-4 w-4 shrink-0'), `${t('lbNote')} ${t('lbRules')}`));
   }
 
   function renderProgress() {

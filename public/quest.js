@@ -1190,6 +1190,7 @@
       }
       q.coins += coins;
       q.earned += coins;
+      if (N.accounts) N.postJson('/api/leaderboard/add', { board: 'games', amount: coins }).catch(() => {});
       save();
       kit.markDay();
       (won ? SFX.win : SFX.lose)();
