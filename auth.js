@@ -195,6 +195,22 @@ async function init() {
     ALTER TABLE sms_broadcasts ADD COLUMN IF NOT EXISTS channel TEXT NOT NULL DEFAULT 'sms';
     ALTER TABLE sms_broadcasts ADD COLUMN IF NOT EXISTS subject TEXT;
   `);
+  // Face ID / fingerprint for admins (WebAuthn passkeys, passkeys.js). A session waits for the
+  // second step in pending_2fa and counts as signed out until the passkey is checked.
+  await pool.query(`
+    ALTER TABLE sessions ADD COLUMN IF NOT EXISTS pending_2fa BOOLEAN NOT NULL DEFAULT false;
+    CREATE TABLE IF NOT EXISTS passkeys (
+      id TEXT PRIMARY KEY,
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      public_key TEXT NOT NULL,
+      counter BIGINT NOT NULL DEFAULT 0,
+      transports TEXT,
+      name TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      last_used TIMESTAMPTZ
+    );
+    CREATE INDEX IF NOT EXISTS passkeys_user ON passkeys (user_id);
+  `);
   console.log('Accounts database ready');
 }
 
@@ -296,10 +312,57 @@ async function getUser(req) {
             u.phone, u.terms_at, u.marketing,
             u.password_hash IS NOT NULL AS has_password, u.google_sub IS NOT NULL AS has_google
        FROM sessions s JOIN users u ON u.id = s.user_id
-      WHERE s.token_hash = $1 AND s.expires_at > now()`,
+      WHERE s.token_hash = $1 AND s.expires_at > now() AND NOT s.pending_2fa`,
     [sha256(token)],
   );
   return rows[0] || null;
+}
+
+// ---------- second step for admins: passkeys (Face ID, fingerprint) ----------
+const sessionToken = (cookie) => (/nimi_session=([^;]*)/.exec(cookie || '') || [])[1] || '';
+// The session just started with this cookie waits for the passkey.
+async function holdSession(cookie) {
+  await requirePool().query('UPDATE sessions SET pending_2fa = true WHERE token_hash = $1', [sha256(sessionToken(cookie))]);
+}
+// The user of a session that waits for the passkey (null for any other session).
+async function pendingUser(req) {
+  const token = parseCookies(req)[SESSION_COOKIE];
+  if (!pool || !token) return null;
+  const { rows } = await pool.query(
+    `SELECT u.id, u.email, u.role FROM sessions s JOIN users u ON u.id = s.user_id
+      WHERE s.token_hash = $1 AND s.expires_at > now() AND s.pending_2fa`,
+    [sha256(token)],
+  );
+  return rows[0] || null;
+}
+async function releaseSession(req) {
+  await requirePool().query('UPDATE sessions SET pending_2fa = false WHERE token_hash = $1', [sha256(parseCookies(req)[SESSION_COOKIE] || '')]);
+}
+async function listPasskeys(userId) {
+  const { rows } = await requirePool().query(
+    'SELECT id, public_key, counter, transports, name, created_at, last_used FROM passkeys WHERE user_id = $1 ORDER BY created_at',
+    [userId],
+  );
+  return rows;
+}
+async function addPasskey(userId, key) {
+  await requirePool().query(
+    'INSERT INTO passkeys (id, user_id, public_key, counter, transports, name) VALUES ($1, $2, $3, $4, $5, $6)',
+    [key.id, userId, key.publicKey, key.counter, key.transports, key.name],
+  );
+}
+async function usePasskey(id, counter) {
+  await requirePool().query('UPDATE passkeys SET counter = $2, last_used = now() WHERE id = $1', [id, counter]);
+}
+async function deletePasskey(userId, id) {
+  await requirePool().query('DELETE FROM passkeys WHERE user_id = $1 AND id = $2', [userId, id]);
+}
+// Lost phone: the owner removes an admin's passkeys with the admin key, password sign-in works again.
+async function resetPasskeys(login) {
+  const { rows } = await requirePool().query('SELECT id FROM users WHERE email = $1', [normalizeLogin(login)]);
+  if (!rows.length) throw new AuthError('user_not_found', 404);
+  const r = await pool.query('DELETE FROM passkeys WHERE user_id = $1', [rows[0].id]);
+  return r.rowCount;
 }
 
 // ---------- subscription: the owner grants a free week or paid months by hand ----------
@@ -1321,6 +1384,14 @@ module.exports = {
   AuthError,
   init,
   getUser,
+  holdSession,
+  pendingUser,
+  releaseSession,
+  listPasskeys,
+  addPasskey,
+  usePasskey,
+  deletePasskey,
+  resetPasskeys,
   publicUser,
   register,
   registerCodes,

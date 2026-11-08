@@ -10,13 +10,14 @@
     "dev": "npm run build && node server.js"
   },
   "dependencies": {
+    "@simplewebauthn/server": "^13.3.3",
     "@tailwindcss/cli": "4.3.3",
     "katex": "^0.16.22",
     "pg": "^8.23.1",
     "tailwindcss": "4.3.3"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "license": "MIT"
 }
