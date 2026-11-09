@@ -201,7 +201,7 @@
         passkey_failed: 'Не получилось подтвердить Face ID. Попробуйте ещё раз.',
         passkey_expired: 'Время вышло. Войдите с паролем ещё раз.',
         passkey_unsupported: 'Этот браузер не умеет Face ID. Откройте сайт в Safari или Chrome.',
-        passkey_update_app: 'Для Face ID нужна новая версия приложения Nimi. Скачайте её на сайте nimi-ai.onrender.com (кнопка «Скачать приложение для Android») или войдите через Safari/Chrome.',
+        passkey_update_app: 'Для Face ID нужна новая версия приложения Nimi. Скачайте её на сайте Nimi (кнопка «Скачать приложение для Android») или войдите через Safari/Chrome.',
       },
     },
     uz: {
@@ -335,7 +335,7 @@
         passkey_failed: "Face ID tasdiqlanmadi. Qayta urinib ko'ring.",
         passkey_expired: 'Vaqt tugadi. Parol bilan qayta kiring.',
         passkey_unsupported: "Bu brauzer Face ID'ni bilmaydi. Saytni Safari yoki Chrome'da oching.",
-        passkey_update_app: "Face ID uchun Nimi ilovasining yangi versiyasi kerak. Uni nimi-ai.onrender.com saytidan yuklab oling («Android uchun ilovani yuklab olish» tugmasi) yoki Safari/Chrome orqali kiring.",
+        passkey_update_app: "Face ID uchun Nimi ilovasining yangi versiyasi kerak. Uni Nimi saytidan yuklab oling («Android uchun ilovani yuklab olish» tugmasi) yoki Safari/Chrome orqali kiring.",
       },
     },
   };

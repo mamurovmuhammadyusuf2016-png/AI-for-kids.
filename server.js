@@ -403,6 +403,29 @@ async function handleReport(req, res, body, user) {
   }
 }
 
+// ---------- main address of the site ----------
+// PUBLIC_URL on Render (e.g. https://nimi.uz) makes that the main address: pages opened through any
+// other address (nimi-ai.onrender.com, www.nimi.uz) move there, and links in index.html, sitemap.xml
+// and robots.txt point there. Unset: everything stays on the Render address.
+// Not moved: the API, /health (keep-awake), the Android app (its WebView and its Chrome pages
+// app-login/app-passkey), the APK and .well-known — they keep working on both addresses.
+const RENDER_URL = 'https://nimi-ai.onrender.com';
+const PUBLIC_URL = (process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
+const PUBLIC_HOST = (() => { try { return PUBLIC_URL ? new URL(PUBLIC_URL).host : ''; } catch { return ''; } })();
+function redirectToPublic(req, res, urlPath) {
+  if (!PUBLIC_HOST || req.method !== 'GET') return false;
+  const host = String(req.headers.host || '').toLowerCase();
+  if (!host || host === PUBLIC_HOST || /^(localhost|127\.|\[::1\])/.test(host)) return false;
+  if (urlPath.startsWith('/api/') || urlPath === '/health' || urlPath.startsWith('/.well-known/') || urlPath === '/nimi.apk') return false;
+  if (/^\/app-(login|passkey)\.html$/.test(urlPath)) return false;
+  if (/NimiAndroid/.test(req.headers['user-agent'] || '') || /[?&]source=android\b/.test(req.url)) return false;
+  // 302, not 301: browsers never cache it, so the move can be undone by removing PUBLIC_URL.
+  res.writeHead(302, { Location: PUBLIC_URL + req.url, 'Cache-Control': 'no-store' });
+  res.end();
+  return true;
+}
+const LINKED_FILES = new Set(['index.html', 'sitemap.xml', 'robots.txt']);
+
 function serveStatic(res, urlPath) {
   const file = path.normalize(path.join(PUBLIC_DIR, urlPath === '/' ? 'index.html' : urlPath));
   const type = MIME[path.extname(file)];
@@ -410,6 +433,7 @@ function serveStatic(res, urlPath) {
   fs.readFile(file, (err, data) => {
     if (err) return sendJson(res, 404, { code: 'not_found' });
     res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
+    if (PUBLIC_URL && LINKED_FILES.has(path.basename(file))) return res.end(data.toString('utf8').replaceAll(RENDER_URL, PUBLIC_URL));
     res.end(data);
   });
   return true;
@@ -891,6 +915,7 @@ async function handleApiPost(req, res, urlPath) {
 async function route(req, res) {
   const urlPath = req.url.split('?')[0];
   try {
+    if (redirectToPublic(req, res, urlPath)) return;
     if (req.method === 'POST' && urlPath.startsWith('/api/')) return await handleApiPost(req, res, urlPath);
     if (req.method === 'GET' && urlPath === '/api/auth/me') return await handleMe(req, res);
     if (req.method === 'GET' && urlPath === '/api/auth/app-exchange') return await handleAppExchange(req, res);
