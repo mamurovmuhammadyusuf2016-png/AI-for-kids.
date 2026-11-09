@@ -955,12 +955,14 @@ async function handleApiPost(req, res, urlPath) {
 
 async function route(req, res) {
   const urlPath = req.url.split('?')[0];
+  // Node suppresses the response body for HEAD while preserving GET's headers.
+  const isRead = req.method === 'GET' || req.method === 'HEAD';
   try {
     if (redirectToPublic(req, res, urlPath)) return;
     if (req.method === 'POST' && urlPath.startsWith('/api/')) return await handleApiPost(req, res, urlPath);
-    if (req.method === 'GET' && urlPath === '/api/auth/me') return await handleMe(req, res);
+    if (isRead && urlPath === '/api/auth/me') return await handleMe(req, res);
     if (req.method === 'GET' && urlPath === '/api/auth/app-exchange') return await handleAppExchange(req, res);
-    if (req.method === 'GET' && urlPath === '/api/config') {
+    if (isRead && urlPath === '/api/config') {
       return sendJson(res, 200, {
         googleClientId: auth.GOOGLE_CLIENT_ID,
         accounts: auth.enabled(),
@@ -978,8 +980,18 @@ async function route(req, res) {
         },
       });
     }
-    if (req.method === 'GET' && urlPath === '/health') return sendJson(res, 200, { ok: true });
-    if (req.method === 'GET' && serveStatic(res, urlPath)) return;
+    // /health does not touch the database (keep-awake visits must not wake Neon).
+    // /health?db=1 also checks the database: the Docker health check on the nimi.uz server uses it.
+    if (isRead && urlPath === '/health') {
+      if (!new URLSearchParams(req.url.split('?')[1] || '').has('db')) return sendJson(res, 200, { ok: true });
+      try {
+        await auth.health();
+        return sendJson(res, 200, { ok: true });
+      } catch {
+        return sendJson(res, 503, { ok: false });
+      }
+    }
+    if (isRead && serveStatic(res, urlPath)) return;
     sendJson(res, 404, { code: 'not_found' });
   } catch (err) {
     if (err instanceof auth.AuthError) return sendJson(res, err.status, { code: err.code, ...(err.retry ? { retry: err.retry } : {}) });
@@ -1004,16 +1016,47 @@ function keepAwake() {
   console.log(`Keep-awake: visiting ${base}/health every ${minutes} min`);
 }
 
-auth.init()
-  .catch((err) => console.error('Database init failed', err.message))
-  .finally(() => {
-    http.createServer(route).listen(PORT, () => {
-      console.log(`Nimi AI listening on port ${PORT}, model ${MODEL}`);
-      keepAwake();
-      // Admin SMS broadcasts go out slowly, one message per tick, from the owner's phone.
-      if (auth.enabled()) {
-        auth.checkActiveBroadcast();
-        for (const [channel, c] of Object.entries(auth.CHANNELS)) setInterval(() => auth.broadcastTick(channel), c.everySec * 1000).unref();
-      }
-    });
+// STRICT_STARTUP=on (set in deploy/compose.yaml for the nimi.uz server): refuse to start with
+// missing secrets or a database error, so Docker shows the failure instead of a half-working site.
+// On Render it is off: the site starts as before even if the database is not reachable yet.
+const STRICT_STARTUP = process.env.STRICT_STARTUP === 'on';
+
+async function start() {
+  if (STRICT_STARTUP) {
+    const missing = ['DATABASE_URL', 'AI_API_KEY', 'SECRET_KEY', 'ADMIN_API_KEY'].filter((key) => !process.env[key]);
+    if (missing.length) throw new Error(`Missing production configuration: ${missing.join(', ')}`);
+    if (process.env.SECRET_KEY.length < 32 || ADMIN_API_KEY.length < 32) {
+      throw new Error('Production secret keys must contain at least 32 characters');
+    }
+    await auth.init();
+  } else {
+    await auth.init().catch((err) => console.error('Database init failed', err.message));
+  }
+  const server = http.createServer(route);
+  server.listen(PORT, process.env.HOST || '0.0.0.0', () => {
+    console.log(`Nimi AI listening on port ${PORT}, model ${MODEL}`);
+    keepAwake();
+    // Admin SMS broadcasts go out slowly, one message per tick, from the owner's phone.
+    if (auth.enabled()) {
+      auth.checkActiveBroadcast();
+      for (const [channel, c] of Object.entries(auth.CHANNELS)) setInterval(() => auth.broadcastTick(channel), c.everySec * 1000).unref();
+    }
   });
+  // Graceful stop (Render and Docker send SIGTERM on every update): finish open requests first.
+  let stopping = false;
+  const shutdown = () => {
+    if (stopping) return;
+    stopping = true;
+    setTimeout(() => process.exit(1), 25000).unref();
+    server.close(async () => {
+      try { await auth.close(); process.exit(0); } catch { process.exit(1); }
+    });
+  };
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
+}
+
+start().catch((err) => {
+  console.error('Startup failed', err.message);
+  process.exit(1);
+});

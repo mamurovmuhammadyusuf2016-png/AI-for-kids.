@@ -1,0 +1,63 @@
+name: nimi
+services:
+  app:
+    image: nimi-app:${RELEASE_TAG:?Set RELEASE_TAG}
+    build:
+      context: ..
+    env_file: /opt/nimi/shared/app.env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      STRICT_STARTUP: "on"
+    ports:
+      - "127.0.0.1:18320:3000"
+      - "172.18.0.1:18320:3000"
+    networks: [app, database]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs: ["/tmp:size=32m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 384m
+    memswap_limit: 384m
+    cpus: 0.75
+    pids_limit: 100
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+  postgres:
+    image: postgres:16-alpine@sha256:e013e867e712fec275706a6c51c966f0bb0c93cfa8f51000f85a15f9865a28cb
+    env_file: /opt/nimi/shared/postgres.env
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=25", "-c", "work_mem=4MB"]
+    networks: [database]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nimi -d nimi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 0.5
+    pids_limit: 100
+    shm_size: 64m
+    security_opt: ["no-new-privileges:true"]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+networks:
+  app: {}
+  database:
+    internal: true
+volumes:
+  postgres_data: {}

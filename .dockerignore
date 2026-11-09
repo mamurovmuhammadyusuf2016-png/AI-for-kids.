@@ -1,0 +1,9 @@
+.git
+node_modules
+.env
+.env.*
+.deployment
+*.dump
+*.log
+public/styles.css
+public/vendor

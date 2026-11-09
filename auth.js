@@ -25,12 +25,24 @@ const pool = DATABASE_URL
       connectionString: DATABASE_URL,
       ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
       max: 5,
+      connectionTimeoutMillis: 5000,
+      query_timeout: 10000,
     })
   : null;
 
 // Neon closes idle connections (it sleeps between visits). Without this handler such a drop is an
 // unhandled 'error' event and the whole server stops; the pool simply opens a new connection next time.
 if (pool) pool.on('error', (err) => console.warn(`Database connection dropped: ${err.message}`));
+
+// Database check for /health?db=1 (the nimi.uz server's container health check).
+async function health() {
+  if (pool) await pool.query('SELECT 1');
+}
+
+// Graceful shutdown: let open queries finish and close the connections.
+async function close() {
+  if (pool) await pool.end();
+}
 
 // "ip|email" -> [timestamps of failed logins]
 const failedLogins = new Map();
@@ -748,7 +760,7 @@ async function register(req, body) {
   const hash = await hashPassword(password);
   const { rows } = await db.query(
     `INSERT INTO users (email, phone, password_hash, verified_at) VALUES ($1, $2, $3, CASE WHEN $4 THEN now() END)
-     ON CONFLICT DO NOTHING RETURNING id, email`,
+     ON CONFLICT DO NOTHING RETURNING id, email, created_at, premium_until, plan_kind, plan_tier, free_used`,
     [account, byPhone ? account : null, hash, verify],
   );
   if (!rows.length) throw new AuthError(byPhone ? 'phone_taken' : 'email_taken', 409);
@@ -786,7 +798,7 @@ async function login(req, body) {
   }
 
   const { rows } = await db.query(
-    'SELECT id, email, role, password_hash, google_sub IS NOT NULL AS has_google FROM users WHERE email = $1',
+    'SELECT id, email, role, created_at, premium_until, plan_kind, plan_tier, free_used, password_hash, google_sub IS NOT NULL AS has_google FROM users WHERE email = $1',
     [email],
   );
   const user = rows[0];
@@ -829,7 +841,7 @@ async function googleUser(body) {
   const db = requirePool();
   const { sub, email } = await verifyGoogleToken(body.credential);
   const known = await db.query(
-    'SELECT id, email, google_sub, role, password_hash IS NOT NULL AS has_password FROM users WHERE google_sub = $1',
+    'SELECT id, email, google_sub, role, created_at, premium_until, plan_kind, plan_tier, free_used, password_hash IS NOT NULL AS has_password FROM users WHERE google_sub = $1',
     [sub],
   );
   if (known.rows.length) {
@@ -839,7 +851,7 @@ async function googleUser(body) {
   const { rows } = await db.query(
     `INSERT INTO users (email, google_sub) VALUES ($1, $2)
      ON CONFLICT (email) DO UPDATE SET google_sub = COALESCE(users.google_sub, EXCLUDED.google_sub)
-     RETURNING id, email, google_sub, role, password_hash IS NOT NULL AS has_password`,
+     RETURNING id, email, google_sub, role, created_at, premium_until, plan_kind, plan_tier, free_used, password_hash IS NOT NULL AS has_password`,
     [email, sub],
   );
   const user = rows[0];
@@ -1350,6 +1362,8 @@ async function revokeAllExcept(keep, apply) {
 }
 
 module.exports = {
+  health,
+  close,
   plan,
   freeLeft,
   useFree,
