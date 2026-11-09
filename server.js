@@ -408,7 +408,7 @@ async function handleReport(req, res, body, user) {
 // other address (nimi-ai.onrender.com, www.nimi.uz) move there, and links in index.html, sitemap.xml
 // and robots.txt point there. Unset: everything stays on the Render address.
 // Not moved: the API, /health (keep-awake), the Android app (its WebView and its Chrome pages
-// app-login/app-passkey), the APK and .well-known — they keep working on both addresses.
+// app-login), the APK and .well-known — they keep working on both addresses.
 const RENDER_URL = 'https://nimi-ai.onrender.com';
 const PUBLIC_URL = (process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
 const PUBLIC_HOST = (() => { try { return PUBLIC_URL ? new URL(PUBLIC_URL).host : ''; } catch { return ''; } })();
@@ -417,7 +417,9 @@ function redirectToPublic(req, res, urlPath) {
   const host = String(req.headers.host || '').toLowerCase();
   if (!host || host === PUBLIC_HOST || /^(localhost|127\.|\[::1\])/.test(host)) return false;
   if (urlPath.startsWith('/api/') || urlPath === '/health' || urlPath.startsWith('/.well-known/') || urlPath === '/nimi.apk') return false;
-  if (/^\/app-(login|passkey)\.html$/.test(urlPath)) return false;
+  // Google sign-in for the app stays put; app-passkey.html (also in Chrome) moves with the site,
+  // because Face ID keys belong to one address (the main one once PUBLIC_URL is set).
+  if (urlPath === '/app-login.html') return false;
   if (/NimiAndroid/.test(req.headers['user-agent'] || '') || /[?&]source=android\b/.test(req.url)) return false;
   // 302, not 301: browsers never cache it, so the move can be undone by removing PUBLIC_URL.
   res.writeHead(302, { Location: PUBLIC_URL + req.url, 'Cache-Control': 'no-store' });
