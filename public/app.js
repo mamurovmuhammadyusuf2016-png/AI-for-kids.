@@ -159,6 +159,9 @@
       passkeyText: 'Пароль верный. Теперь подтвердите, что это вы: Face ID, отпечаток пальца или Windows Hello.',
       passkeyBtn: 'Войти по Face ID',
       passkeyInApp: 'Откроется Chrome: подтвердите там Face ID или отпечаток — и вернётесь в приложение.',
+      setupTitle: 'Включите Face ID',
+      setupText: 'В админку теперь входят только по Face ID или отпечатку пальца — одного пароля мало. Добавьте свой телефон: дальше войти сможете только вы, с этим телефоном. На компьютере — Windows Hello, Touch ID или телефон по QR-коду.',
+      setupBtn: 'Включить Face ID',
       forgot: 'Забыли пароль?',
       forgotText: 'Не переживай! Вот как вернуть вход:',
       forgotParent: 'Если у тебя есть аккаунт родителя — мама или папа могут поставить новый пароль в своём кабинете.',
@@ -293,6 +296,9 @@
       passkeyText: "Parol to'g'ri. Endi bu siz ekaningizni tasdiqlang: Face ID, barmoq izi yoki Windows Hello.",
       passkeyBtn: 'Face ID orqali kirish',
       passkeyInApp: "Chrome ochiladi: u yerda Face ID yoki barmoq izini tasdiqlang — keyin ilovaga qaytasiz.",
+      setupTitle: "Face ID'ni yoqing",
+      setupText: "Adminkaga endi faqat Face ID yoki barmoq izi bilan kiriladi — parolning o'zi yetmaydi. O'z telefoningizni qo'shing: keyin faqat siz, shu telefon bilan kira olasiz. Kompyuterda — Windows Hello, Touch ID yoki QR-kod orqali telefon.",
+      setupBtn: "Face ID'ni yoqish",
       forgot: 'Parolni unutdingmi?',
       forgotText: "Xavotir olma! Kirishni shunday qaytarish mumkin:",
       forgotParent: "Agar ota-ona akkaunting bo'lsa — onang yoki otang o'z kabinetida yangi parol qo'yishi mumkin.",
@@ -1317,15 +1323,16 @@
       response: { clientDataJSON: b64u.from(r.clientDataJSON), authenticatorData: b64u.from(r.authenticatorData), signature: b64u.from(r.signature), userHandle: b64u.from(r.userHandle) } };
   }
   // The password was right and the account has Face ID: one more tap (Safari needs a tap to start it).
-  function askPasskey() {
+  // setup: an admin without Face ID yet adds this device first (the password alone never opens the admin panel).
+  function askPasskey(setup = false) {
     $('passkeyGate')?.remove();
     const err = h2('p', { className: 'hidden text-sm text-rose-200' });
     const fail = (code) => { err.textContent = t('errors')[code] || t('errors').passkey_failed; err.classList.remove('hidden'); };
-    const go = h2('button', { type: 'button', textContent: t('passkeyBtn'), className: 'min-h-14 rounded-2xl bg-brand-500 text-lg font-semibold text-onfill disabled:bg-night-700' });
+    const go = h2('button', { type: 'button', textContent: t(setup ? 'setupBtn' : 'passkeyBtn'), className: 'min-h-14 rounded-2xl bg-brand-500 text-lg font-semibold text-onfill disabled:bg-night-700' });
     const out = h2('button', { type: 'button', textContent: t('logout'), className: 'min-h-10 text-sm text-slate-400 hover:text-white' });
     const card = h2('div', { className: 'flex max-h-full w-full max-w-md flex-col gap-3 overflow-y-auto rounded-3xl bg-night-900 p-5 ring-1 ring-white/10' });
-    card.append(h2('p', { className: 'text-xl font-semibold text-white', textContent: t('passkeyTitle') }),
-      h2('p', { className: 'text-sm text-slate-300', textContent: t('passkeyText') }), err, go, out);
+    card.append(h2('p', { className: 'text-xl font-semibold text-white', textContent: t(setup ? 'setupTitle' : 'passkeyTitle') }),
+      h2('p', { className: 'text-sm text-slate-300', textContent: t(setup ? 'setupText' : 'passkeyText') }), err, go, out);
     const gate = h2('div', { id: 'passkeyGate', className: 'fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4' });
     gate.setAttribute('role', 'dialog');
     gate.setAttribute('aria-modal', 'true');
@@ -1336,7 +1343,7 @@
     go.onclick = async () => {
       if (AndroidApp) {
         go.disabled = true;
-        const code = await passkeyViaApp(false);
+        const code = await passkeyViaApp(setup, setup ? 'Android' : '');
         go.disabled = false;
         return code ? fail(code) : undefined;
       }
@@ -1344,11 +1351,11 @@
       go.disabled = true;
       err.classList.add('hidden');
       try {
-        const opts = await postJson('/api/auth/passkey/options', {});
+        const opts = await postJson(setup ? '/api/auth/passkey/setup-options' : '/api/auth/passkey/options', {});
         if (!opts.challenge) return fail(opts.code);
         let response;
-        try { response = await passkeyGet(opts); } catch { return fail('passkey_failed'); }
-        const data = await postJson('/api/auth/passkey/verify', { response });
+        try { response = await (setup ? passkeyCreate(opts) : passkeyGet(opts)); } catch { return fail('passkey_failed'); }
+        const data = await postJson(setup ? '/api/auth/passkey/setup-verify' : '/api/auth/passkey/verify', { response, name: setup ? deviceName() : undefined });
         if (!data.user) return fail(data.code);
         const me = await fetch('/api/auth/me').then((r) => r.json());
         gate.remove();
@@ -1361,6 +1368,11 @@
       }
     };
     out.onclick = () => { gate.remove(); logout(); };
+  }
+  // A short name for the device in the admin list ("iPhone", "Android", "Windows"...).
+  function deviceName() {
+    const ua = navigator.userAgent;
+    return /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Windows/.test(ua) ? 'Windows' : /Mac/.test(ua) ? 'Mac' : '';
   }
   const googleVisible = () => !(authStep === 'code' || authMode === 'reset' || (authMode === 'register' && regBy() === 'phone'));
   function h2(tag, props) { return Object.assign(document.createElement(tag), props); }
@@ -1490,7 +1502,7 @@
     $('authSubmit').disabled = true;
     try {
       const data = await promise;
-      if (data.twoFactor === 'passkey') return askPasskey();
+      if (data.twoFactor === 'passkey' || data.twoFactor === 'passkey_setup') return askPasskey(data.twoFactor === 'passkey_setup');
       if (!data.user) return showAuthError(data.code);
       const me = await fetch('/api/auth/me').then((r) => r.json());
       childEmail = me.child || null;
@@ -1734,7 +1746,7 @@
       const me = await fetch('/api/auth/me').then((r) => r.json());
       childEmail = me.child || null;
       if (me.user) return signedIn(me.user, me.remaining);
-      if (me.twoFactor === 'passkey') { signedOut(); return askPasskey(); }
+      if (me.twoFactor === 'passkey' || me.twoFactor === 'passkey_setup') { signedOut(); return askPasskey(me.twoFactor === 'passkey_setup'); }
     } catch {}
     signedOut();
   })();

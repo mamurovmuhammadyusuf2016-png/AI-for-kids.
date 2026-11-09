@@ -566,6 +566,17 @@ async function handleData(req, res, body, user) {
 
 const isAdmin = (user) => !!user?.apiAdmin || user?.role === 'admin' || (!!user?.email && ADMIN_EMAILS.has(user.email));
 
+// Admins must use Face ID / fingerprint: the password alone never opens the admin panel.
+// Without a passkey yet, the session waits until the admin adds this phone (the first sign-in).
+// Emergency switch: ADMIN_FACE_ID=off on Render makes Face ID optional again (as before 08.11.2026).
+const mustUsePasskey = (u) => process.env.ADMIN_FACE_ID !== 'off' && !!u && !u.apiAdmin && (u.role === 'admin' || (!!u.email && ADMIN_EMAILS.has(u.email)));
+// 'passkey' (check Face ID), 'passkey_setup' (add the first one) or '' (no second step).
+async function secondStep(user) {
+  if ((await auth.listPasskeys(user.id)).length) return 'passkey';
+  return mustUsePasskey(user) ? 'passkey_setup' : '';
+}
+const sessionCookieOf = (req) => `nimi_session=${(/(?:^|;\s*)nimi_session=([^;]*)/.exec(req.headers.cookie || '') || [])[1] || ''}`;
+
 function hasAdminKey(req) {
   const given = Buffer.from(String(req.headers['x-admin-key'] || ''));
   const key = Buffer.from(ADMIN_API_KEY);
@@ -574,7 +585,15 @@ function hasAdminKey(req) {
 
 async function handleMe(req, res) {
   const user = await auth.getUser(req);
-  if (!user) return sendJson(res, 200, { user: null, twoFactor: (await auth.pendingUser(req)) ? 'passkey' : undefined });
+  if (!user) {
+    const pending = await auth.pendingUser(req);
+    return sendJson(res, 200, { user: null, twoFactor: pending ? await secondStep(pending) : undefined });
+  }
+  // An admin signed in before Face ID became required: this session waits until Face ID is added.
+  if (mustUsePasskey(user) && (await secondStep(user)) === 'passkey_setup') {
+    await auth.holdSession(sessionCookieOf(req));
+    return sendJson(res, 200, { user: null, twoFactor: 'passkey_setup' });
+  }
   const used = await auth.usedToday(user.id, today());
   const tokens = user.role === 'student' ? await auth.tokensThisMonth(user.id, month()) : undefined;
   sendJson(res, 200, {
@@ -596,6 +615,7 @@ async function handleSubscribe(req, res, body, user) {
 
 async function handleAdmin(req, res, body, user, action) {
   if (!isAdmin(user)) return sendJson(res, 403, { code: 'forbidden' });
+  if (mustUsePasskey(user) && (await secondStep(user)) === 'passkey_setup') return sendJson(res, 401, { code: 'passkey_setup' });
   if (action === 'requests') return sendJson(res, 200, { requests: await auth.listRequests() });
   if (action === 'grant') {
     const months = Number(body.months) === 0 ? 0 : Math.min(12, Math.max(1, parseInt(body.months, 10) || 1));
@@ -799,6 +819,9 @@ async function handleAppPasskey(req, res, body, step) {
   if (step === 'ticket') {
     let kind = 'login';
     let user = await auth.pendingUser(req);
+    // The first Face ID of an admin (the session waits for it); only while the account has none.
+    if (user && (await secondStep(user)) === 'passkey_setup') kind = 'enroll';
+    else if (user && (await secondStep(user)) !== 'passkey') user = null;
     if (!user && body.enroll) {
       const full = await auth.getUser(req);
       if (full && isAdmin(full)) [kind, user] = ['enroll', full];
@@ -830,8 +853,13 @@ async function handleAppExchange(req, res) {
     return res.end();
   }
   const cookie = await auth.startSession(req, entry.userId);
-  // An account with Face ID still has to pass it; the page shows that step after the redirect.
-  if (!entry.passkeyChecked && (await auth.listPasskeys(entry.userId)).length) await auth.holdSession(cookie);
+  // An account with Face ID (or an admin who must add it) still has to pass that step after the redirect.
+  if (!entry.passkeyChecked) {
+    const fresh = { headers: { cookie } };
+    await auth.holdSession(cookie);
+    const pending = await auth.pendingUser(fresh);
+    if (!pending || !(await secondStep(pending))) await auth.releaseSession(fresh);
+  }
   res.writeHead(302, { Location: '/?source=android', 'Set-Cookie': cookie, 'Cache-Control': 'no-store' });
   res.end();
 }
@@ -871,12 +899,23 @@ async function handleApiPost(req, res, urlPath) {
     await auth.releaseSession(req);
     return sendJson(res, 200, { user: auth.publicUser(await auth.getUser(req)) });
   }
+  // The first Face ID of an admin, right after the password: only while the account has none.
+  if (urlPath === '/api/auth/passkey/setup-options' || urlPath === '/api/auth/passkey/setup-verify') {
+    const pending = auth.enabled() ? await auth.pendingUser(req) : null;
+    if (!pending) return sendJson(res, 401, { code: 'passkey_expired' });
+    if ((await secondStep(pending)) !== 'passkey_setup') return sendJson(res, 403, { code: 'forbidden' });
+    if (urlPath.endsWith('/setup-options')) return sendJson(res, 200, await passkeys.registrationOptions(req, pending));
+    await passkeys.register(req, pending, body);
+    await auth.releaseSession(req);
+    return sendJson(res, 200, { user: auth.publicUser(await auth.getUser(req)) });
+  }
   const action = AUTH_ACTIONS[urlPath];
   if (action) {
     const { user, cookie } = await action(req, body);
-    if ((await auth.listPasskeys(user.id)).length) {
+    const step = await secondStep(user);
+    if (step) {
       await auth.holdSession(cookie);
-      return sendJson(res, 200, { twoFactor: 'passkey' }, { 'Set-Cookie': cookie });
+      return sendJson(res, 200, { twoFactor: step }, { 'Set-Cookie': cookie });
     }
     return sendJson(res, 200, { user: auth.publicUser(user) }, { 'Set-Cookie': cookie });
   }

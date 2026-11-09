@@ -13,6 +13,9 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const SESSION_COOKIE = 'nimi_session';
 const SESSION_DAYS = 30;
 const MAX_FAILED_LOGINS = 10;
+// Per account, from any address: the IP can be faked or changed, so a password guesser who keeps
+// switching addresses still gets only 5 tries per account, then the account waits 15 minutes.
+const MAX_FAILED_PER_ACCOUNT = 5;
 const FAILED_WINDOW_MS = 15 * 60 * 1000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const GOOGLE_ISSUERS = new Set(['accounts.google.com', 'https://accounts.google.com']);
@@ -573,9 +576,13 @@ function clientIp(req) {
 function recentFailures(key) {
   const now = Date.now();
   const list = (failedLogins.get(key) || []).filter((t) => now - t < FAILED_WINDOW_MS);
-  failedLogins.set(key, list);
+  if (list.length) failedLogins.set(key, list);
+  else failedLogins.delete(key);
   return list;
 }
+
+// Old entries go away, so a flood of made-up logins cannot fill the memory.
+setInterval(() => { for (const key of [...failedLogins.keys()]) recentFailures(key); }, FAILED_WINDOW_MS).unref();
 
 // ---------- actions ----------
 // ---------- consents ----------
@@ -770,7 +777,13 @@ async function login(req, body) {
   const email = normalizeLogin(body.email);
   const password = typeof body.password === 'string' ? body.password.slice(0, 128) : '';
   const key = `${clientIp(req)}|${email}`;
+  const accountKey = `account|${email}`;
   if (recentFailures(key).length >= MAX_FAILED_LOGINS) throw new AuthError('too_many_attempts', 429);
+  // A locked account is not checked at all: a right guess during the lock tells nothing.
+  if (recentFailures(accountKey).length >= MAX_FAILED_PER_ACCOUNT) {
+    console.warn('Login locked for 15 minutes: too many wrong passwords for one account');
+    throw new AuthError('too_many_attempts', 429);
+  }
 
   const { rows } = await db.query(
     'SELECT id, email, role, password_hash, google_sub IS NOT NULL AS has_google FROM users WHERE email = $1',
@@ -780,10 +793,13 @@ async function login(req, body) {
   const ok = await checkPassword(password, user?.password_hash || DUMMY_HASH);
   if (user && !user.password_hash) throw new AuthError('use_google', 401);
   if (!user || !ok) {
-    recentFailures(key).push(Date.now());
+    const now = Date.now();
+    failedLogins.set(key, [...recentFailures(key), now]);
+    failedLogins.set(accountKey, [...recentFailures(accountKey), now]);
     throw new AuthError('invalid_credentials', 401);
   }
   failedLogins.delete(key);
+  failedLogins.delete(accountKey);
   return { user: { ...user, has_password: true }, cookie: await startSession(req, user.id) };
 }
 
