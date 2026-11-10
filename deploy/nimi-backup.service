@@ -1,0 +1,9 @@
+[Unit]
+Description=Nimi PostgreSQL backup
+After=docker.service
+Requires=docker.service
+[Service]
+Type=oneshot
+ExecStart=/opt/nimi/current/deploy/backup.sh
+Nice=15
+IOSchedulingClass=idle

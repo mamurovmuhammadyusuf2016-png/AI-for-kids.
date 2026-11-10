@@ -1,0 +1,8 @@
+[Unit]
+Description=Retry initial Nimi TLS provisioning until DNS is ready
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=5min
+Unit=nimi-tls-setup.service
+[Install]
+WantedBy=timers.target

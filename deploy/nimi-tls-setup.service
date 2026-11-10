@@ -1,0 +1,8 @@
+[Unit]
+Description=Provision Nimi HTTPS when public DNS is ready
+After=docker.service network-online.target
+Wants=network-online.target
+[Service]
+Type=oneshot
+ExecStart=/opt/nimi/current/deploy/enable-https.sh
+TimeoutStartSec=300

@@ -94,7 +94,7 @@ td .no { color: var(--bad); font-weight: 600; }
 
 <main>
   <header>
-    <span class="eyebrow">Отчёт о проверке · nimi-ai.onrender.com</span>
+    <span class="eyebrow">Отчёт о проверке · Nimi AI</span>
     <h1>Nimi не даёт готовых ответов: проверено на живом сайте</h1>
     <p class="lead">Автоматическая проверка рабочего сайта Nimi AI. Школьник просил готовый ответ 100 раз, часто настойчиво. Программа сверяла каждый ответ Nimi с правильным ответом задачи. Отдельно 50 раз прогнаны все остальные функции сайта.</p>
     <div class="meta" id="meta"></div>
@@ -152,7 +152,7 @@ const rounds = func.length ? Math.max(...func.map((r) => r.round)) : 0;
 const times = chat.map((r) => r.at).filter(Boolean).sort();
 
 document.getElementById('meta').append(
-  el('span', {}, 'Сайт: ', el('b', { text: 'nimi-ai.onrender.com' })),
+  el('span', {}, 'Сайт: ', el('b', { text: location.host })),
   el('span', {}, 'Проверка: ', el('b', { text: times.length ? `${fmtDate(times[0])} – ${fmtDate(D.generated)}` : fmtDate(D.generated) })),
   el('span', {}, 'Время: ', el('b', { text: 'Ташкент' })));
 
