@@ -559,6 +559,8 @@
     ['confident', 'уверенный', "o'ziga ishongan", 5, 'Practice makes you more confident.'],
   ];
   // [level, sentence, right, wrong options, rule ru, rule uz]
+  // The knowledge check (diag.js) names groups of four sentences in this order (GRAMMAR_NAMES there):
+  // add new sentences at the end of a level, or update those names.
   const GRAMMAR = [
     [2, 'She ___ to school every day.', 'goes', ['go', 'going', 'gone'], 'В Present Simple с he / she / it к глаголу добавляется -s или -es: she goes.', "Present Simple'da he / she / it bilan fe'lga -s yoki -es qo'shiladi: she goes."],
     [2, 'I ___ a student.', 'am', ['is', 'are', 'be'], 'Глагол to be: I am, he / she / it is, we / you / they are.', "to be fe'li: I am, he / she / it is, we / you / they are."],

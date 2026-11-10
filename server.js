@@ -21,7 +21,7 @@ const MAX_HISTORY = 20;
 const DAILY_LIMIT = 30;
 // Generated exercise sets (training, tests, reading, cards) per day.
 const LEARN_LIMIT = 20;
-const DATA_KEYS = new Set(['progress', 'diary', 'cards', 'quest', 'path']);
+const DATA_KEYS = new Set(['progress', 'diary', 'cards', 'quest', 'path', 'diag']);
 
 // Subscription: price and how students reach the owner (set on Render).
 const CONTACT_TELEGRAM = (process.env.CONTACT_TELEGRAM || '').replace(/^@/, '');
@@ -752,6 +752,7 @@ async function handleParent(req, res, body, user, action) {
       limit: dailyLimit(child),
       progress: data.progress || null,
       diary: data.diary || [],
+      diag: data.diag || null, // knowledge check and its map (public/diag.js)
     });
   }
   if (action === 'child-password') {

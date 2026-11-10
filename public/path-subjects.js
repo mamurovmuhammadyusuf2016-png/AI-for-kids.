@@ -104,6 +104,22 @@ window.NimiPathSubjects = {
       ["Формула кинетической энергии:", "Kinetik energiya formulasi:", ["E = m v² / 2", "E = m g h", "E = m v", "E = m / v"], ["E = m v² / 2", "E = m g h", "E = m v", "E = m / v"], "m g h — это потенциальная энергия.", "m g h — potensial energiya."],
       ["Потенциальная энергия поднятого тела:", "Ko'tarilgan jismning potensial energiyasi:", ["E = m g h", "E = m v² / 2", "E = m / h", "E = m g / h"], ["E = m g h", "E = m v² / 2", "E = m / h", "E = m g / h"], "Чем выше тело, тем больше его энергия.", "Jism qancha baland bo'lsa, energiyasi shuncha katta."],
     ] },
+    { id: 'measure', g: [6, 6], name: ["Физические величины и измерения", "Fizik kattaliklar va o'lchashlar"], rule: ["Физическую величину можно измерить: длину — линейкой (метр), массу — весами (килограмм), время — часами (секунда), температуру — термометром. 1 км = 1000 м, 1 кг = 1000 г, 1 ч = 60 мин.", "Fizik kattalikni o'lchash mumkin: uzunlik — chizg'ich bilan (metr), massa — tarozi bilan (kilogramm), vaqt — soat bilan (sekund), harorat — termometr bilan. 1 km = 1000 m, 1 kg = 1000 g, 1 soat = 60 min."], qs: [
+      ["Единица длины в СИ:", "SI da uzunlik birligi:", ["метр", "килограмм", "секунда", "литр"], ["metr", "kilogramm", "sekund", "litr"], "Длину измеряют в метрах.", "Uzunlik metrda o'lchanadi."],
+      ["Чем измеряют массу?", "Massa nima bilan o'lchanadi?", ["весами", "линейкой", "термометром", "часами"], ["tarozi bilan", "chizg'ich bilan", "termometr bilan", "soat bilan"], "Весы показывают массу тела в граммах и килограммах.", "Tarozi jism massasini gramm va kilogrammda ko'rsatadi."],
+      ["Сколько метров в 3 км?", "3 km necha metr?", ["3000 м", "300 м", "30 м", "30 000 м"], ["3000 m", "300 m", "30 m", "30 000 m"], "1 км = 1000 м, значит 3 км = 3000 м.", "1 km = 1000 m, demak 3 km = 3000 m."],
+      ["Сколько граммов в 2 кг?", "2 kg necha gramm?", ["2000 г", "200 г", "20 г", "20 000 г"], ["2000 g", "200 g", "20 g", "20 000 g"], "1 кг = 1000 г.", "1 kg = 1000 g."],
+      ["Единица времени в СИ:", "SI da vaqt birligi:", ["секунда", "час", "метр", "сутки"], ["sekund", "soat", "metr", "sutka"], "Основная единица времени — секунда.", "Vaqtning asosiy birligi — sekund."],
+      ["Что из этого физическое тело?", "Qaysi biri fizik jism?", ["мяч", "скорость", "время", "температура"], ["to'p", "tezlik", "vaqt", "harorat"], "Тело — это предмет; скорость, время и температура — величины.", "Jism — bu narsa; tezlik, vaqt va harorat — kattaliklar."],
+    ] },
+    { id: 'matter', g: [6, 7], name: ["Строение вещества", "Moddaning tuzilishi"], rule: ["Вещества состоят из молекул и атомов, они непрерывно движутся. Диффузия — самопроизвольное перемешивание веществ. Три состояния: твёрдое (сохраняет форму и объём), жидкое (сохраняет объём), газообразное (занимает весь объём).", "Moddalar molekula va atomlardan iborat, ular to'xtovsiz harakatlanadi. Diffuziya — moddalarning o'z-o'zidan aralashishi. Uch holat: qattiq (shakli va hajmini saqlaydi), suyuq (hajmini saqlaydi), gaz (butun hajmni egallaydi)."], qs: [
+      ["Из чего состоят вещества?", "Moddalar nimadan iborat?", ["из молекул и атомов", "только из воды", "из света", "из звуков"], ["molekula va atomlardan", "faqat suvdan", "yorug'likdan", "tovushlardan"], "Молекулы состоят из атомов.", "Molekulalar atomlardan tuzilgan."],
+      ["Запах духов расходится по комнате. Это…", "Atir hidi xonaga tarqaladi. Bu…", ["диффузия", "плавление", "кипение", "трение"], ["diffuziya", "erish", "qaynash", "ishqalanish"], "Молекулы духов перемешиваются с молекулами воздуха.", "Atir molekulalari havo molekulalari bilan aralashadi."],
+      ["Диффузия идёт быстрее, когда вещество…", "Diffuziya modda qanday bo'lsa tezroq boradi?", ["теплее", "холоднее", "темнее", "тяжелее"], ["issiqroq bo'lsa", "sovuqroq bo'lsa", "qorong'iroq bo'lsa", "og'irroq bo'lsa"], "При нагревании молекулы движутся быстрее.", "Qizdirilganda molekulalar tezroq harakatlanadi."],
+      ["Какое вещество сохраняет и форму, и объём?", "Qaysi modda ham shaklini, ham hajmini saqlaydi?", ["лёд", "вода", "воздух", "пар"], ["muz", "suv", "havo", "bug'"], "Лёд — твёрдое тело.", "Muz — qattiq jism."],
+      ["В каком состоянии вещество занимает весь предоставленный объём?", "Qaysi holatda modda berilgan butun hajmni egallaydi?", ["в газообразном", "в твёрдом", "в жидком", "в любом"], ["gaz holatida", "qattiq holatda", "suyuq holatda", "istalgan holatda"], "Молекулы газа далеко друг от друга и разлетаются по всему сосуду.", "Gaz molekulalari bir-biridan uzoq va butun idish bo'ylab tarqaladi."],
+      ["Лёд, вода и водяной пар состоят из…", "Muz, suv va suv bug'i nimadan iborat?", ["одинаковых молекул", "разных молекул", "разных атомов", "только из кислорода"], ["bir xil molekulalardan", "har xil molekulalardan", "har xil atomlardan", "faqat kisloroddan"], "Это одно вещество — вода — в трёх состояниях.", "Bu bitta modda — suv — uch holatda."],
+    ] },
   ] },
 
   chemistry: { from: 7, topics: [
@@ -147,6 +163,14 @@ window.NimiPathSubjects = {
       ["Что ржавеет?", "Nima zanglaydi?", ["железо", "золото", "стекло", "пластик"], ["temir", "oltin", "shisha", "plastik"], "Железо во влажном воздухе окисляется.", "Temir nam havoda oksidlanadi."],
       ["Самый лёгкий газ:", "Eng yengil gaz:", ["водород", "гелий", "кислород", "азот"], ["vodorod", "geliy", "kislorod", "azot"], "Водород — первый элемент таблицы.", "Vodorod — jadvaldagi birinchi element."],
     ] },
+    { id: 'phenomena', g: [7, 7], name: ["Явления и смеси", "Hodisalar va aralashmalar"], rule: ["При физическом явлении вещество остаётся тем же (таяние, кипение, измельчение). При химическом образуются новые вещества (горение, ржавление, скисание). Смесь можно разделить: фильтрованием, выпариванием, отстаиванием, магнитом.", "Fizik hodisada modda o'zgarmaydi (erish, qaynash, maydalash). Kimyoviy hodisada yangi moddalar hosil bo'ladi (yonish, zanglash, achish). Aralashmani ajratish mumkin: filtrlash, bug'latish, tindirish, magnit bilan."], qs: [
+      ["Какое явление физическое?", "Qaysi hodisa fizik?", ["таяние льда", "ржавление железа", "горение дров", "скисание молока"], ["muzning erishi", "temirning zanglashi", "o'tinning yonishi", "sutning achishi"], "Лёд стал водой — вещество осталось тем же.", "Muz suvga aylandi — modda o'sha qoldi."],
+      ["Ржавление железа — это…", "Temirning zanglashi — bu…", ["химическое явление", "физическое явление", "смесь", "растворение"], ["kimyoviy hodisa", "fizik hodisa", "aralashma", "erish"], "Образуется новое вещество — ржавчина.", "Yangi modda — zang hosil bo'ladi."],
+      ["Как отделить песок от воды?", "Qumni suvdan qanday ajratish mumkin?", ["фильтрованием", "магнитом", "перемешиванием", "охлаждением"], ["filtrlash bilan", "magnit bilan", "aralashtirish bilan", "sovitish bilan"], "Вода проходит через фильтр, песок остаётся.", "Suv filtrdan o'tadi, qum qoladi."],
+      ["Как получить соль из солёной воды?", "Sho'r suvdan tuzni qanday olish mumkin?", ["выпариванием", "фильтрованием", "магнитом", "отстаиванием"], ["bug'latish bilan", "filtrlash bilan", "magnit bilan", "tindirish bilan"], "Вода испаряется, соль остаётся.", "Suv bug'lanadi, tuz qoladi."],
+      ["Чем отделить железные опилки от песка?", "Temir qipig'ini qumdan nima bilan ajratish mumkin?", ["магнитом", "фильтром", "выпариванием", "отстаиванием"], ["magnit bilan", "filtr bilan", "bug'latish bilan", "tindirish bilan"], "Железо притягивается магнитом, песок — нет.", "Temir magnitga tortiladi, qum esa yo'q."],
+      ["Признак химической реакции:", "Kimyoviy reaksiya belgisi:", ["выделение газа или изменение цвета", "изменение формы", "изменение размера", "изменение места"], ["gaz ajralishi yoki rang o'zgarishi", "shakl o'zgarishi", "o'lcham o'zgarishi", "joy o'zgarishi"], "Ещё признаки: осадок, запах, выделение тепла и света.", "Yana belgilar: cho'kma, hid, issiqlik va yorug'lik ajralishi."],
+    ] },
   ] },
 
   biology: { from: 5, topics: [
@@ -189,6 +213,14 @@ window.NimiPathSubjects = {
       ["Кто предложил теорию эволюции?", "Evolyutsiya nazariyasini kim taklif qilgan?", ["Дарвин", "Мендель", "Менделеев", "Павлов"], ["Darvin", "Mendel", "Mendeleyev", "Pavlov"], "Книга «Происхождение видов», 1859.", "«Turlarning kelib chiqishi» kitobi, 1859."],
       ["Участок ДНК, который определяет признак:", "Belgini belgilaydigan DNK bo'lagi:", ["ген", "клетка", "ткань", "орган"], ["gen", "hujayra", "to'qima", "a'zo"], "Например, ген цвета глаз.", "Masalan, ko'z rangi geni."],
       ["Хромосомы, определяющие мужской пол:", "Erkak jinsini belgilaydigan xromosomalar:", ["XY", "XX", "YY", "X0"], ["XY", "XX", "YY", "X0"], "XX — женский пол.", "XX — ayol jinsi."],
+    ] },
+    { id: 'living', g: [5, 5], name: ["Живая природа", "Tirik tabiat"], rule: ["Живые организмы дышат, питаются, растут, размножаются. Царства живой природы: бактерии, грибы, растения, животные. Биология — наука о живой природе; ботаника изучает растения, зоология — животных.", "Tirik organizmlar nafas oladi, oziqlanadi, o'sadi, ko'payadi. Tirik tabiat olamlari: bakteriyalar, zamburug'lar, o'simliklar, hayvonlar. Biologiya — tirik tabiat haqidagi fan; botanika o'simliklarni, zoologiya hayvonlarni o'rganadi."], qs: [
+      ["Что изучает биология?", "Biologiya nimani o'rganadi?", ["живую природу", "звёзды", "горные породы", "числа"], ["tirik tabiatni", "yulduzlarni", "tog' jinslarini", "sonlarni"], "«Биос» — жизнь, «логос» — наука.", "«Bios» — hayot, «logos» — fan."],
+      ["Что из этого живой организм?", "Qaysi biri tirik organizm?", ["гриб", "камень", "вода", "песок"], ["zamburug'", "tosh", "suv", "qum"], "Гриб питается, растёт и размножается.", "Zamburug' oziqlanadi, o'sadi va ko'payadi."],
+      ["Наука о растениях:", "O'simliklar haqidagi fan:", ["ботаника", "зоология", "анатомия", "геология"], ["botanika", "zoologiya", "anatomiya", "geologiya"], "Зоология изучает животных.", "Zoologiya hayvonlarni o'rganadi."],
+      ["Признак живого:", "Tiriklik belgisi:", ["размножение", "блеск", "твёрдость", "прозрачность"], ["ko'payish", "yaltirash", "qattiqlik", "shaffoflik"], "Только живые организмы дают потомство.", "Faqat tirik organizmlar nasl qoldiradi."],
+      ["Растения сами создают питательные вещества на свету. Это…", "O'simliklar yorug'likda oziq moddalarni o'zi hosil qiladi. Bu…", ["фотосинтез", "дыхание", "испарение", "брожение"], ["fotosintez", "nafas olish", "bug'lanish", "bijg'ish"], "Для фотосинтеза нужны свет, вода и углекислый газ.", "Fotosintez uchun yorug'lik, suv va karbonat angidrid kerak."],
+      ["К какому царству относятся дрожжи и плесень?", "Xamirturush va mog'or qaysi olamga kiradi?", ["грибы", "растения", "животные", "бактерии"], ["zamburug'lar", "o'simliklar", "hayvonlar", "bakteriyalar"], "Дрожжи и плесень — микроскопические грибы.", "Xamirturush va mog'or — mikroskopik zamburug'lar."],
     ] },
   ] },
 
@@ -240,6 +272,14 @@ window.NimiPathSubjects = {
       ["Когда Колумб доплыл до Америки?", "Kolumb Amerikaga qachon yetib borgan?", ["1492", "1500", "1812", "1066"], ["1492", "1500", "1812", "1066"], "Он искал морской путь в Индию.", "U Hindistonga dengiz yo'lini izlagan."],
       ["Кто изобрёл книгопечатание в Европе?", "Yevropada kitob bosishni kim ixtiro qilgan?", ["Гутенберг", "Колумб", "Ньютон", "Наполеон"], ["Gutenberg", "Kolumb", "Nyuton", "Napoleon"], "Около 1450 года.", "Taxminan 1450-yilda."],
       ["Когда основана ООН?", "BMT qachon tashkil topgan?", ["1945", "1918", "1991", "1960"], ["1945", "1918", "1991", "1960"], "После Второй мировой войны, чтобы сохранить мир.", "Ikkinchi jahon urushidan keyin tinchlikni saqlash uchun."],
+    ] },
+    { id: 'time', g: [5, 5], name: ["История и время", "Tarix va vaqt"], rule: ["История изучает прошлое людей по источникам: вещественным (орудия, монеты), письменным (летописи) и устным (предания). Век — 100 лет, тысячелетие — 1000 лет. Годы до нашей эры считают в обратном порядке.", "Tarix odamlarning o'tmishini manbalar orqali o'rganadi: moddiy (qurollar, tangalar), yozma (yilnomalar) va og'zaki (rivoyatlar). Asr — 100 yil, ming yillik — 1000 yil. Miloddan avvalgi yillar teskari tartibda sanaladi."], qs: [
+      ["Сколько лет в одном веке?", "Bir asrda necha yil bor?", ["100", "10", "1000", "50"], ["100", "10", "1000", "50"], "Век — 100 лет, тысячелетие — 1000 лет.", "Asr — 100 yil, ming yillik — 1000 yil."],
+      ["К какому веку относится 1991 год?", "1991-yil qaysi asrga kiradi?", ["XX", "XIX", "XXI", "XVIII"], ["XX", "XIX", "XXI", "XVIII"], "1901–2000 годы — XX век.", "1901–2000-yillar — XX asr."],
+      ["Что из этого письменный источник?", "Qaysi biri yozma manba?", ["летопись", "каменный топор", "глиняный кувшин", "наскальный рисунок"], ["yilnoma", "tosh bolta", "sopol ko'za", "qoyatosh rasmi"], "Летопись — запись событий по годам.", "Yilnoma — voqealarning yillar bo'yicha yozuvi."],
+      ["Кто находит и изучает древние вещи в земле?", "Yer ostidan qadimgi buyumlarni kim topib o'rganadi?", ["археолог", "астроном", "геолог", "биолог"], ["arxeolog", "astronom", "geolog", "biolog"], "Археология изучает прошлое по вещественным источникам.", "Arxeologiya o'tmishni moddiy manbalar orqali o'rganadi."],
+      ["Что было раньше: 500 год до н. э. или 200 год до н. э.?", "Qaysi biri oldin bo'lgan: miloddan avvalgi 500-yilmi yoki 200-yil?", ["500 год до н. э.", "200 год до н. э.", "одновременно", "узнать нельзя"], ["mil. avv. 500-yil", "mil. avv. 200-yil", "bir vaqtda", "bilib bo'lmaydi"], "До нашей эры годы считают в обратном порядке: чем больше число, тем раньше.", "Miloddan avvalgi yillar teskari sanaladi: son qancha katta bo'lsa, shuncha oldin."],
+      ["Из чего первобытные люди делали первые орудия труда?", "Ibtidoiy odamlar ilk mehnat qurollarini nimadan yasagan?", ["из камня", "из железа", "из пластика", "из стекла"], ["toshdan", "temirdan", "plastikdan", "shishadan"], "Поэтому древнейшую эпоху называют каменным веком.", "Shuning uchun eng qadimgi davr tosh davri deb ataladi."],
     ] },
   ] },
 
@@ -346,6 +386,14 @@ window.NimiPathSubjects = {
       ["Кто написал «Преступление и наказание»?", "«Jinoyat va jazo»ni kim yozgan?", ["Достоевский", "Толстой", "Чехов", "Тургенев"], ["Dostoyevskiy", "Tolstoy", "Chexov", "Turgenev"], "Главный герой — Раскольников.", "Bosh qahramon — Raskolnikov."],
       ["Кто написал «Маленького принца»?", "«Kichkina shahzoda»ni kim yozgan?", ["Сент-Экзюпери", "Андерсен", "Жюль Верн", "Гюго"], ["Sent-Ekzyuperi", "Andersen", "Jyul Vern", "Gyugo"], "«Зорко одно лишь сердце».", "«Faqat yurak ko'radi»."],
     ] },
+    { id: 'folk', g: [5, 6], name: ["Сказки, басни и пословицы", "Ertak, masal va maqollar"], rule: ["Фольклор — устное народное творчество: сказки, пословицы, загадки, эпос. У них нет одного автора. Басня — короткий рассказ с моралью, где герои часто животные. Пословица — краткое мудрое изречение.", "Folklor — xalq og'zaki ijodi: ertaklar, maqollar, topishmoqlar, dostonlar. Ularning bitta muallifi yo'q. Masal — qissadan hissa chiqariladigan qisqa asar, qahramonlari ko'pincha hayvonlar. Maqol — qisqa hikmatli so'z."], qs: [
+      ["У народной сказки автор…", "Xalq ertagining muallifi…", ["народ", "один писатель", "учёный", "журналист"], ["xalq", "bitta yozuvchi", "olim", "jurnalist"], "Народные сказки передавались из уст в уста.", "Xalq ertaklari og'izdan og'izga o'tib kelgan."],
+      ["Как называют вывод, поучение в басне?", "Masaldagi xulosa, o'git nima deyiladi?", ["мораль", "рифма", "сюжет", "эпиграф"], ["qissadan hissa", "qofiya", "syujet", "epigraf"], "Мораль — то, чему учит басня.", "Qissadan hissa — masal nimaga o'rgatishi."],
+      ["Кто чаще всего герои басен?", "Masallarning qahramonlari ko'pincha kimlar?", ["животные", "космонавты", "учёные", "короли"], ["hayvonlar", "kosmonavtlar", "olimlar", "qirollar"], "Под животными в баснях показывают людей и их недостатки.", "Masalda hayvonlar orqali odamlar va ularning kamchiliklari ko'rsatiladi."],
+      ["«Без труда не вытащишь и рыбку из пруда» — это…", "«Mehnat, mehnatning tagi — rohat» — bu…", ["пословица", "загадка", "сказка", "басня"], ["maqol", "topishmoq", "ertak", "masal"], "Пословица — краткое народное изречение с поучением.", "Maqol — o'git beruvchi qisqa xalq hikmati."],
+      ["Узбекский народный героический эпос:", "O'zbek xalq qahramonlik dostoni:", ["«Алпамыш»", "«Хамса»", "«Бабур-наме»", "«Минувшие дни»"], ["«Alpomish»", "«Xamsa»", "«Boburnoma»", "«O'tkan kunlar»"], "«Алпамыш» создан народом; у остальных книг есть авторы.", "«Alpomish»ni xalq yaratgan; qolgan asarlarning muallifi bor."],
+      ["«Зимой и летом одним цветом» — это…", "«Qishin-yozin bir xil rangda» — bu…", ["загадка", "пословица", "басня", "рассказ"], ["topishmoq", "maqol", "masal", "hikoya"], "В загадке предмет описан, но не назван (ёлка).", "Topishmoqda narsa tasvirlanadi, lekin nomi aytilmaydi (archa)."],
+    ] },
   ] },
 
   // Russian as the school subject on the Russian site (one language).
@@ -390,6 +438,14 @@ window.NimiPathSubjects = {
       ["Причастный оборот после определяемого слова…", ["выделяется запятыми", "не выделяется", "берётся в кавычки", "берётся в скобки"], "Мальчик, читающий книгу, сидел тихо."],
       ["Вводные слова («конечно», «наверное»)…", ["выделяются запятыми", "берутся в кавычки", "отделяются точкой", "не выделяются"], "Он, конечно, прав."],
     ] },
+    { id: 'words1', g: [1, 2], name: "Слово и предложение", rule: "Предложение начинается с большой буквы, в конце ставят точку, вопросительный или восклицательный знак. Имена людей, клички животных и названия городов пишут с большой буквы. Слова переносят по слогам.", qs: [
+      ["С какой буквы начинается предложение?", ["с большой", "с маленькой", "с любой", "с гласной"], "Первое слово в предложении пишут с большой буквы."],
+      ["Что ставят в конце вопроса?", ["вопросительный знак", "точку", "запятую", "тире"], "Как тебя зовут?"],
+      ["Какое слово пишут с большой буквы?", ["Ташкент", "город", "река", "школа"], "Названия городов пишут с большой буквы."],
+      ["Как правильно написать кличку кошки?", ["Мурка", "мурка", "МУрка", "мурКа"], "Клички животных пишут с большой буквы."],
+      ["Как правильно перенести слово «мама»?", ["ма-ма", "м-ама", "мам-а", "мама-"], "Слова переносят по слогам, одну букву на строке не оставляют."],
+      ["Сколько слов в предложении «Мама мыла раму»?", ["3", "2", "4", "1"], "Мама — мыла — раму."],
+    ] },
   ] },
 
   // Ona tili on the Uzbek site (one language).
@@ -433,6 +489,14 @@ window.NimiPathSubjects = {
       ["Uyushiq bo'laklar orasiga qaysi belgi qo'yiladi?", ["vergul", "nuqta", "so'roq belgisi", "undov belgisi"], "Olma, nok, uzum pishdi."],
       ["«Lekin», «ammo» oldidan nima qo'yiladi?", ["vergul", "nuqta", "tire", "hech narsa"], "Bordim, lekin uni topmadim."],
       ["Ko'chirma gap qanday yoziladi?", ["qo'shtirnoq ichida", "qavs ichida", "vergul bilan", "ajratilmaydi"], "U: «Men kelaman», — dedi."],
+    ] },
+    { id: 'gap1', g: [1, 2], name: "So'z va gap", rule: "Gap bosh harf bilan boshlanadi, oxiriga nuqta, so'roq yoki undov belgisi qo'yiladi. Kishilarning ismi, hayvonlarning laqabi va shahar nomlari bosh harf bilan yoziladi. So'zlar bo'g'inlab ko'chiriladi.", qs: [
+      ["Gap qanday harf bilan boshlanadi?", ["bosh harf bilan", "kichik harf bilan", "istalgan harf bilan", "unli harf bilan"], "Gapning birinchi so'zi bosh harf bilan yoziladi."],
+      ["Savol so'ralgan gap oxiriga qaysi belgi qo'yiladi?", ["so'roq belgisi", "nuqta", "vergul", "tire"], "Isming nima?"],
+      ["Qaysi so'z bosh harf bilan yoziladi?", ["Toshkent", "shahar", "daryo", "maktab"], "Shahar nomlari bosh harf bilan yoziladi."],
+      ["Mushukning laqabi qanday yoziladi?", ["Mosh", "mosh", "MOsh", "moSh"], "Hayvonlarning laqabi bosh harf bilan yoziladi."],
+      ["«Bola» so'zi qanday ko'chiriladi?", ["bo-la", "b-ola", "bol-a", "bola-"], "So'zlar bo'g'inlab ko'chiriladi, satrda bitta harf qoldirilmaydi."],
+      ["«Men maktabga boraman» gapida nechta so'z bor?", ["3", "2", "4", "1"], "Men — maktabga — boraman."],
     ] },
   ] },
 };

@@ -138,6 +138,7 @@
       askLead: 'Разберём задачу вместе — без готовых ответов',
       lbTitle: 'Рейтинг',
       lbCard: 'Кто набрал больше всех монеток и XP',
+      diagCard: ['Проверка знаний', 'Карта знаний и план по слабым темам'],
       lbTabs: { games: 'Игры · монетки', path: 'Путь знаний · XP' },
       lbYou: 'Это ты',
       lbEmpty: 'Пока здесь никого нет — стань первым!',
@@ -236,7 +237,7 @@
         freeLead: 'Без подписки можно задавать вопросы в чат.',
         freeLeftN: (n) => `осталось ${n}`,
         freeUsedWord: 'использовано',
-        features: { path: 'Путь знаний', chat: 'Чат с учителем', photo: 'Фото задачи', training: 'Тренировка', test: 'Тест по теме', exam: 'Экзамен', olympiad: 'Олимпиада', reading: 'Чтение', report: 'Отчёт для родителей' },
+        features: { plan: 'План занятий', path: 'Путь знаний', chat: 'Чат с учителем', photo: 'Фото задачи', training: 'Тренировка', test: 'Тест по теме', exam: 'Экзамен', olympiad: 'Олимпиада', reading: 'Чтение', report: 'Отчёт для родителей' },
         freeUsed: (name, key) => (key === 'chat' ? 'Бесплатные вопросы в чате закончились. Чтобы продолжить, выбери тариф или попроси бесплатную неделю.' : `Раздел «${name}» открывается с подпиской. Выбери тариф или попроси бесплатную неделю.`),
         tileFree: 'Бесплатно',
         allUsed: 'Бесплатные попытки закончились',
@@ -649,6 +650,7 @@
       askLead: 'Masalani birga yechamiz — tayyor javobsiz',
       lbTitle: 'Reyting',
       lbCard: "Kim ko'proq tanga va XP to'pladi",
+      diagCard: ['Bilimni tekshirish', "Bilim xaritasi va zaif mavzular bo'yicha reja"],
       lbTabs: { games: "O'yinlar · tangalar", path: "Bilim yo'li · XP" },
       lbYou: 'Bu sen',
       lbEmpty: "Hozircha hech kim yo'q — birinchi bo'l!",
@@ -747,7 +749,7 @@
         freeLead: "Obunasiz chatga savol berish mumkin.",
         freeLeftN: (n) => `${n} ta qoldi`,
         freeUsedWord: 'ishlatildi',
-        features: { path: "Bilim yo'li", chat: "O'qituvchi bilan chat", photo: 'Masala surati', training: 'Mashq', test: "Mavzu bo'yicha test", exam: 'Imtihon', olympiad: 'Olimpiada', reading: "O'qish", report: 'Ota-onalar uchun hisobot' },
+        features: { plan: "Mashg'ulotlar rejasi", path: "Bilim yo'li", chat: "O'qituvchi bilan chat", photo: 'Masala surati', training: 'Mashq', test: "Mavzu bo'yicha test", exam: 'Imtihon', olympiad: 'Olimpiada', reading: "O'qish", report: 'Ota-onalar uchun hisobot' },
         freeUsed: (name, key) => (key === 'chat' ? "Chatdagi bepul savollar tugadi. Davom etish uchun tarifni tanla yoki bepul haftani so'ra." : `«${name}» bo'limi obuna bilan ochiladi. Tarifni tanla yoki bepul haftani so'ra.`),
         tileFree: 'Bepul',
         allUsed: 'Bepul urinishlar tugadi',
@@ -1068,6 +1070,7 @@
     cards: { decks: [] },
     quest: {},
     path: {},
+    diag: {},
   });
   let data = blank();
   const saveTimers = {};
@@ -1080,6 +1083,7 @@
       cards: { decks: Array.isArray(d?.cards?.decks) ? d.cards.decks : [] },
       quest: d?.quest && typeof d.quest === 'object' && !Array.isArray(d.quest) ? d.quest : {},
       path: d?.path && typeof d.path === 'object' && !Array.isArray(d.path) ? d.path : {},
+      diag: d?.diag && typeof d.diag === 'object' && !Array.isArray(d.diag) ? d.diag : {},
     };
   }
 
@@ -2459,6 +2463,7 @@
         topicsBox.append(h('div', { class: 'flex items-center gap-3 rounded-xl bg-night-800 px-3 py-2' }, h('span', { class: `h-3 w-3 shrink-0 rounded-full ${c}` }), h('span', { class: 'min-w-0 flex-1 text-sm text-slate-100' }, topic), h('span', { class: 'text-xs tabular-nums text-slate-400' }, `${st.ok}/${st.total}`)));
       });
     });
+    if (window.NimiDiag) root.append(window.NimiDiag.parentCard(r.diag));
     root.append(topicsBox);
     // Homework
     // AI report
@@ -2659,6 +2664,11 @@
         ico('star', 'icon text-amber-300'), h('span', { class: 'min-w-0 flex-1' }, st.text), ico('chevron-right', 'icon text-slate-500')));
     }
 
+    // Knowledge check and the plan for today (diag.js); a new student is taken to the check once.
+    if (window.NimiDiag) {
+      if (window.NimiDiag.offerOnce()) return;
+      root.append(window.NimiDiag.homeCard());
+    }
     // Learning path (path.js): lessons without AI, free for everyone.
     if (window.NimiPath) root.append(window.NimiPath.heroCard ? window.NimiPath.heroCard() : window.NimiPath.homeCard());
 
@@ -2808,6 +2818,13 @@
       root.append(h('button', { type: 'button', class: `${CARD} flex items-center gap-3 text-left transition hover:bg-night-800 active:scale-[.99]`, onclick: () => openLeaderboard('path') },
         h('span', { class: 'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-200' }, ico('trophy')),
         h('span', { class: 'min-w-0 flex-1' }, h('span', { class: 'block font-semibold text-white' }, t('lbTitle')), h('span', { class: 'block text-sm text-slate-400' }, t('lbCard'))),
+        ico('chevron-right', 'icon text-slate-500')));
+    }
+
+    if (window.NimiDiag) {
+      root.append(h('button', { type: 'button', class: `${CARD} flex items-center gap-3 text-left transition hover:bg-night-800 active:scale-[.99]`, onclick: () => window.NimiDiag.open() },
+        h('span', { class: 'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-mint text-brand-600' }, ico('clipboard-check')),
+        h('span', { class: 'min-w-0 flex-1' }, h('span', { class: 'block font-semibold text-white' }, t('diagCard')[0]), h('span', { class: 'block text-sm text-slate-400' }, t('diagCard')[1])),
         ico('chevron-right', 'icon text-slate-500')));
     }
 
