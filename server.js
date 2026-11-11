@@ -571,9 +571,13 @@ const isAdmin = (user) => !!user?.apiAdmin || user?.role === 'admin' || (!!user?
 // Admins must use Face ID / fingerprint: the password alone never opens the admin panel.
 // Without a passkey yet, the session waits until the admin adds this phone (the first sign-in).
 // Emergency switch: ADMIN_FACE_ID=off on Render makes Face ID optional again (as before 08.11.2026).
-const mustUsePasskey = (u) => process.env.ADMIN_FACE_ID !== 'off' && !!u && !u.apiAdmin && (u.role === 'admin' || (!!u.email && ADMIN_EMAILS.has(u.email)));
+// Face ID for admins is OFF since 11.11.2026 (owner's decision): admins sign in with the password only.
+// ADMIN_FACE_ID=on on Render turns it back on (required, as from 08.11.2026); the passkeys stay stored.
+const faceIdOn = () => process.env.ADMIN_FACE_ID === 'on';
+const mustUsePasskey = (u) => faceIdOn() && !!u && !u.apiAdmin && (u.role === 'admin' || (!!u.email && ADMIN_EMAILS.has(u.email)));
 // 'passkey' (check Face ID), 'passkey_setup' (add the first one) or '' (no second step).
 async function secondStep(user) {
+  if (!faceIdOn()) return '';
   if ((await auth.listPasskeys(user.id)).length) return 'passkey';
   return mustUsePasskey(user) ? 'passkey_setup' : '';
 }
@@ -969,6 +973,7 @@ async function route(req, res) {
         accounts: auth.enabled(),
         // Which codes the site can send: SMS (phone sign-up) and email. Off until the keys are set on Render.
         verify: { sms: notify.smsEnabled(), email: notify.emailEnabled(), register: auth.registerCodes() },
+        faceId: faceIdOn(),
         consent: { version: auth.CONSENT_VERSION, texts: auth.CONSENT_TEXTS },
         billing: {
           plans: Object.entries(PLANS).map(([id, p]) => ({ id, name: p.name, price: p.price, input: p.input, output: p.output, questions: p.questions })),

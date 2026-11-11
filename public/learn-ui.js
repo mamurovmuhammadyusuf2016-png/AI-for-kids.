@@ -1954,7 +1954,7 @@
       msg));
     root.append(studentsBlock(A, grant));
     root.append(revokeBlock(A));
-    root.append(faceIdBlock(A));
+    if (N.faceId) root.append(faceIdBlock(A));
     root.append(h('p', { class: 'font-semibold text-white' }, A.pending));
     const list = h('div', { class: 'flex flex-col gap-2' }, loading(t('loadingTopics')));
     root.append(list);

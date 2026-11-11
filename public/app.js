@@ -1711,6 +1711,7 @@
     get user() { return user; },
     get account() { return account; },
     get accounts() { return !!config.accounts; },
+    get faceId() { return !!config.faceId; },
     get billing() { return config.billing || {}; },
     hasAccess,
     canUse,
