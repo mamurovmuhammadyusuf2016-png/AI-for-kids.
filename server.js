@@ -988,26 +988,6 @@ async function route(req, res) {
     }
     // /health does not touch the database (keep-awake visits must not wake Neon).
     // /health?db=1 also checks the database: the Docker health check on the nimi.uz server uses it.
-    // TEMPORARY (ad video): Google speech synthesis with the site's AI key, for the video voice-over.
-    // Works only while TTS_TOKEN is set on Render; remove this block after use.
-    if (req.method === 'POST' && urlPath === '/tts-temp') {
-      const token = Buffer.from(process.env.TTS_TOKEN || '');
-      const given = Buffer.from(String(req.headers['x-tts-token'] || ''));
-      if (token.length < 24 || given.length !== token.length || !require('crypto').timingSafeEqual(given, token)) {
-        return sendJson(res, 403, { code: 'forbidden' });
-      }
-      const body = JSON.parse(await readBody(req, 400000) || '{}');
-      const path = String(body.path || '');
-      if (!/^(models\/[a-z0-9.-]+:(generateContent|streamGenerateContent\?alt=sse)|interactions)$/.test(path)) return sendJson(res, 400, { code: 'bad_path' });
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/${path}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
-        body: JSON.stringify(body.payload || {}),
-        signal: AbortSignal.timeout(120000),
-      });
-      res.writeHead(r.status, { 'Content-Type': r.headers.get('content-type') || 'application/octet-stream' });
-      return res.end(Buffer.from(await r.arrayBuffer()));
-    }
     if (isRead && urlPath === '/health') {
       if (!new URLSearchParams(req.url.split('?')[1] || '').has('db')) return sendJson(res, 200, { ok: true });
       try {
