@@ -19,90 +19,6 @@ const MODEL_TIMEOUT_MS = 20000;
 const FALLBACK_TIMEOUT_MS = 40000;
 const MAX_HISTORY = 20;
 
-// ---------- anonymous study-only chat (each post is approved before publishing) ----------
-const STUDY_CHAT_MAX_LENGTH = 500;
-const STUDY_CHAT_RATE_WINDOW_MS = 60 * 1000;
-const STUDY_CHAT_RATE_LIMIT = 10;
-const STUDY_CHAT_ADJECTIVES = ['Смелый', 'Умный', 'Добрый', 'Яркий', 'Быстрый', 'Звёздный', 'Любознательный', 'Тихий'];
-const STUDY_CHAT_ANIMALS = ['Лисёнок', 'Тигр', 'Кит', 'Сова', 'Панда', 'Ёжик', 'Дельфин', 'Коала'];
-const STUDY_CHAT_NICKNAMES = new Set(STUDY_CHAT_ADJECTIVES.flatMap((adjective) => STUDY_CHAT_ANIMALS.map((animal) => adjective + '-' + animal)));
-const studyChatMessages = [];
-const studyChatRateLimits = new Map();
-
-const STUDY_CHAT_SYSTEM_PROMPT = [
-  'You moderate an anonymous chat used by children only for learning. Return JSON only.',
-  'Allow only respectful school questions, explanations, homework help, factual answers, or study resources.',
-  'Block greetings, friendship chatting, games, memes, advertising, personal conversation, requests to move elsewhere, profanity, bullying, sexual or adult content, violence, self-harm, illegal or dangerous acts, and any attempt to identify or contact someone.',
-  'Block real names, addresses, contact details, school or class identity, social handles, locations, and requests for these details. Reject when unsure.',
-  'Block help that enables cheating during a current exam; invite the learner to study the concept instead.',
-  'Keep a rejection reason short, kind, and in Russian. When allowed, safeText must preserve meaning but remove personal data.'
-].join(' ');
-
-function studyChatLocalReason(text) {
-  const rules = [
-    [/\b[\w.+-]+@[\w-]+\.[\w.-]+\b/i, 'Не отправляй почту — в учебном чате она не нужна.'],
-    [/(?:\+?\d[\s().-]?){7,}\d/, 'Не отправляй номер телефона.'],
-    [/(?:https?:\/\/|www\.|t\.me\/|telegram|instagram|discord)/i, 'Ссылки и приглашения в другие чаты здесь запрещены.'],
-    [/(?:^|\s)@[\w_]{2,}/i, 'Не отправляй аккаунты или контакты.'],
-    [/(?:меня зовут|мо[её] имя|я живу|мой адрес|моя школа|мой класс)\b/i, 'Не делись именем, адресом, школой или классом.']
-  ];
-  for (const [pattern, reason] of rules) if (pattern.test(text)) return reason;
-  return null;
-}
-
-function studyChatCanPost(ip) {
-  const now = Date.now();
-  const recent = (studyChatRateLimits.get(ip) || []).filter((time) => now - time < STUDY_CHAT_RATE_WINDOW_MS);
-  if (recent.length >= STUDY_CHAT_RATE_LIMIT) return false;
-  recent.push(now);
-  studyChatRateLimits.set(ip, recent);
-  return true;
-}
-
-async function moderateStudyChatMessage(text) {
-  if (!API_KEY) return { allowed: false, reason: 'Чат пока не настроен. Попробуй позже.', safeText: '' };
-  const schema = {
-    type: 'OBJECT',
-    properties: {
-      allowed: { type: 'BOOLEAN' },
-      reason: { type: 'STRING' },
-      safeText: { type: 'STRING' }
-    },
-    required: ['allowed', 'reason', 'safeText']
-  };
-  const raw = await generate(STUDY_CHAT_SYSTEM_PROMPT, [{ role: 'user', content: text }], { schema });
-  const decision = JSON.parse(raw);
-  if (typeof decision.allowed !== 'boolean' || typeof decision.reason !== 'string' || typeof decision.safeText !== 'string') {
-    throw new Error('invalid_gemini_moderation_response');
-  }
-  return decision;
-}
-
-async function handleStudyChat(req, res, body) {
-  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
-  if (!studyChatCanPost(ip)) return sendJson(res, 429, { code: 'rate_limited', message: 'Подожди минутку: сообщений стало слишком много.' });
-  const nickname = typeof body.nickname === 'string' ? body.nickname : '';
-  const rawText = typeof body.text === 'string' ? body.text : '';
-  if (!STUDY_CHAT_NICKNAMES.has(nickname)) return sendJson(res, 400, { code: 'bad_nickname', message: 'Выбери анонимный ник, который предложил чат.' });
-  const text = rawText.trim().replace(/\s+/g, ' ');
-  if (!text || text.length > STUDY_CHAT_MAX_LENGTH) return sendJson(res, 400, { code: 'bad_message', message: 'Сообщение должно быть от 1 до 500 символов.' });
-  const localReason = studyChatLocalReason(text);
-  if (localReason) return sendJson(res, 422, { code: 'blocked', message: localReason });
-  try {
-    const decision = await moderateStudyChatMessage(text);
-    if (!decision.allowed) return sendJson(res, 422, { code: 'blocked', message: decision.reason || 'Разрешены только добрые сообщения об учёбе.' });
-    const safeText = decision.safeText.trim().slice(0, STUDY_CHAT_MAX_LENGTH);
-    if (!safeText) return sendJson(res, 422, { code: 'blocked', message: 'Не удалось безопасно опубликовать сообщение.' });
-    const message = { id: require('crypto').randomUUID(), nickname, text: safeText, createdAt: new Date().toISOString() };
-    studyChatMessages.push(message);
-    if (studyChatMessages.length > 100) studyChatMessages.shift();
-    return sendJson(res, 201, { message });
-  } catch (err) {
-    console.error('Study chat message was not published because moderation failed:', err.message);
-    return sendJson(res, 503, { code: 'moderation_unavailable', message: 'Проверка безопасности сейчас недоступна. Сообщение не опубликовано.' });
-  }
-}
-
 const DAILY_LIMIT = 30;
 // Generated exercise sets (training, tests, reading, cards) per day.
 const LEARN_LIMIT = 20;
@@ -755,6 +671,9 @@ async function handleAdmin(req, res, body, user, action) {
     return sendJson(res, 200, { keys: await passkeys.list(user) });
   }
   // Lost phone: the owner asks Claude, Claude removes the passkeys with the admin key.
+  // Students' chat: the latest messages with the author's login, and removing one.
+  if (action === 'room-list') return sendJson(res, 200, { messages: await auth.roomAdminList(), subjects: ROOM_SUBJECTS });
+  if (action === 'room-delete') return sendJson(res, 200, { ok: await auth.hideRoomMessage(Number(body.id) || 0, 0, true) });
   if (action === 'passkey-reset' && user.apiAdmin) return sendJson(res, 200, { removed: await auth.resetPasskeys(cleanText(body.login, 254)) });
   if (action === 'create-admin' && user.apiAdmin) return sendJson(res, 200, await auth.createAdminAccount(cleanText(body.login, 32), cleanText(body.password, 128)));
   sendJson(res, 404, { code: 'not_found' });
@@ -875,7 +794,130 @@ async function handleParent(req, res, body, user, action) {
 }
 
 // API areas with a sub-action in the path: /api/<area>/<action>.
-const AREA_HANDLERS = { admin: handleAdmin, parent: handleParent, account: handleAccount, chats: handleChats };
+// ---------- students' chat: one room per subject, every message checked by the AI first ----------
+// Nothing reaches the room until the AI says it is about the room's subject or school tasks.
+// Off-topic talk, personal data, insults and links are not published (the author sees why).
+// Nicknames are an animal and a number (as in the leaderboard): no names, phones or emails.
+const ROOM_SUBJECTS = {
+  math: 'математика', russian: 'русский язык', uzbek: 'узбекский язык (Ona tili)', english: 'английский язык', literature: 'литература',
+  nature: 'окружающий мир', physics: 'физика', chemistry: 'химия', biology: 'биология', history: 'история', geography: 'география',
+  informatics: 'информатика', spanish: 'испанский язык', french: 'французский язык', german: 'немецкий язык', chinese: 'китайский язык',
+  japanese: 'японский язык', korean: 'корейский язык', arabic: 'арабский язык', turkish: 'турецкий язык', italian: 'итальянский язык',
+  portuguese: 'португальский язык', hindi: 'хинди', dutch: 'нидерландский язык', polish: 'польский язык', swedish: 'шведский язык',
+};
+const ROOM_MAX_LEN = 500;
+const ROOM_GAP_MS = 5000;           // one message every 5 seconds
+const ROOM_DAILY = 60;              // messages a day per student
+const ROOM_STRIKES = 3;             // this many rejected messages in 10 minutes ...
+const ROOM_MUTE_MS = 10 * 60 * 1000; // ... and the student waits 10 minutes
+const roomState = new Map();        // userId -> { last, strikes: [times], mutedUntil }
+const ROOM_TEXT = {
+  ru: {
+    gap: 'Подожди пару секунд перед следующим сообщением.',
+    daily: 'На сегодня сообщений достаточно. Возвращайся завтра!',
+    muted: (m) => `Слишком много сообщений не по теме. Чат снова откроется через ${m} мин.`,
+    empty: 'Напиши сообщение (до 500 символов).',
+    phone: 'Не пиши номер телефона — в чате он не нужен.',
+    email: 'Не пиши почту — в чате она не нужна.',
+    link: 'Ссылки, аккаунты и приглашения в другие чаты здесь запрещены.',
+    personal: 'Не рассказывай своё имя, адрес и другие личные данные.',
+    offtopic: 'Здесь можно писать только про учёбу и задания по этому предмету.',
+    down: 'Проверка сообщений сейчас недоступна. Попробуй чуть позже.',
+  },
+  uz: {
+    gap: 'Keyingi xabardan oldin bir necha soniya kuting.',
+    daily: "Bugun uchun xabarlar yetarli. Ertaga qaytib keling!",
+    muted: (m) => `Mavzudan tashqari xabarlar juda ko'p. Chat ${m} daqiqadan keyin yana ochiladi.`,
+    empty: 'Xabar yozing (500 belgigacha).',
+    phone: 'Telefon raqamini yozmang — chatda u kerak emas.',
+    email: 'Pochta manzilini yozmang — chatda u kerak emas.',
+    link: 'Havolalar, akkauntlar va boshqa chatlarga taklif qilish taqiqlangan.',
+    personal: "Ismingiz, manzilingiz va boshqa shaxsiy ma'lumotlarni yozmang.",
+    offtopic: 'Bu yerda faqat shu fan bo\'yicha o\'qish va topshiriqlar haqida yozish mumkin.',
+    down: "Xabarlarni tekshirish hozir ishlamayapti. Birozdan keyin urinib ko'ring.",
+  },
+};
+
+// Quick checks before the AI: contacts and links are never allowed.
+function roomLocalBlock(text) {
+  if (/[\w.+-]+@[\w-]+\.[a-z]{2,}/i.test(text)) return 'email';
+  if (/(?:\+?998|\b9\d)[\s-]?\(?\d{2}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}\b|\+\d[\d\s-]{7,}/.test(text)) return 'phone';
+  if (/https?:\/\/|www\.|\b[\w-]+\.(?:com|ru|uz|me|org|net|io|gg)\b|t\.me|telegram|телеграм|instagram|инстаграм|tiktok|тикток|discord|whatsapp|ватсап|(?:^|\s)@[\w_]{3,}/i.test(text)) return 'link';
+  if (/(?:меня зовут|моё имя|мое имя|я живу|мой адрес|mening ismim|ismim\s|men .*da yashayman|manzilim)/i.test(text)) return 'personal';
+  return null;
+}
+
+const ROOM_PROMPT = (subject) => [
+  `You moderate a chat for school students (grades 1–11) in Uzbekistan. This chat room is ONLY for the subject: ${subject}.`,
+  'Decide if the message may be published. Allow ONLY: questions, explanations, hints, examples, homework or exercise help, study tips, facts and corrections that are about this subject or school tasks in it; short polite study replies to others ("thanks, now I understand", "check step 2") are fine.',
+  'Reject: greetings or chit-chat alone, talk about other subjects or other topics (games, films, music, sport, friends, love, money, politics, religion), jokes and memes, spam or repeated letters, advertising, requests to add or meet or move to another app, any names, phone numbers, addresses, schools, social accounts or other personal data, insults, bullying, swearing (also hidden with symbols or in Uzbek/Russian/English slang), sexual, violent, scary or dangerous content, self-harm, illegal acts, and posting full answers for a test that is happening right now.',
+  'When unsure, reject. The message may be in Russian, Uzbek (Latin or Cyrillic) or English, and may contain formulas.',
+  'Return JSON: allowed (boolean), reason (a short, kind explanation for the child in the language given, one sentence, only when rejected, otherwise empty), text (the message to publish: the same text with only typos untouched, nothing added; empty when rejected).',
+].join('\n');
+
+async function moderateRoom(subject, text, lang) {
+  const schema = {
+    type: 'OBJECT',
+    properties: { allowed: { type: 'BOOLEAN' }, reason: { type: 'STRING' }, text: { type: 'STRING' } },
+    required: ['allowed', 'reason', 'text'],
+  };
+  const raw = await generate(ROOM_PROMPT(subject), [{ role: 'user', content: `Language for the reason: ${lang === 'uz' ? 'Uzbek (Latin)' : 'Russian'}\nMessage:\n${text}` }], { schema });
+  const d = JSON.parse(raw);
+  if (typeof d.allowed !== 'boolean') throw new Error('bad_moderation_reply');
+  return { allowed: d.allowed, reason: String(d.reason || '').slice(0, 200), text: String(d.text || '').trim().slice(0, ROOM_MAX_LEN) };
+}
+
+function roomStrike(st) {
+  const now = Date.now();
+  st.strikes = st.strikes.filter((x) => now - x < ROOM_MUTE_MS);
+  st.strikes.push(now);
+  if (st.strikes.length >= ROOM_STRIKES) { st.mutedUntil = now + ROOM_MUTE_MS; st.strikes = []; }
+}
+
+async function handleRoom(req, res, body, user, action) {
+  if (!auth.enabled() || !/^\d+$/.test(String(user.id))) return sendJson(res, 200, { messages: [] });
+  const room = Object.hasOwn(ROOM_SUBJECTS, body.room) ? body.room : 'math';
+  const lang = body.lang === 'uz' ? 'uz' : 'ru';
+  const T = ROOM_TEXT[lang];
+  if (action === 'list') {
+    const after = Number(body.after) || 0;
+    const list = await auth.roomMessages(room);
+    const st = roomState.get(String(user.id));
+    const muted = st?.mutedUntil > Date.now() ? Math.ceil((st.mutedUntil - Date.now()) / 60000) : 0;
+    return sendJson(res, 200, { room, messages: auth.roomView(list.filter((m) => m.id > after), user.id), muted });
+  }
+  if (action === 'delete') return sendJson(res, 200, { ok: await auth.hideRoomMessage(Number(body.id) || 0, user.id, false) });
+  if (action !== 'send') return sendJson(res, 404, { code: 'not_found' });
+
+  const key = String(user.id);
+  const st = roomState.get(key) || { last: 0, strikes: [], mutedUntil: 0 };
+  roomState.set(key, st);
+  const now = Date.now();
+  if (st.mutedUntil > now) return sendJson(res, 200, { ok: false, reason: T.muted(Math.ceil((st.mutedUntil - now) / 60000)), muted: true });
+  if (now - st.last < ROOM_GAP_MS) return sendJson(res, 200, { ok: false, reason: T.gap });
+  const text = cleanText(body.text, 2000).replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+  if (!text || text.length > ROOM_MAX_LEN) return sendJson(res, 200, { ok: false, reason: T.empty });
+  if ((await auth.roomMessagesToday(user.id)) >= ROOM_DAILY) return sendJson(res, 200, { ok: false, reason: T.daily });
+  st.last = now;
+  const local = roomLocalBlock(text);
+  if (local) { roomStrike(st); return sendJson(res, 200, { ok: false, reason: T[local] }); }
+  if (!API_KEY) return sendJson(res, 200, { ok: false, reason: T.down });
+  let d;
+  try {
+    d = await moderateRoom(ROOM_SUBJECTS[room], text, lang);
+  } catch (err) {
+    // Gemini refusing the text (its own safety filter) means the message is not for children.
+    if (err.code === 'blocked') { roomStrike(st); return sendJson(res, 200, { ok: false, reason: T.offtopic }); }
+    console.error('Students chat: moderation failed, message not published:', err.message);
+    return sendJson(res, 200, { ok: false, reason: T.down });
+  }
+  // The text the AI returns is checked again: it must not bring back contacts.
+  if (!d.allowed || !d.text || roomLocalBlock(d.text)) { roomStrike(st); return sendJson(res, 200, { ok: false, reason: d.reason || T.offtopic }); }
+  const id = await auth.addRoomMessage(room, user.id, d.text);
+  sendJson(res, 200, { ok: true, id });
+}
+
+const AREA_HANDLERS = { admin: handleAdmin, parent: handleParent, account: handleAccount, chats: handleChats, room: handleRoom };
 
 // Account actions: each returns { user, cookie }.
 const AUTH_ACTIONS = { '/api/auth/register': auth.register, '/api/auth/login': auth.login, '/api/auth/google': auth.google, '/api/auth/reset': auth.resetPassword };
@@ -976,7 +1018,6 @@ async function handleApiPost(req, res, urlPath) {
   } catch {
     return sendJson(res, 400, { code: 'bad_request' });
   }
-  if (urlPath === '/api/study-chat/messages') return handleStudyChat(req, res, body);
   if (urlPath === '/api/auth/logout') {
     return sendJson(res, 200, { ok: true }, { 'Set-Cookie': await auth.logout(req) });
   }
@@ -1035,7 +1076,7 @@ async function handleApiPost(req, res, urlPath) {
   if (areaName === 'account' && !auth.enabled()) return sendJson(res, 503, { code: 'auth_unavailable' });
   // Without access (no free week or subscription) cards, games, the diary and chat history stay open,
   // and every paid section can be tried for free (plans.js FREE_TRIES).
-  const locked = area === 'student' && auth.enabled() && !FREE_PATHS.has(urlPath) && !['account', 'chats'].includes(areaName) && !isAdmin(user) && !auth.plan(user).active;
+  const locked = area === 'student' && auth.enabled() && !FREE_PATHS.has(urlPath) && !['account', 'chats', 'room'].includes(areaName) && !isAdmin(user) && !auth.plan(user).active;
   if (locked) {
     const key = tryKey(urlPath, body);
     if (!key || !auth.freeLeft(user)[key]) return sendJson(res, 402, { code: 'premium_required', feature: key });
@@ -1051,7 +1092,6 @@ async function route(req, res) {
   try {
     if (redirectToPublic(req, res, urlPath)) return;
     if (req.method === 'POST' && urlPath.startsWith('/api/')) return await handleApiPost(req, res, urlPath);
-    if (isRead && urlPath === '/api/study-chat/messages') return sendJson(res, 200, { messages: studyChatMessages });
     if (isRead && urlPath === '/api/auth/me') return await handleMe(req, res);
     if (req.method === 'GET' && urlPath === '/api/auth/app-exchange') return await handleAppExchange(req, res);
     if (isRead && urlPath === '/api/config') {

@@ -223,6 +223,18 @@ async function init() {
     );
     CREATE INDEX IF NOT EXISTS passkeys_user ON passkeys (user_id);
   `);
+  // Students' chat (one room per subject): only messages the AI let through are stored.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS room_messages (
+      id BIGSERIAL PRIMARY KEY,
+      room TEXT NOT NULL,
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      text TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      hidden BOOLEAN NOT NULL DEFAULT false
+    );
+    CREATE INDEX IF NOT EXISTS room_messages_room ON room_messages (room, id);
+  `);
   console.log('Accounts database ready');
 }
 
@@ -989,6 +1001,51 @@ async function leaderboard(board, period, userId) {
   return { board: b, period: week ? 'week' : 'all', top, me: mine ? row(mine) : { ...nickOf(userId), value: 0, rank: null, me: true } };
 }
 
+// ---------- students' chat: one room per subject, nicknames like the leaderboard ----------
+// The last messages of each room are kept in memory, so the screen asking for new messages every
+// few seconds does not wake the database (Neon sleeps between real visits).
+const ROOM_KEEP = 60;
+const roomCache = new Map(); // room -> [{ id, userId, text, at }]
+async function roomMessages(room) {
+  if (!roomCache.has(room)) {
+    const { rows } = await requirePool().query(
+      `SELECT id, user_id, text, created_at FROM room_messages WHERE room = $1 AND NOT hidden ORDER BY id DESC LIMIT $2`, [room, ROOM_KEEP]);
+    roomCache.set(room, rows.reverse().map((r) => ({ id: Number(r.id), userId: String(r.user_id), text: r.text, at: r.created_at })));
+  }
+  return roomCache.get(room);
+}
+function roomView(list, userId) {
+  return list.map((m) => ({ id: m.id, ...nickOf(m.userId), text: m.text, at: m.at, me: m.userId === String(userId) }));
+}
+async function addRoomMessage(room, userId, text) {
+  const list = await roomMessages(room);
+  const { rows: [r] } = await requirePool().query(
+    'INSERT INTO room_messages (room, user_id, text) VALUES ($1, $2, $3) RETURNING id, created_at', [room, userId, text]);
+  list.push({ id: Number(r.id), userId: String(userId), text, at: r.created_at });
+  if (list.length > ROOM_KEEP) list.splice(0, list.length - ROOM_KEEP);
+  return Number(r.id);
+}
+async function roomMessagesToday(userId) {
+  const { rows: [r] } = await requirePool().query(
+    `SELECT count(*)::int AS n FROM room_messages WHERE user_id = $1 AND created_at >= ${TODAY_TASHKENT}`, [userId]);
+  return r.n;
+}
+// The author removes their own message; an admin removes any.
+async function hideRoomMessage(id, userId, admin) {
+  const { rows } = await requirePool().query(
+    `UPDATE room_messages SET hidden = true WHERE id = $1 AND ($2::boolean OR user_id = $3) RETURNING room`, [id, !!admin, admin ? 0 : userId]);
+  if (!rows.length) return false;
+  const list = roomCache.get(rows[0].room);
+  if (list) { const k = list.findIndex((m) => m.id === Number(id)); if (k >= 0) list.splice(k, 1); }
+  return true;
+}
+async function roomAdminList(limit = 100) {
+  const { rows } = await requirePool().query(
+    `SELECT m.id, m.room, m.text, m.created_at, m.user_id, u.email FROM room_messages m JOIN users u ON u.id = m.user_id
+      WHERE NOT m.hidden ORDER BY m.id DESC LIMIT $1`, [limit]);
+  return rows.map((r) => ({ id: Number(r.id), room: r.room, text: r.text, at: r.created_at, email: r.email, ...nickOf(r.user_id) }));
+}
+
 // ---------- admin broadcasts: SMS (owner's phone, SMSGate) and email (Brevo) ----------
 // Only to students who agreed to news (checked again right before each message). Sent slowly
 // from a queue in the database (survives restarts): a personal SIM card that sends hundreds of
@@ -1362,6 +1419,12 @@ async function revokeAllExcept(keep, apply) {
 }
 
 module.exports = {
+  roomMessages,
+  roomView,
+  addRoomMessage,
+  roomMessagesToday,
+  hideRoomMessage,
+  roomAdminList,
   health,
   close,
   plan,

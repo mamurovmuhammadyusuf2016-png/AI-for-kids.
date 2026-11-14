@@ -137,6 +137,18 @@
       subLink: 'Подписка',
       askLead: 'Разберём задачу вместе — без готовых ответов',
       lbTitle: 'Рейтинг',
+      roomTitle: 'Чат учеников',
+      roomCard: 'Обсуждай задания с другими учениками',
+      roomRules: 'Только про учёбу и задания. ИИ проверяет каждое сообщение: не по теме — не публикуется. Не пиши имя, номер, адрес и ссылки.',
+      roomSubject: 'Предмет',
+      roomEmpty: 'Пока здесь тихо. Задай первый вопрос по предмету!',
+      roomPh: 'Вопрос или подсказка по предмету…',
+      roomSend: 'Отправить',
+      roomChecking: 'ИИ проверяет сообщение…',
+      roomBlocked: 'Сообщение не опубликовано',
+      roomDelete: 'Удалить',
+      roomYou: 'ты',
+      roomMuted: (m) => `Чат снова откроется через ${m} мин.`,
       lbCard: 'Кто набрал больше всех монеток и XP',
       diagCard: ['Проверка знаний', 'Карта знаний и план по слабым темам'],
       lbTabs: { games: 'Игры · монетки', path: 'Путь знаний · XP' },
@@ -297,7 +309,8 @@
         delConfirm: (email) => `Удалить ${email} вместе с прогрессом и аккаунтом родителя? Это нельзя отменить.`,
         delYes: 'Да, удалить',
         cancel: 'Отмена',
-        tabs: { dash: 'Показатели', manage: 'Ученики и заявки', consents: 'Рассылка' },
+        tabs: { dash: 'Показатели', manage: 'Ученики и заявки', consents: 'Рассылка', room: 'Чат' },
+        roomAdmin: { title: 'Чат учеников', text: 'Сообщения, которые ИИ пропустил. Не по теме — удалите.', empty: 'Сообщений пока нет.', del: 'Удалить' },
         consents: {
           title: 'Согласны на SMS, письма и звонки',
           text: 'Только эти люди сами отметили согласие на новости и рекламу. Остальным звонить и писать рекламу нельзя: за это бывают штрафы. Список обновляется сразу, когда кто-то отказывается в «Настройках».',
@@ -649,6 +662,18 @@
       subLink: 'Obuna',
       askLead: 'Masalani birga yechamiz — tayyor javobsiz',
       lbTitle: 'Reyting',
+      roomTitle: "O'quvchilar chati",
+      roomCard: "Topshiriqlarni boshqa o'quvchilar bilan muhokama qiling",
+      roomRules: "Faqat o'qish va topshiriqlar haqida. Sun'iy intellekt har bir xabarni tekshiradi: mavzudan tashqarisi chiqmaydi. Ism, raqam, manzil va havola yozmang.",
+      roomSubject: 'Fan',
+      roomEmpty: "Hozircha jim. Fan bo'yicha birinchi savolni bering!",
+      roomPh: "Fan bo'yicha savol yoki maslahat…",
+      roomSend: 'Yuborish',
+      roomChecking: "Sun'iy intellekt xabarni tekshirmoqda…",
+      roomBlocked: 'Xabar chop etilmadi',
+      roomDelete: "O'chirish",
+      roomYou: 'siz',
+      roomMuted: (m) => `Chat ${m} daqiqadan keyin yana ochiladi.`,
       lbCard: "Kim ko'proq tanga va XP to'pladi",
       diagCard: ['Bilimni tekshirish', "Bilim xaritasi va zaif mavzular bo'yicha reja"],
       lbTabs: { games: "O'yinlar · tangalar", path: "Bilim yo'li · XP" },
@@ -809,7 +834,8 @@
         delConfirm: (email) => `${email} natijalari va ota-ona akkaunti bilan birga o'chirilsinmi? Buni qaytarib bo'lmaydi.`,
         delYes: "Ha, o'chirish",
         cancel: 'Bekor qilish',
-        tabs: { dash: "Ko'rsatkichlar", manage: "O'quvchilar va arizalar", consents: 'Xabarnoma' },
+        tabs: { dash: "Ko'rsatkichlar", manage: "O'quvchilar va arizalar", consents: 'Xabarnoma', room: 'Chat' },
+        roomAdmin: { title: "O'quvchilar chati", text: "Sun'iy intellekt o'tkazgan xabarlar. Mavzudan tashqarisini o'chiring.", empty: "Hozircha xabar yo'q.", del: "O'chirish" },
         consents: {
           title: "SMS, xat va qo'ng'iroqqa roziligi borlar",
           text: "Faqat shu odamlar yangilik va reklamaga o'zlari rozilik belgilagan. Qolganlarga reklama yozish va qo'ng'iroq qilish mumkin emas: buning uchun jarima bo'lishi mumkin. Kimdir «Sozlamalar»da voz kechsa, ro'yxat darhol yangilanadi.",
@@ -1925,20 +1951,46 @@
   let adminTab = 'dash';
   // rootId: 'activity' (from a student admin's menu) or 'adminHome' (the staff account's only screen).
   // tab: 'dash' (numbers) or 'manage' (grant access, students, requests).
+  // Admin: the latest messages of the students' chat with the author's login; remove any of them.
+  async function renderRoomAdmin(root, A) {
+    const M = A.roomAdmin;
+    root.append(h('p', { class: 'text-sm text-slate-400' }, M.text));
+    root.append(loading(t('loadingTopics')));
+    const r = await N.postJson('/api/admin/room-list', {}).catch(() => ({}));
+    root.lastChild.remove();
+    if (!r.messages) { root.append(h('p', { class: 'text-rose-200' }, t('errors').default)); return; }
+    if (!r.messages.length) { root.append(h('p', { class: `${CARD} text-center text-slate-400` }, M.empty)); return; }
+    r.messages.forEach((m) => {
+      const row = h('div', { class: `${CARD} flex flex-col gap-1.5` },
+        h('div', { class: 'flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-400' },
+          h('span', { class: 'font-semibold text-slate-200' }, `${t('lbAnimals')[m.a] || ''} ${m.n}`),
+          h('span', {}, m.email || ''),
+          h('span', {}, N.subjectName(m.room)),
+          h('span', {}, new Date(m.at).toLocaleString(N.lang === 'uz' ? 'uz-UZ' : 'ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })),
+          h('button', { type: 'button', class: 'ml-auto flex min-h-9 items-center gap-1 rounded-xl px-2 text-rose-300 hover:bg-rose-500/10', onclick: async () => {
+            const x = await N.postJson('/api/admin/room-delete', { id: m.id }).catch(() => null);
+            if (x?.ok) row.remove();
+          } }, ico('trash-2', 'h-3.5 w-3.5'), M.del)),
+        h('p', { class: 'whitespace-pre-wrap break-words text-[15px] text-white [overflow-wrap:anywhere]' }, m.text));
+      root.append(row);
+    });
+  }
+
   async function openAdmin(rootId = adminRoot, tab = adminTab) {
     adminRoot = rootId;
     adminTab = tab;
     const root = screen(rootId);
     const A = t('admin');
     root.append(rootId === 'activity' ? titleBar(A.title) : h('h2', { class: 'text-2xl font-semibold text-white' }, A.title));
-    root.append(h('div', { class: 'grid grid-cols-3 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5', role: 'tablist' },
-      ['dash', 'manage', 'consents'].map((id) => h('button', {
+    root.append(h('div', { class: 'grid grid-cols-4 gap-1 rounded-2xl bg-night-800 p-1 ring-1 ring-white/5', role: 'tablist' },
+      ['dash', 'manage', 'consents', 'room'].map((id) => h('button', {
         type: 'button', role: 'tab', 'aria-selected': String(adminTab === id),
         class: `min-h-11 rounded-xl px-3 text-sm font-semibold ${adminTab === id ? 'bg-brand-500 text-onfill' : 'text-slate-300 hover:bg-night-700'}`,
         onclick: () => openAdmin(adminRoot, id),
       }, A.tabs[id]))));
     if (adminTab === 'dash') return renderDashboard(root, A);
     if (adminTab === 'consents') return renderConsents(root, A);
+    if (adminTab === 'room') return renderRoomAdmin(root, A);
     const msg = h('p', { class: 'text-sm' });
     const email = h('input', { type: 'text', class: INPUT, placeholder: A.emailPh, id: 'adminEmail' });
     const months = h('select', { class: `${INPUT} appearance-none`, id: 'adminMonths' }, [0, 1, 3, 6, 12].map((m) => h('option', { value: m }, m ? t('sub').monthLabel(m) : A.week)));
@@ -2736,6 +2788,14 @@
       square('test', 'clipboard-check', openTestPicker),
       older ? square('exam', 'graduation-cap', openExams) : games(false),
       older ? games(true) : null));
+
+    // Students' chat (free; the server's AI publishes only study messages).
+    if (N.accounts) {
+      root.append(h('button', { type: 'button', class: `${CARD} flex items-center gap-3 text-left transition hover:bg-night-800 active:scale-[.99]`, onclick: () => openRoom() },
+        h('span', { class: 'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-mint text-brand-600' }, ico('users')),
+        h('span', { class: 'min-w-0 flex-1' }, h('span', { class: 'block font-semibold text-white' }, t('roomTitle')), h('span', { class: 'block text-sm text-slate-400' }, t('roomCard'))),
+        freePill() || ico('chevron-right', 'icon text-slate-500')));
+    }
   }
 
   // ---------- progress ----------
@@ -2794,6 +2854,76 @@
         : h('p', { class: 'rounded-2xl bg-night-800 px-4 py-3 text-sm text-slate-300' }, t('lbNotYet')));
     }
     root.append(h('p', { class: 'flex items-start gap-2 px-1 text-xs text-slate-400' }, ico('shield-check', 'h-4 w-4 shrink-0'), `${t('lbNote')} ${t('lbRules')}`));
+  }
+
+  // ---------- students' chat: one room per subject, the server's AI lets only study messages in ----------
+  async function openRoom(room = subj(), back = () => N.showScreen('home')) {
+    const root = screen('activity');
+    root.append(titleBar(t('roomTitle'), back));
+    const select = h('select', { class: `${INPUT} min-h-12 text-[15px]`, 'aria-label': t('roomSubject'), onchange: () => openRoom(select.value, back) },
+      N.SUBJECTS.map(([key]) => h('option', { value: key, selected: key === room }, N.subjectName(key))));
+    root.append(h('label', { class: 'flex flex-col gap-1.5' }, h('span', { class: 'px-1 text-sm text-slate-400' }, t('roomSubject')), select));
+    root.append(h('p', { class: 'flex items-start gap-2 rounded-2xl bg-night-800 px-4 py-3 text-sm text-slate-300' }, ico('shield-check', 'h-4 w-4 shrink-0 mt-0.5 text-brand-400'), t('roomRules')));
+    const list = h('div', { class: 'flex flex-col gap-2', 'aria-live': 'polite' });
+    const status = h('p', { class: 'hidden rounded-2xl px-4 py-3 text-sm', role: 'status' });
+    const field = h('textarea', { rows: '2', maxlength: '500', class: 'min-h-12 w-full flex-1 resize-none bg-transparent py-3 text-[15px] text-white outline-none placeholder:text-slate-500', placeholder: t('roomPh'), 'aria-label': t('roomPh') });
+    const sendBtn = h('button', { type: 'submit', class: 'flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-500 text-onfill transition hover:bg-brand-400 active:scale-95 disabled:bg-night-700 disabled:text-slate-500', 'aria-label': t('roomSend') }, ico('send', 'h-[18px] w-[18px]'));
+    const form = h('form', { class: 'sticky bottom-2 flex items-end gap-2 rounded-2xl bg-night-800 py-1 pl-4 pr-1.5 ring-1 ring-white/10 focus-within:ring-brand-400/60' }, field, sendBtn);
+    root.append(list, status, form);
+
+    const say = (text, tone) => {
+      status.textContent = text || '';
+      status.className = text ? `rounded-2xl px-4 py-3 text-sm ${tone === 'bad' ? 'bg-rose-500/10 text-rose-200 ring-1 ring-rose-400/30' : 'bg-night-800 text-slate-300'}` : 'hidden';
+    };
+    const time = (at) => new Date(at).toLocaleTimeString(N.lang === 'uz' ? 'uz-UZ' : 'ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const bubble = (m) => h('div', { class: `flex gap-2.5 ${m.me ? 'flex-row-reverse' : ''}` },
+      h('span', { class: 'q-emoji flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-night-800 text-lg', 'aria-hidden': 'true' }, LB_EMOJI[m.a] || '🦊'),
+      h('div', { class: `flex min-w-0 max-w-[80%] flex-col gap-1 rounded-2xl px-3.5 py-2.5 ring-1 ${m.me ? 'bg-brand-500/10 ring-brand-400/30' : 'bg-night-900/80 ring-white/5'}` },
+        h('span', { class: 'flex items-center gap-2 text-xs text-slate-400' },
+          h('span', { class: 'font-semibold text-slate-200' }, `${t('lbAnimals')[m.a] || ''} ${m.n}${m.me ? ` · ${t('roomYou')}` : ''}`),
+          h('span', {}, time(m.at)),
+          m.me ? h('button', { type: 'button', class: 'ml-auto text-slate-500 hover:text-rose-300', 'aria-label': t('roomDelete'), title: t('roomDelete'), onclick: async () => {
+            await N.postJson('/api/room/delete', { id: m.id }).catch(() => null);
+            refresh();
+          } }, ico('trash-2', 'h-3.5 w-3.5')) : null),
+        R('div', { class: 'break-words text-[15px] leading-snug text-white [overflow-wrap:anywhere]' }, m.text)));
+
+    let shown = '';
+    let first = true;
+    async function refresh() {
+      const r = await N.postJson('/api/room/list', { room, lang: N.lang }).catch(() => null);
+      if (!r || !root.contains(list)) return;
+      const sig = (r.messages || []).map((m) => m.id).join(',');
+      if (r.muted) say(t('roomMuted')(r.muted), 'bad');
+      if (sig === shown && !first) return;
+      const atBottom = root.scrollTop + root.clientHeight >= root.scrollHeight - 80;
+      shown = sig;
+      list.replaceChildren(...(r.messages?.length ? r.messages.map(bubble) : [h('p', { class: `${CARD} text-center text-slate-400` }, t('roomEmpty'))]));
+      if (first || atBottom) form.scrollIntoView({ block: 'end' });
+      first = false;
+    }
+    list.append(loading(t('loadingTopics')));
+    await refresh();
+    // New messages every 4 seconds, only while this screen is open and visible.
+    const timer = setInterval(() => {
+      if (!root.contains(list)) return clearInterval(timer);
+      if (!document.hidden && !root.classList.contains('hidden')) refresh();
+    }, 4000);
+    stopActive = () => clearInterval(timer);
+
+    field.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); } });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = field.value.trim();
+      if (!text || sendBtn.disabled) return;
+      sendBtn.disabled = true;
+      say(t('roomChecking'));
+      const r = await N.postJson('/api/room/send', { room, text, lang: N.lang }).catch(() => null);
+      sendBtn.disabled = false;
+      if (r?.ok) { field.value = ''; say(''); first = true; await refresh(); }
+      else say(`${t('roomBlocked')}: ${r?.reason || t('errors').default}`, 'bad');
+      field.focus();
+    });
   }
 
   function renderProgress() {
@@ -2966,5 +3096,5 @@
     setStop(fn) { stopActive = fn; },
   };
 
-  window.NimiLearn = { load, render, markDay, openSubscribe, openAdmin, openSettings, renderParent, renderLanding, openHistory, openLeaderboard, kit };
+  window.NimiLearn = { load, render, markDay, openSubscribe, openAdmin, openSettings, renderParent, renderLanding, openHistory, openLeaderboard, openRoom, kit };
 })();
