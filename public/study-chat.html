@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI for Kids — учебный чат</title>
+  <link rel="stylesheet" href="/study-chat.css">
+</head>
+<body>
+  <main class="study-chat-shell">
+    <a class="back-link" href="/">← Вернуться в Nimi AI</a>
+    <section class="study-chat-hero">
+      <p class="study-chat-eyebrow">AI FOR KIDS</p>
+      <h1>Учебный чат без настоящих имён</h1>
+      <p>Спрашивай про уроки и помогай с объяснениями. ИИ проверяет каждое сообщение до публикации.</p>
+      <div class="study-chat-rules"><span>🧠 Только учёба</span><span>🕵️ Без имён и контактов</span><span>💛 Доброжелательно</span></div>
+    </section>
+    <section class="study-chat-card" aria-label="Учебный чат">
+      <header class="study-chat-header">
+        <div><p>ТВОЙ АНОНИМНЫЙ НИК</p><strong id="nickname">Загрузка…</strong></div>
+        <button id="new-nickname" class="study-chat-link-button" type="button">Другой ник</button>
+      </header>
+      <div id="notice" class="study-chat-notice" role="status">Напиши учебный вопрос или помоги объяснить тему.</div>
+      <div id="messages" class="study-chat-messages" aria-live="polite"></div>
+      <form id="message-form">
+        <label for="message">Сообщение</label>
+        <div class="study-chat-composer">
+          <textarea id="message" maxlength="500" placeholder="Например: Почему дроби приводят к общему знаменателю?" required></textarea>
+          <button id="send" type="submit">Отправить</button>
+        </div>
+        <p class="study-chat-hint">Не указывай настоящее имя, школу, адрес, номер или аккаунты. Личные разговоры чат не публикует.</p>
+      </form>
+    </section>
+  </main>
+  <script src="/study-chat.js" defer></script>
+</body>
+</html>

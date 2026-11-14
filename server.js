@@ -18,6 +18,113 @@ const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const MODEL_TIMEOUT_MS = 20000;
 const FALLBACK_TIMEOUT_MS = 40000;
 const MAX_HISTORY = 20;
+
+// ---------- anonymous study-only chat (each post is approved before publishing) ----------
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
+const GROQ_MODERATION_MODEL = process.env.GROQ_MODERATION_MODEL || 'openai/gpt-oss-20b';
+const STUDY_CHAT_MAX_LENGTH = 500;
+const STUDY_CHAT_RATE_WINDOW_MS = 60 * 1000;
+const STUDY_CHAT_RATE_LIMIT = 10;
+const STUDY_CHAT_ADJECTIVES = ['Смелый', 'Умный', 'Добрый', 'Яркий', 'Быстрый', 'Звёздный', 'Любознательный', 'Тихий'];
+const STUDY_CHAT_ANIMALS = ['Лисёнок', 'Тигр', 'Кит', 'Сова', 'Панда', 'Ёжик', 'Дельфин', 'Коала'];
+const STUDY_CHAT_NICKNAMES = new Set(STUDY_CHAT_ADJECTIVES.flatMap((adjective) => STUDY_CHAT_ANIMALS.map((animal) => adjective + '-' + animal)));
+const studyChatMessages = [];
+const studyChatRateLimits = new Map();
+
+const STUDY_CHAT_SYSTEM_PROMPT = [
+  'You moderate an anonymous chat used by children only for learning. Return JSON only.',
+  'Allow only respectful school questions, explanations, homework help, factual answers, or study resources.',
+  'Block greetings, friendship chatting, games, memes, advertising, personal conversation, requests to move elsewhere, profanity, bullying, sexual or adult content, violence, self-harm, illegal or dangerous acts, and any attempt to identify or contact someone.',
+  'Block real names, addresses, contact details, school or class identity, social handles, locations, and requests for these details. Reject when unsure.',
+  'Block help that enables cheating during a current exam; invite the learner to study the concept instead.',
+  'Keep a rejection reason short, kind, and in Russian. When allowed, safeText must preserve meaning but remove personal data.'
+].join(' ');
+
+function studyChatLocalReason(text) {
+  const rules = [
+    [/\b[\w.+-]+@[\w-]+\.[\w.-]+\b/i, 'Не отправляй почту — в учебном чате она не нужна.'],
+    [/(?:\+?\d[\s().-]?){7,}\d/, 'Не отправляй номер телефона.'],
+    [/(?:https?:\/\/|www\.|t\.me\/|telegram|instagram|discord)/i, 'Ссылки и приглашения в другие чаты здесь запрещены.'],
+    [/(?:^|\s)@[\w_]{2,}/i, 'Не отправляй аккаунты или контакты.'],
+    [/(?:меня зовут|мо[её] имя|я живу|мой адрес|моя школа|мой класс)\b/i, 'Не делись именем, адресом, школой или классом.']
+  ];
+  for (const [pattern, reason] of rules) if (pattern.test(text)) return reason;
+  return null;
+}
+
+function studyChatCanPost(ip) {
+  const now = Date.now();
+  const recent = (studyChatRateLimits.get(ip) || []).filter((time) => now - time < STUDY_CHAT_RATE_WINDOW_MS);
+  if (recent.length >= STUDY_CHAT_RATE_LIMIT) return false;
+  recent.push(now);
+  studyChatRateLimits.set(ip, recent);
+  return true;
+}
+
+async function moderateStudyChatMessage(text) {
+  if (!GROQ_API_KEY) return { allowed: false, reason: 'Чат пока не настроен. Попробуй позже.', safeText: '' };
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + GROQ_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: GROQ_MODERATION_MODEL,
+      messages: [
+        { role: 'system', content: STUDY_CHAT_SYSTEM_PROMPT },
+        { role: 'user', content: text }
+      ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'study_chat_decision',
+          strict: true,
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              allowed: { type: 'boolean' },
+              reason: { type: 'string' },
+              safeText: { type: 'string' }
+            },
+            required: ['allowed', 'reason', 'safeText']
+          }
+        }
+      }
+    })
+  });
+  if (!response.ok) throw new Error('groq_moderation_' + response.status);
+  const data = await response.json();
+  const decision = JSON.parse(data.choices?.[0]?.message?.content || '');
+  if (typeof decision.allowed !== 'boolean' || typeof decision.reason !== 'string' || typeof decision.safeText !== 'string') {
+    throw new Error('invalid_groq_moderation_response');
+  }
+  return decision;
+}
+
+async function handleStudyChat(req, res, body) {
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
+  if (!studyChatCanPost(ip)) return sendJson(res, 429, { code: 'rate_limited', message: 'Подожди минутку: сообщений стало слишком много.' });
+  const nickname = typeof body.nickname === 'string' ? body.nickname : '';
+  const rawText = typeof body.text === 'string' ? body.text : '';
+  if (!STUDY_CHAT_NICKNAMES.has(nickname)) return sendJson(res, 400, { code: 'bad_nickname', message: 'Выбери анонимный ник, который предложил чат.' });
+  const text = rawText.trim().replace(/\s+/g, ' ');
+  if (!text || text.length > STUDY_CHAT_MAX_LENGTH) return sendJson(res, 400, { code: 'bad_message', message: 'Сообщение должно быть от 1 до 500 символов.' });
+  const localReason = studyChatLocalReason(text);
+  if (localReason) return sendJson(res, 422, { code: 'blocked', message: localReason });
+  try {
+    const decision = await moderateStudyChatMessage(text);
+    if (!decision.allowed) return sendJson(res, 422, { code: 'blocked', message: decision.reason || 'Разрешены только добрые сообщения об учёбе.' });
+    const safeText = decision.safeText.trim().slice(0, STUDY_CHAT_MAX_LENGTH);
+    if (!safeText) return sendJson(res, 422, { code: 'blocked', message: 'Не удалось безопасно опубликовать сообщение.' });
+    const message = { id: require('crypto').randomUUID(), nickname, text: safeText, createdAt: new Date().toISOString() };
+    studyChatMessages.push(message);
+    if (studyChatMessages.length > 100) studyChatMessages.shift();
+    return sendJson(res, 201, { message });
+  } catch (err) {
+    console.error('Study chat message was not published because moderation failed:', err.message);
+    return sendJson(res, 503, { code: 'moderation_unavailable', message: 'Проверка безопасности сейчас недоступна. Сообщение не опубликовано.' });
+  }
+}
+
 const DAILY_LIMIT = 30;
 // Generated exercise sets (training, tests, reading, cards) per day.
 const LEARN_LIMIT = 20;
@@ -891,6 +998,7 @@ async function handleApiPost(req, res, urlPath) {
   } catch {
     return sendJson(res, 400, { code: 'bad_request' });
   }
+  if (urlPath === '/api/study-chat/messages') return handleStudyChat(req, res, body);
   if (urlPath === '/api/auth/logout') {
     return sendJson(res, 200, { ok: true }, { 'Set-Cookie': await auth.logout(req) });
   }
@@ -965,6 +1073,7 @@ async function route(req, res) {
   try {
     if (redirectToPublic(req, res, urlPath)) return;
     if (req.method === 'POST' && urlPath.startsWith('/api/')) return await handleApiPost(req, res, urlPath);
+    if (isRead && urlPath === '/api/study-chat/messages') return sendJson(res, 200, { messages: studyChatMessages });
     if (isRead && urlPath === '/api/auth/me') return await handleMe(req, res);
     if (req.method === 'GET' && urlPath === '/api/auth/app-exchange') return await handleAppExchange(req, res);
     if (isRead && urlPath === '/api/config') {
