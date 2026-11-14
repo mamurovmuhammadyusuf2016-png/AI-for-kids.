@@ -20,8 +20,6 @@ const FALLBACK_TIMEOUT_MS = 40000;
 const MAX_HISTORY = 20;
 
 // ---------- anonymous study-only chat (each post is approved before publishing) ----------
-const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
-const GROQ_MODERATION_MODEL = process.env.GROQ_MODERATION_MODEL || 'openai/gpt-oss-20b';
 const STUDY_CHAT_MAX_LENGTH = 500;
 const STUDY_CHAT_RATE_WINDOW_MS = 60 * 1000;
 const STUDY_CHAT_RATE_LIMIT = 10;
@@ -62,40 +60,20 @@ function studyChatCanPost(ip) {
 }
 
 async function moderateStudyChatMessage(text) {
-  if (!GROQ_API_KEY) return { allowed: false, reason: 'Чат пока не настроен. Попробуй позже.', safeText: '' };
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: { Authorization: 'Bearer ' + GROQ_API_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: GROQ_MODERATION_MODEL,
-      messages: [
-        { role: 'system', content: STUDY_CHAT_SYSTEM_PROMPT },
-        { role: 'user', content: text }
-      ],
-      response_format: {
-        type: 'json_schema',
-        json_schema: {
-          name: 'study_chat_decision',
-          strict: true,
-          schema: {
-            type: 'object',
-            additionalProperties: false,
-            properties: {
-              allowed: { type: 'boolean' },
-              reason: { type: 'string' },
-              safeText: { type: 'string' }
-            },
-            required: ['allowed', 'reason', 'safeText']
-          }
-        }
-      }
-    })
-  });
-  if (!response.ok) throw new Error('groq_moderation_' + response.status);
-  const data = await response.json();
-  const decision = JSON.parse(data.choices?.[0]?.message?.content || '');
+  if (!API_KEY) return { allowed: false, reason: 'Чат пока не настроен. Попробуй позже.', safeText: '' };
+  const schema = {
+    type: 'OBJECT',
+    properties: {
+      allowed: { type: 'BOOLEAN' },
+      reason: { type: 'STRING' },
+      safeText: { type: 'STRING' }
+    },
+    required: ['allowed', 'reason', 'safeText']
+  };
+  const raw = await generate(STUDY_CHAT_SYSTEM_PROMPT, [{ role: 'user', content: text }], { schema });
+  const decision = JSON.parse(raw);
   if (typeof decision.allowed !== 'boolean' || typeof decision.reason !== 'string' || typeof decision.safeText !== 'string') {
-    throw new Error('invalid_groq_moderation_response');
+    throw new Error('invalid_gemini_moderation_response');
   }
   return decision;
 }

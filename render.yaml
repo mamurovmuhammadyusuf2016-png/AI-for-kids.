@@ -7,7 +7,5 @@ services:
     startCommand: npm start
     healthCheckPath: /health
     envVars:
-      - key: GROQ_API_KEY
+      - key: AI_API_KEY
         sync: false
-      - key: GROQ_MODERATION_MODEL
-        value: openai/gpt-oss-20b
