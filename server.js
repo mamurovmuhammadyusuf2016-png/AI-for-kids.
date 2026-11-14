@@ -32,7 +32,7 @@ const PAYMENT_CARD = process.env.PAYMENT_CARD || '';
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 const ADMIN_EMAILS = new Set((process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean));
 // Free without a subscription: word cards (and the topic list), games and diary run in the browser.
-const FREE_PATHS = new Set(['/api/learn/cards', '/api/learn/topics', '/api/data', '/api/subscribe', '/api/leaderboard', '/api/leaderboard/add']);
+const FREE_PATHS = new Set(['/api/learn/cards', '/api/learn/topics', '/api/data', '/api/subscribe', '/api/leaderboard', '/api/leaderboard/add', '/api/tts']);
 // Paid sections that can be tried for free once (plans.js FREE_TRIES): the key of each request.
 const TRY_KINDS = new Set(['training', 'test', 'exam', 'olympiad', 'reading']);
 function tryKey(urlPath, body) {
@@ -794,6 +794,110 @@ async function handleParent(req, res, body, user, action) {
 }
 
 // API areas with a sub-action in the path: /api/<area>/<action>.
+// ---------- reading aloud with Google's voice (for languages the phone has no voice for, mostly Uzbek) ----------
+// Phones and browsers almost never have an Uzbek voice, so the site asks the server: the server turns
+// the text into speech with Gemini (the same AI_API_KEY) and sends back a WAV file. The same text is
+// kept in memory for a while, so pressing the speaker again does not spend the key's quota.
+// Speech models: TTS_MODEL on Render (if set), then the voice models this key can use, taken from
+// Google's list once (names change over time), then known names in case the list is not available.
+let TTS_MODELS = [...new Set([process.env.TTS_MODEL, 'gemini-2.5-flash-preview-tts', 'gemini-2.5-pro-preview-tts'].filter(Boolean))];
+let ttsListed = false;
+async function ttsListModels() {
+  if (ttsListed) return;
+  ttsListed = true;
+  try {
+    const r = await fetch(`${GEMINI_BASE}?pageSize=1000`, { headers: { 'X-goog-api-key': API_KEY }, signal: AbortSignal.timeout(15000) });
+    const data = await r.json();
+    const found = (data.models || [])
+      .filter((m) => /tts/i.test(m.name) && (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map((m) => m.name.replace(/^models\//, ''))
+      // flash before pro (faster, cheaper), newer versions first
+      .sort((a, b) => (/flash/.test(b) - /flash/.test(a)) || b.localeCompare(a, 'en', { numeric: true }));
+    if (found.length) TTS_MODELS = [...new Set([process.env.TTS_MODEL, ...found, ...TTS_MODELS].filter(Boolean))];
+    console.log('Speech models:', TTS_MODELS.join(', '));
+  } catch (err) {
+    console.error('Speech models list failed:', err.message);
+  }
+}
+const TTS_VOICE = process.env.TTS_VOICE || 'Leda';
+const TTS_MAX_LEN = 1500;
+const TTS_DAILY = 120;                       // per student a day
+const TTS_LANGS = { uz: 'Uzbek', ru: 'Russian', en: 'English', es: 'Spanish', fr: 'French', de: 'German', zh: 'Chinese', ja: 'Japanese', ko: 'Korean', ar: 'Arabic', tr: 'Turkish', it: 'Italian', pt: 'Portuguese', hi: 'Hindi', nl: 'Dutch', pl: 'Polish', sv: 'Swedish' };
+const ttsCache = new Map();                  // key -> WAV buffer (newest last)
+let ttsCacheBytes = 0;
+const ttsUse = new Map();                    // userId -> { day, n }
+let ttsModel = 0;                            // index of the model that answered last
+
+function pcmToWav(pcm, rate) {
+  const h = Buffer.alloc(44);
+  h.write('RIFF', 0); h.writeUInt32LE(36 + pcm.length, 4); h.write('WAVE', 8);
+  h.write('fmt ', 12); h.writeUInt32LE(16, 16); h.writeUInt16LE(1, 20); h.writeUInt16LE(1, 22);
+  h.writeUInt32LE(rate, 24); h.writeUInt32LE(rate * 2, 28); h.writeUInt16LE(2, 32); h.writeUInt16LE(16, 34);
+  h.write('data', 36); h.writeUInt32LE(pcm.length, 40);
+  return Buffer.concat([h, pcm]);
+}
+
+async function ttsGenerate(text, lang) {
+  await ttsListModels();
+  const prompt = `Read this aloud in ${TTS_LANGS[lang]} in a warm, clear, calm voice for a schoolchild, at a slightly slow pace:\n${text}`;
+  let lastErr;
+  for (let k = 0; k < TTS_MODELS.length; k++) {
+    const i = (ttsModel + k) % TTS_MODELS.length;
+    const r = await fetch(`${GEMINI_BASE}/${TTS_MODELS[i]}:generateContent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-goog-api-key': API_KEY },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_VOICE } } } },
+      }),
+      signal: AbortSignal.timeout(60000),
+    }).catch((err) => ({ ok: false, status: 0, json: async () => ({ error: { message: err.message } }) }));
+    const data = await r.json().catch(() => ({}));
+    const part = (data.candidates?.[0]?.content?.parts || []).find((p) => p.inlineData?.data);
+    if (r.ok && part) {
+      ttsModel = i;
+      const rate = Number(/rate=(\d+)/.exec(part.inlineData.mimeType || '')?.[1]) || 24000;
+      const audio = Buffer.from(part.inlineData.data, 'base64');
+      return /wav/i.test(part.inlineData.mimeType || '') ? audio : pcmToWav(audio, rate);
+    }
+    lastErr = { status: r.status, message: String(data.error?.message || 'no audio').slice(0, 300) };
+    console.error(`Speech (${TTS_MODELS[i]}) failed`, lastErr.status, lastErr.message);
+    if (r.status === 429) break; // the key's limit for today: other models share it
+  }
+  throw new AiError(lastErr?.status === 429 ? 'rate_limited' : 'ai_error', lastErr?.status || 502);
+}
+
+async function handleTts(req, res, body, user) {
+  const lang = Object.hasOwn(TTS_LANGS, body.lang) ? body.lang : 'uz';
+  const text = cleanText(body.text, 4000).replace(/\s+/g, ' ').trim().slice(0, TTS_MAX_LEN);
+  if (!text) return sendJson(res, 400, { code: 'bad_request' });
+  if (!API_KEY) return sendJson(res, 503, { code: 'ai_error' });
+  const key = require('crypto').createHash('sha256').update(`${lang}|${TTS_VOICE}|${text}`).digest('hex');
+  let wav = ttsCache.get(key);
+  if (!wav) {
+    const day = new Date().toISOString().slice(0, 10);
+    const use = ttsUse.get(String(user.id));
+    const used = use?.day === day ? use.n : 0;
+    if (used >= TTS_DAILY) return sendJson(res, 429, { code: 'rate_limited' });
+    try {
+      wav = await ttsGenerate(text, lang);
+    } catch (err) {
+      return sendJson(res, err.code === 'rate_limited' ? 429 : 502, { code: err.code || 'ai_error' });
+    }
+    ttsUse.set(String(user.id), { day, n: used + 1 });
+    ttsCache.set(key, wav);
+    ttsCacheBytes += wav.length;
+    for (const [k, v] of ttsCache) {
+      if (ttsCacheBytes <= 40 * 1024 * 1024) break;
+      ttsCache.delete(k); ttsCacheBytes -= v.length;
+    }
+  } else {
+    ttsCache.delete(key); ttsCache.set(key, wav); // keep recently used ones
+  }
+  res.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': wav.length, 'Cache-Control': 'private, max-age=86400' });
+  res.end(wav);
+}
+
 // ---------- students' chat: one room per subject, every message checked by the AI first ----------
 // Nothing reaches the room until the AI says it is about the room's subject or school tasks.
 // Off-topic talk, personal data, insults and links are not published (the author sees why).
@@ -1060,7 +1164,7 @@ async function handleApiPost(req, res, urlPath) {
     ? (q, r, b, u) => handleLearn(q, r, b, u, learnKind)
     : areaHandler
       ? (q, r, b, u) => areaHandler(q, r, b, u, areaAction)
-      : { '/api/chat': handleChat, '/api/report': handleReport, '/api/data': handleData, '/api/subscribe': handleSubscribe, '/api/leaderboard': handleLeaderboard, '/api/leaderboard/add': handleLeaderboard }[urlPath];
+      : { '/api/chat': handleChat, '/api/report': handleReport, '/api/data': handleData, '/api/subscribe': handleSubscribe, '/api/leaderboard': handleLeaderboard, '/api/leaderboard/add': handleLeaderboard, '/api/tts': handleTts }[urlPath];
   if (!handler) return sendJson(res, 404, { code: 'not_found' });
   // Without a database the app runs in guest mode, limited per device.
   const deviceId = cleanText(body.deviceId, 64);

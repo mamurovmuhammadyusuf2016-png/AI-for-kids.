@@ -97,6 +97,7 @@
       photoError: 'Не получилось открыть фото. Попробуй другое.',
       listen: 'Слушать',
       noVoice: 'На этом устройстве нет голоса для этого языка.',
+      voiceLimit: 'Голос на сегодня закончился. Попробуй завтра.',
       micDenied: 'Нет доступа к микрофону. Разреши его в настройках браузера.',
       googleInApp: 'Продолжить с Google',
       googleEmbedded: 'Вход через Google не работает во встроенном браузере Telegram, Instagram и других приложений. Откройте сайт в Chrome или Safari (меню ⋮ или … → «Открыть в браузере») или войдите по почте.',
@@ -234,6 +235,7 @@
       photoError: "Suratni ochib bo'lmadi. Boshqasini sinab ko'r.",
       listen: 'Tinglash',
       noVoice: "Bu qurilmada bu til uchun ovoz yo'q.",
+      voiceLimit: "Bugun uchun ovoz tugadi. Ertaga urinib ko'ring.",
       micDenied: "Mikrofonga ruxsat yo'q. Brauzer sozlamalarida ruxsat ber.",
       googleInApp: 'Google orqali davom etish',
       googleEmbedded: "Google orqali kirish Telegram, Instagram va boshqa ilovalarning ichki brauzerida ishlamaydi. Saytni Chrome yoki Safari'da oching (⋮ yoki … menyusi → «Brauzerda ochish») yoki pochta orqali kiring.",
@@ -634,12 +636,53 @@
   function voiceFor(code) {
     return speechSynthesis.getVoices().find((v) => v.lang.toLowerCase().replace('_', '-').startsWith(code));
   }
-  // code: 'ru' | 'uz' | 'en'. Returns false when the device has no voice for it.
+  // Google's voice through the Nimi server, for languages the device has no voice for (almost
+  // always Uzbek). One audio element for the whole page: it is "unlocked" right in the tap, so the
+  // phone lets it play when the sound arrives a few seconds later.
+  const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=';
+  let cloudEl = null, cloudUrl = '', cloudDone = null, cloudSeq = 0;
+  function cloudFinish(seq) {
+    if (seq !== undefined && seq !== cloudSeq) return;
+    if (cloudUrl) { URL.revokeObjectURL(cloudUrl); cloudUrl = ''; }
+    const d = cloudDone; cloudDone = null; d?.();
+  }
+  function stopSpeaking() {
+    cloudSeq++;
+    if (cloudEl) cloudEl.pause();
+    cloudFinish();
+    if (canSpeak) speechSynthesis.cancel();
+  }
+  function speakCloud(text, code, onEnd) {
+    if (!config.accounts || !user || !window.Audio) return false;
+    const seq = ++cloudSeq;
+    cloudDone = onEnd || null;
+    if (!cloudEl) {
+      cloudEl = new Audio();
+      cloudEl.onended = () => { if (!cloudEl.src.startsWith('data:')) cloudFinish(cloudSeq); };
+      cloudEl.onerror = () => { if (cloudUrl && cloudEl.src === cloudUrl) { cloudFinish(cloudSeq); showNotice(t('noVoice'), 3500); } };
+    }
+    cloudEl.src = SILENT_WAV;
+    cloudEl.play().catch(() => {});
+    const fail = (msg) => { if (seq !== cloudSeq) return; cloudFinish(seq); showNotice(msg, 3500); };
+    fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: speechText(text), lang: code }) })
+      .then(async (r) => {
+        if (seq !== cloudSeq) return;
+        if (!r.ok) return fail(r.status === 429 ? t('voiceLimit') : t('noVoice'));
+        const blob = await r.blob();
+        if (seq !== cloudSeq) return;
+        cloudUrl = URL.createObjectURL(blob);
+        cloudEl.src = cloudUrl;
+        await cloudEl.play();
+      })
+      .catch(() => fail(t('noVoice')));
+    return true;
+  }
+  // code: 'ru' | 'uz' | 'en' | …. Returns false when neither the device nor the server can speak it.
   function speak(text, code, onEnd) {
-    if (!canSpeak) return false;
-    speechSynthesis.cancel();
+    stopSpeaking();
+    if (!canSpeak) return speakCloud(text, code, onEnd);
     const voice = voiceFor(code);
-    if (!voice && code !== 'en') return false;
+    if (!voice && code !== 'en') return speakCloud(text, code, onEnd);
     const u = new SpeechSynthesisUtterance(speechText(text));
     u.lang = { ru: 'ru-RU', uz: 'uz-UZ', en: 'en-US', es: 'es-ES', fr: 'fr-FR', de: 'de-DE', zh: 'zh-CN', ja: 'ja-JP', ko: 'ko-KR', ar: 'ar-SA', tr: 'tr-TR', it: 'it-IT', pt: 'pt-BR', hi: 'hi-IN', nl: 'nl-NL', pl: 'pl-PL', sv: 'sv-SE' }[code] || code;
     if (voice) u.voice = voice;
@@ -679,14 +722,14 @@
       bubble.innerHTML = formatReply(text);
       meta.className += ' text-slate-400';
       if (ts) {
-        if (canSpeak) {
+        if (canSpeak || config.accounts) {
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'mr-auto -ml-1 flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-white/5 hover:text-white';
           btn.setAttribute('aria-label', t('listen'));
           btn.innerHTML = icon('volume-2', 'h-4 w-4');
           btn.onclick = () => {
-            if (btn.dataset.on) { speechSynthesis.cancel(); return; }
+            if (btn.dataset.on) { stopSpeaking(); return; }
             const done = () => { delete btn.dataset.on; btn.innerHTML = icon('volume-2', 'h-4 w-4'); };
             if (!speak(text, textLang(text), done)) return showNotice(t('noVoice'), 3000);
             btn.dataset.on = '1';
