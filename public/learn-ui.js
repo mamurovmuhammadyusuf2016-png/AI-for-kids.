@@ -28,6 +28,42 @@
         newsOff: 'Не получаю',
         newsTurnOn: 'Включить',
         newsTurnOff: 'Отказаться',
+        teachersTitle: 'Мои учителя',
+        teachersText: 'Эти учителя видят твой прогресс: задания, темы и карту знаний. Твои сообщения в чате они не видят.',
+        teacherRemove: 'Отключить',
+      },
+      teacherPage: {
+        title: 'Кабинет учителя',
+        lead: 'Здесь видно, как учатся ваши ученики: серия дней, задания, темы, карта знаний и отчёт ИИ.',
+        addTitle: 'Добавить ученика',
+        addText: 'Попросите у ученика его логин (телефон, почту или логин) и пароль от Nimi. Пароль нужен только чтобы подтвердить, что это ваш ученик, — он нигде не сохраняется.',
+        loginPh: 'Телефон, почта или логин ученика',
+        pwPh: 'Пароль ученика',
+        add: 'Добавить',
+        added: (e) => `Ученик ${e} добавлен.`,
+        errors: {
+          invalid_credentials: 'Неверный логин или пароль ученика.',
+          use_google: 'Этот ученик входит через Google и у него нет пароля. Пусть родитель задаст ему пароль в кабинете родителя.',
+          not_student: 'Это не аккаунт ученика.',
+          too_many_students: 'Учеников слишком много (максимум 300).',
+          too_many_attempts: 'Слишком много попыток. Подождите 15 минут.',
+          invalid_email: 'Проверьте логин ученика.',
+          invalid_phone: 'Проверьте номер телефона.',
+        },
+        students: (n) => `Ваши ученики · ${n}`,
+        empty: 'Пока нет учеников. Добавьте первого по его логину и паролю.',
+        streak: (n) => `${n} дн. подряд`,
+        tasks: (n, pct) => `${n} заданий · ${pct}% верно`,
+        today: (n) => `сегодня вопросов: ${n}`,
+        last: (d) => `был(а) ${d}`,
+        never: 'ещё не занимался(-ась)',
+        todayWord: 'сегодня',
+        access: 'Доступ',
+        noAccess: 'без подписки',
+        remove: 'Убрать из моих учеников',
+        removeAsk: (e) => `Убрать ${e} из ваших учеников? Его данные не удалятся.`,
+        back: 'Все ученики',
+        student: 'Ученик',
       },
       parentPage: {
         title: 'Кабинет родителя',
@@ -310,6 +346,20 @@
         delYes: 'Да, удалить',
         cancel: 'Отмена',
         tabs: { dash: 'Показатели', manage: 'Ученики и заявки', consents: 'Рассылка', room: 'Чат' },
+        teachersAdmin: {
+          title: 'Учителя',
+          text: 'Учитель входит со своим логином и паролем и видит прогресс только тех учеников, которых сам добавил (по логину и паролю ученика).',
+          loginPh: 'Логин учителя, например teacher-aziza',
+          create: 'Создать учителя',
+          created: (l, p) => `Готово! Передайте учителю — логин: ${l}, пароль: ${p}`,
+          taken: 'Этот логин уже занят другим аккаунтом.',
+          badLogin: 'Логин: латинские буквы, цифры, точка, дефис (без @ и не номер телефона).',
+          students: (n) => `учеников: ${n}`,
+          newPw: 'Новый пароль',
+          del: 'Удалить',
+          delAsk: (l) => `Удалить учителя ${l}? Ученики останутся, просто он больше их не увидит.`,
+          empty: 'Учителей пока нет.',
+        },
         roomAdmin: { title: 'Чат учеников', text: 'Сообщения, которые ИИ пропустил. Не по теме — удалите.', empty: 'Сообщений пока нет.', del: 'Удалить' },
         consents: {
           title: 'Согласны на SMS, письма и звонки',
@@ -553,6 +603,42 @@
         newsOff: 'Olmayman',
         newsTurnOn: 'Yoqish',
         newsTurnOff: 'Voz kechish',
+        teachersTitle: "Mening o'qituvchilarim",
+        teachersText: "Bu o'qituvchilar natijalaringizni ko'radi: topshiriqlar, mavzular va bilim xaritasi. Chatdagi xabarlaringizni ko'rmaydi.",
+        teacherRemove: 'Uzish',
+      },
+      teacherPage: {
+        title: "O'qituvchi kabineti",
+        lead: "Bu yerda o'quvchilaringiz qanday o'qiyotgani ko'rinadi: kunlar seriyasi, topshiriqlar, mavzular, bilim xaritasi va sun'iy intellekt hisoboti.",
+        addTitle: "O'quvchi qo'shish",
+        addText: "O'quvchidan Nimi'dagi loginini (telefon, pochta yoki login) va parolini so'rang. Parol faqat bu sizning o'quvchingiz ekanini tasdiqlash uchun kerak — u hech qayerda saqlanmaydi.",
+        loginPh: "O'quvchining telefoni, pochtasi yoki logini",
+        pwPh: "O'quvchining paroli",
+        add: "Qo'shish",
+        added: (e) => `O'quvchi ${e} qo'shildi.`,
+        errors: {
+          invalid_credentials: "O'quvchining logini yoki paroli noto'g'ri.",
+          use_google: "Bu o'quvchi Google orqali kiradi va paroli yo'q. Ota-onasi unga ota-ona kabinetida parol qo'ysin.",
+          not_student: "Bu o'quvchi akkaunti emas.",
+          too_many_students: "O'quvchilar juda ko'p (ko'pi bilan 300).",
+          too_many_attempts: "Urinishlar juda ko'p. 15 daqiqa kuting.",
+          invalid_email: "O'quvchining loginini tekshiring.",
+          invalid_phone: 'Telefon raqamini tekshiring.',
+        },
+        students: (n) => `O'quvchilaringiz · ${n}`,
+        empty: "Hozircha o'quvchi yo'q. Birinchisini logini va paroli bilan qo'shing.",
+        streak: (n) => `${n} kun ketma-ket`,
+        tasks: (n, pct) => `${n} ta topshiriq · ${pct}% to'g'ri`,
+        today: (n) => `bugun savollar: ${n}`,
+        last: (d) => `oxirgi marta: ${d}`,
+        never: 'hali shug\'ullanmagan',
+        todayWord: 'bugun',
+        access: 'Kirish',
+        noAccess: 'obunasiz',
+        remove: "O'quvchilarim ro'yxatidan olib tashlash",
+        removeAsk: (e) => `${e} o'quvchilaringiz ro'yxatidan olib tashlansinmi? Uning ma'lumotlari o'chmaydi.`,
+        back: "Barcha o'quvchilar",
+        student: "O'quvchi",
       },
       parentPage: {
         title: 'Ota-ona kabineti',
@@ -835,6 +921,20 @@
         delYes: "Ha, o'chirish",
         cancel: 'Bekor qilish',
         tabs: { dash: "Ko'rsatkichlar", manage: "O'quvchilar va arizalar", consents: 'Xabarnoma', room: 'Chat' },
+        teachersAdmin: {
+          title: "O'qituvchilar",
+          text: "O'qituvchi o'z logini va paroli bilan kiradi va faqat o'zi qo'shgan o'quvchilarning natijalarini ko'radi (o'quvchining logini va paroli orqali).",
+          loginPh: "O'qituvchi logini, masalan teacher-aziza",
+          create: "O'qituvchi yaratish",
+          created: (l, p) => `Tayyor! O'qituvchiga bering — login: ${l}, parol: ${p}`,
+          taken: 'Bu login boshqa akkauntda band.',
+          badLogin: "Login: lotin harflari, raqamlar, nuqta, chiziqcha (@siz va telefon raqami emas).",
+          students: (n) => `o'quvchilar: ${n}`,
+          newPw: 'Yangi parol',
+          del: "O'chirish",
+          delAsk: (l) => `${l} o'qituvchisi o'chirilsinmi? O'quvchilar qoladi, u ularni boshqa ko'rmaydi.`,
+          empty: "Hozircha o'qituvchi yo'q.",
+        },
         roomAdmin: { title: "O'quvchilar chati", text: "Sun'iy intellekt o'tkazgan xabarlar. Mavzudan tashqarisini o'chiring.", empty: "Hozircha xabar yo'q.", del: "O'chirish" },
         consents: {
           title: "SMS, xat va qo'ng'iroqqa roziligi borlar",
@@ -1951,6 +2051,38 @@
   let adminTab = 'dash';
   // rootId: 'activity' (from a student admin's menu) or 'adminHome' (the staff account's only screen).
   // tab: 'dash' (numbers) or 'manage' (grant access, students, requests).
+  // Admin: teachers' accounts (create, new password, delete).
+  function teachersBlock(A) {
+    const M = A.teachersAdmin;
+    const login = h('input', { type: 'text', class: INPUT, placeholder: M.loginPh, autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false' });
+    const msg = h('p', { class: 'hidden select-all rounded-2xl p-3 text-sm' });
+    const list = h('div', { class: 'flex flex-col gap-2' });
+    const say = (text, ok) => { msg.textContent = text; msg.className = `select-all break-words rounded-2xl p-3 text-sm ${ok ? 'bg-emerald-500/10 text-emerald-100' : 'bg-rose-500/10 text-rose-200'}`; };
+    const make = async (name) => {
+      const r = await N.postJson('/api/admin/create-teacher', { login: name }).catch(() => ({}));
+      if (r.password) { say(M.created(r.login, r.password), true); login.value = ''; draw(); }
+      else say(r.code === 'email_taken' ? M.taken : r.code === 'invalid_email' ? M.badLogin : t('errors').default, false);
+    };
+    async function draw() {
+      const r = await N.postJson('/api/admin/teachers', {}).catch(() => ({}));
+      list.replaceChildren(...(r.teachers?.length ? r.teachers.map((x) => h('div', { class: 'flex flex-col gap-1 rounded-2xl bg-night-800 px-3 py-2' },
+        h('div', { class: 'flex items-baseline justify-between gap-2' },
+          h('span', { class: 'min-w-0 break-words font-semibold text-white [overflow-wrap:anywhere]' }, x.login),
+          h('span', { class: 'shrink-0 text-xs text-slate-400' }, M.students(x.students))),
+        h('div', { class: 'flex gap-1' },
+        h('button', { type: 'button', class: 'min-h-10 rounded-xl px-3 text-sm text-slate-200 hover:bg-night-700', onclick: () => make(x.login) }, M.newPw),
+        h('button', { type: 'button', class: 'min-h-10 rounded-xl px-3 text-sm text-rose-300 hover:bg-rose-500/10', onclick: async () => {
+          if (!confirm(M.delAsk(x.login))) return;
+          await N.postJson('/api/admin/teacher-delete', { id: x.id }).catch(() => null);
+          draw();
+        } }, M.del)))) : [h('p', { class: 'text-sm text-slate-400' }, M.empty)]));
+    }
+    draw();
+    return h('div', { class: `${CARD} flex flex-col gap-2` },
+      h('p', { class: 'font-semibold text-white' }, M.title), h('p', { class: 'text-sm text-slate-400' }, M.text),
+      login, h('button', { type: 'button', class: BTN, onclick: () => login.value.trim() && make(login.value.trim()) }, ico('plus'), M.create), msg, list);
+  }
+
   // Admin: the latest messages of the students' chat with the author's login; remove any of them.
   async function renderRoomAdmin(root, A) {
     const M = A.roomAdmin;
@@ -2006,6 +2138,7 @@
       msg));
     root.append(studentsBlock(A, grant));
     root.append(revokeBlock(A));
+    root.append(teachersBlock(A));
     if (N.faceId) root.append(faceIdBlock(A));
     root.append(h('p', { class: 'font-semibold text-white' }, A.pending));
     const list = h('div', { class: 'flex flex-col gap-2' }, loading(t('loadingTopics')));
@@ -2436,6 +2569,22 @@
         h('p', { class: 'mt-2 text-xs text-slate-400' }, P.password), pw),
       h('div', { class: 'flex gap-2' }, showBtn, copyBtn),
       resetBtn));
+    // Teachers who see this student's progress; the student can remove any of them.
+    const teachersBox = h('div', { class: `${CARD} flex flex-col gap-3` });
+    const drawTeachers = (list) => {
+      teachersBox.replaceChildren(
+        h('div', { class: 'flex items-center gap-3' }, h('span', { class: 'flex h-11 w-11 items-center justify-center rounded-2xl bg-night-700 text-brand-400' }, ico('graduation-cap')), h('p', { class: 'text-lg font-semibold text-white' }, P.teachersTitle)),
+        h('p', { class: 'text-sm text-slate-300' }, P.teachersText),
+        ...list.map((x) => h('div', { class: 'flex items-center gap-3 rounded-2xl bg-night-800 px-3 py-2' },
+          h('span', { class: 'min-w-0 flex-1 break-all font-semibold text-white' }, x.login),
+          h('button', { type: 'button', class: 'min-h-10 rounded-xl px-3 text-sm font-semibold text-rose-300 hover:bg-rose-500/10', onclick: async () => {
+            const res = await N.postJson('/api/account/teacher-remove', { id: x.id }).catch(() => ({}));
+            if (res.teachers) drawTeachers(res.teachers);
+          } }, P.teacherRemove))));
+      teachersBox.classList.toggle('hidden', !list.length);
+    };
+    drawTeachers(r.teachers || []);
+    root.append(teachersBox);
     // News by SMS / email / calls: the student (or parent) can give or withdraw it at any time.
     let news = !!r.marketing;
     const state = h('p', { class: 'text-sm font-semibold' });
@@ -2458,40 +2607,12 @@
     root.append(h('a', { href: '/privacy.html', target: '_blank', class: 'text-sm text-slate-400 underline' }, t('privacyTitle')));
   }
 
-  // ---------- parent account: the child's progress, diary and subscription ----------
-  async function renderParent() {
-    const root = screen('parentHome');
+  // Progress of one student: activity, knowledge map, topics and the AI report. Parent and teacher cabinets.
+  function studentDetails(root, r, reportUrl, reportBody = {}) {
     const P = t('parentPage');
-    root.append(h('h2', { class: 'text-2xl font-semibold text-white' }, P.title), loading(t('loadingTopics')));
-    const r = await N.postJson('/api/parent/overview', {}).catch(() => ({}));
-    root.lastChild.remove();
-    if (!r.child) { root.append(h('p', { class: 'text-rose-200' }, t('errors').default)); return; }
     const plan = r.child.plan;
     const p = normalize({ progress: r.progress || {} }).progress;
     const s = p.stats;
-    const S = t('sub');
-    // Child and access
-    const access = plan.active
-      ? P.accessUntil(plan.trial ? S.trialTitle : `${S.open} ${planById(plan.tier).name}`, dateStr(plan.until))
-      : plan.never ? P.noAccessYet : S.expired;
-    const subBox = h('div', { class: 'flex flex-col gap-3' });
-    const askBtn = (months, label, getPlan) => h('button', { type: 'button', class: months ? BTN : BTN2, onclick: async () => {
-      const res = await N.postJson('/api/parent/subscribe', { months, plan: getPlan?.().id });
-      if (res.request) showSteps(subBox, res.request, res.price, res.email);
-    } }, label);
-    const paid = plan.active && !plan.trial;
-    let chosen = planById(paid ? plan.tier : RECOMMENDED);
-    const orderBtn = askBtn(1, '', () => chosen);
-    const drawOrder = () => { orderBtn.textContent = `${paid && chosen.id === plan.tier ? S.renew : S.order} · ${sum(chosen.price)}`; };
-    drawOrder();
-    root.append(h('div', { class: `${CARD} flex flex-col gap-3` },
-      h('p', { class: 'text-sm text-slate-400' }, P.child), h('p', { class: 'break-all text-lg font-semibold text-white' }, r.child.email),
-      h('p', { class: `rounded-2xl p-3 text-sm ring-1 ${plan.active ? 'bg-emerald-500/10 text-emerald-100 ring-emerald-400/30' : 'bg-amber-400/10 text-amber-100 ring-amber-400/30'}` }, access),
-      plan.never ? askBtn(0, S.trialAsk) : null,
-      planPicker(chosen.id, (p) => { chosen = p; drawOrder(); }),
-      orderBtn,
-      subBox));
-    if (plan.active && plan.limits && r.child.tokens) root.append(usageCard(plan, r.child.tokens));
     // Activity
     const daySet = new Set(p.days || []);
     const n = (() => { let k = 0; let d = new Date(); if (!daySet.has(d.toLocaleDateString('en-CA'))) d = new Date(d.getTime() - DAY); while (daySet.has(d.toLocaleDateString('en-CA'))) { k++; d = new Date(d.getTime() - DAY); } return k; })();
@@ -2517,19 +2638,53 @@
     });
     if (window.NimiDiag) root.append(window.NimiDiag.parentCard(r.diag));
     root.append(topicsBox);
-    // Homework
     // AI report
     const reportBox = h('div', { class: 'bubble whitespace-pre-wrap text-sm leading-relaxed text-slate-200' });
     const reportBtn = h('button', { type: 'button', class: BTN2 }, ico('file-text'), t('parentReport'));
     reportBtn.onclick = async () => {
       reportBox.replaceChildren(loading(t('loadingTasks')));
-      const res = await N.postJson('/api/parent/report', { lang: N.lang });
+      const res = await N.postJson(reportUrl, { ...reportBody, lang: N.lang });
       reportBox.innerHTML = res.report ? N.formatReply(res.report) : '';
       if (res.report && reportFree) reportFree.remove();
       if (!res.report) reportBox.textContent = res.code === 'premium_required' ? P.reportNeedsSub : t('errors')[res.code] || t('errors').default;
     };
     const reportFree = !plan.active && r.child.free?.report ? h('p', { class: 'text-sm text-emerald-300' }, P.reportFree) : null;
     root.append(h('div', { class: `${CARD} flex flex-col gap-3` }, reportBtn, reportFree, reportBox));
+  }
+
+  // ---------- parent account: the child's progress, diary and subscription ----------
+  async function renderParent() {
+    const root = screen('parentHome');
+    const P = t('parentPage');
+    root.append(h('h2', { class: 'text-2xl font-semibold text-white' }, P.title), loading(t('loadingTopics')));
+    const r = await N.postJson('/api/parent/overview', {}).catch(() => ({}));
+    root.lastChild.remove();
+    if (!r.child) { root.append(h('p', { class: 'text-rose-200' }, t('errors').default)); return; }
+    const plan = r.child.plan;
+    const S = t('sub');
+    // Child and access
+    const access = plan.active
+      ? P.accessUntil(plan.trial ? S.trialTitle : `${S.open} ${planById(plan.tier).name}`, dateStr(plan.until))
+      : plan.never ? P.noAccessYet : S.expired;
+    const subBox = h('div', { class: 'flex flex-col gap-3' });
+    const askBtn = (months, label, getPlan) => h('button', { type: 'button', class: months ? BTN : BTN2, onclick: async () => {
+      const res = await N.postJson('/api/parent/subscribe', { months, plan: getPlan?.().id });
+      if (res.request) showSteps(subBox, res.request, res.price, res.email);
+    } }, label);
+    const paid = plan.active && !plan.trial;
+    let chosen = planById(paid ? plan.tier : RECOMMENDED);
+    const orderBtn = askBtn(1, '', () => chosen);
+    const drawOrder = () => { orderBtn.textContent = `${paid && chosen.id === plan.tier ? S.renew : S.order} · ${sum(chosen.price)}`; };
+    drawOrder();
+    root.append(h('div', { class: `${CARD} flex flex-col gap-3` },
+      h('p', { class: 'text-sm text-slate-400' }, P.child), h('p', { class: 'break-all text-lg font-semibold text-white' }, r.child.email),
+      h('p', { class: `rounded-2xl p-3 text-sm ring-1 ${plan.active ? 'bg-emerald-500/10 text-emerald-100 ring-emerald-400/30' : 'bg-amber-400/10 text-amber-100 ring-amber-400/30'}` }, access),
+      plan.never ? askBtn(0, S.trialAsk) : null,
+      planPicker(chosen.id, (p) => { chosen = p; drawOrder(); }),
+      orderBtn,
+      subBox));
+    if (plan.active && plan.limits && r.child.tokens) root.append(usageCard(plan, r.child.tokens));
+    studentDetails(root, r, '/api/parent/report');
     // Child's password
     const newPw = h('input', { type: 'text', class: INPUT, placeholder: P.newChildPwPh, id: 'childPw', autocomplete: 'off' });
     const pwMsg = h('p', { class: 'text-sm' });
@@ -2540,6 +2695,77 @@
         pwMsg.textContent = res.ok ? P.childPwDone : P.childPwBad;
         if (res.ok) newPw.value = '';
       } }, P.childPwSave), pwMsg));
+  }
+
+  // ---------- teacher account: all of the teacher's students, each like the parent's cabinet ----------
+  async function renderTeacher() {
+    const root = screen('teacherHome');
+    const T = t('teacherPage');
+    root.append(h('h2', { class: 'text-2xl font-semibold text-white' }, T.title), h('p', { class: 'text-sm text-slate-400' }, T.lead));
+    // Add a student by the student's login and password
+    const login = h('input', { type: 'text', class: INPUT, placeholder: T.loginPh, autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false' });
+    const pw = h('input', { type: 'password', class: INPUT, placeholder: T.pwPh, autocomplete: 'new-password' });
+    const msg = h('p', { class: 'hidden text-sm' });
+    const addBtn = h('button', { type: 'submit', class: BTN }, ico('plus'), T.add);
+    root.append(h('form', { class: `${CARD} flex flex-col gap-2`, onsubmit: async (e) => {
+      e.preventDefault();
+      if (!login.value.trim() || !pw.value) return;
+      addBtn.disabled = true;
+      const res = await N.postJson('/api/teacher/add', { login: login.value.trim(), password: pw.value }).catch(() => ({}));
+      addBtn.disabled = false;
+      pw.value = '';
+      msg.className = `text-sm ${res.student ? 'text-emerald-300' : 'text-rose-200'}`;
+      msg.textContent = res.student ? T.added(N.prettyAccount(res.student.email)) : T.errors[res.code] || t('errors')[res.code] || t('errors').default;
+      if (res.student) { login.value = ''; drawList(); }
+    } }, h('p', { class: 'font-semibold text-white' }, T.addTitle), h('p', { class: 'text-sm text-slate-400' }, T.addText), login, pw, addBtn, msg));
+
+    const listBox = h('div', { class: 'flex flex-col gap-2' });
+    root.append(listBox);
+    const lastLabel = (d) => {
+      if (!d) return T.never;
+      if (d === new Date().toLocaleDateString('en-CA')) return T.last(T.todayWord);
+      return T.last(new Date(`${d}T12:00:00`).toLocaleDateString(N.lang === 'uz' ? 'uz-UZ' : 'ru-RU', { day: 'numeric', month: 'short' }));
+    };
+    async function drawList() {
+      listBox.replaceChildren(loading(t('loadingTopics')));
+      const r = await N.postJson('/api/teacher/list', {}).catch(() => ({}));
+      if (!r.students) { listBox.replaceChildren(h('p', { class: 'text-rose-200' }, t('errors').default)); return; }
+      listBox.replaceChildren(h('p', { class: 'px-1 pt-2 font-semibold text-white' }, T.students(r.students.length)));
+      if (!r.students.length) listBox.append(h('p', { class: `${CARD} text-center text-slate-400` }, T.empty));
+      r.students.forEach((x) => {
+        const pct = x.tasks ? Math.round((x.correct / x.tasks) * 100) : 0;
+        listBox.append(h('button', { type: 'button', class: `${CARD} flex items-center gap-3 text-left transition hover:bg-night-800 active:scale-[.99]`, onclick: () => openStudent(x.id) },
+          h('span', { class: `flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-2xl ${x.streak ? 'bg-amber-400/15 text-amber-200' : 'bg-night-800 text-slate-500'}` }, ico('flame', 'h-4 w-4'), h('span', { class: 'text-xs font-semibold tabular-nums' }, String(x.streak))),
+          h('span', { class: 'flex min-w-0 flex-1 flex-col gap-0.5' },
+            h('span', { class: 'truncate font-semibold text-white' }, N.prettyAccount(x.email)),
+            h('span', { class: 'text-sm text-slate-400' }, T.tasks(x.tasks, pct)),
+            h('span', { class: 'text-xs text-slate-500' }, `${lastLabel(x.lastDay)} · ${T.today(x.usedToday)}${x.plan?.active ? '' : ` · ${T.noAccess}`}`)),
+          ico('chevron-right', 'icon text-slate-500')));
+      });
+    }
+    async function openStudent(id) {
+      const box = screen('teacherHome');
+      box.append(h('div', { class: 'flex items-center gap-2' },
+        h('button', { type: 'button', class: 'flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-night-800 text-slate-200 ring-1 ring-white/5 hover:bg-night-700', 'aria-label': T.back, onclick: renderTeacher }, ico('arrow-left')),
+        h('h2', { class: 'min-w-0 flex-1 truncate text-xl font-semibold text-white' }, T.back)), loading(t('loadingTopics')));
+      const r = await N.postJson('/api/teacher/overview', { id }).catch(() => ({}));
+      box.lastChild.remove();
+      if (!r.child) { box.append(h('p', { class: 'text-rose-200' }, t('errors').default)); return; }
+      const plan = r.child.plan;
+      const S = t('sub');
+      box.append(h('div', { class: `${CARD} flex flex-col gap-2` },
+        h('p', { class: 'text-sm text-slate-400' }, T.student),
+        h('p', { class: 'break-all text-lg font-semibold text-white' }, N.prettyAccount(r.child.email)),
+        h('p', { class: `rounded-2xl p-3 text-sm ring-1 ${plan.active ? 'bg-emerald-500/10 text-emerald-100 ring-emerald-400/30' : 'bg-night-800 text-slate-300 ring-white/5'}` },
+          `${T.access}: ${plan.active ? t('parentPage').accessUntil(plan.trial ? S.trialTitle : `${S.open} ${planById(plan.tier).name}`, dateStr(plan.until)) : T.noAccess}`)));
+      studentDetails(box, r, '/api/teacher/report', { id });
+      box.append(h('button', { type: 'button', class: 'min-h-12 rounded-2xl text-sm font-semibold text-rose-300 hover:bg-rose-500/10', onclick: async () => {
+        if (!confirm(T.removeAsk(N.prettyAccount(r.child.email)))) return;
+        const res = await N.postJson('/api/teacher/remove', { id }).catch(() => ({}));
+        if (res.ok) renderTeacher();
+      } }, T.remove));
+    }
+    drawList();
   }
 
   // ---------- landing for parents (not signed in) ----------
@@ -3096,5 +3322,5 @@
     setStop(fn) { stopActive = fn; },
   };
 
-  window.NimiLearn = { load, render, markDay, openSubscribe, openAdmin, openSettings, renderParent, renderLanding, openHistory, openLeaderboard, openRoom, kit };
+  window.NimiLearn = { load, render, markDay, openSubscribe, openAdmin, openSettings, renderParent, renderTeacher, renderLanding, openHistory, openLeaderboard, openRoom, kit };
 })();

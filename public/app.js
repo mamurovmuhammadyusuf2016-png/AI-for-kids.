@@ -174,6 +174,7 @@
       privacyLink: 'Правила и конфиденциальность',
       settings: 'Настройки',
       parentCabinet: 'Кабинет родителя',
+      teacherCabinet: 'Кабинет учителя',
       adminCabinet: 'Админ-панель',
       passwordPh: 'Пароль',
       confirmPh: 'Повтори пароль',
@@ -312,6 +313,7 @@
       privacyLink: 'Qoidalar va maxfiylik',
       settings: 'Sozlamalar',
       parentCabinet: 'Ota-ona kabineti',
+      teacherCabinet: "O'qituvchi kabineti",
       adminCabinet: 'Admin panel',
       passwordPh: 'Parol',
       confirmPh: 'Parolni takrorla',
@@ -773,8 +775,8 @@
   }
 
   // Screen name -> element id. Tabs show the bottom navigation.
-  const SCREENS = { landing: 'landing', auth: 'auth', setup: 'setup', home: 'home', chat: 'chatScreen', activity: 'activity', progress: 'progress', diary: 'diary', parent: 'parentHome', admin: 'adminHome' };
-  const FLEX_SCREENS = ['landing', 'chat', 'home', 'activity', 'progress', 'diary', 'parent', 'admin'];
+  const SCREENS = { landing: 'landing', auth: 'auth', setup: 'setup', home: 'home', chat: 'chatScreen', activity: 'activity', progress: 'progress', diary: 'diary', parent: 'parentHome', teacher: 'teacherHome', admin: 'adminHome' };
+  const FLEX_SCREENS = ['landing', 'chat', 'home', 'activity', 'progress', 'diary', 'parent', 'teacher', 'admin'];
   const TAB_OF = { home: 'home', activity: 'home', chat: 'chat', progress: 'progress', diary: 'diary' };
   let currentScreen = '';
   function showScreen(name, arg) {
@@ -785,9 +787,10 @@
     }
     const inApp = !!TAB_OF[name];
     $('menuWrap').classList.toggle('hidden', name === 'auth' || name === 'landing');
-    $('subtitleLine').textContent = name === 'parent' ? t('parentCabinet') : name === 'admin' ? t('adminCabinet') : t('subtitle');
+    $('subtitleLine').textContent = name === 'parent' ? t('parentCabinet') : name === 'teacher' ? t('teacherCabinet') : name === 'admin' ? t('adminCabinet') : t('subtitle');
     if (name === 'landing') window.NimiLearn?.renderLanding();
     if (name === 'parent') window.NimiLearn?.renderParent();
+    if (name === 'teacher') window.NimiLearn?.renderTeacher();
     if (name === 'admin') window.NimiLearn?.openAdmin('adminHome');
     $('tabbar').classList.toggle('hidden', !inApp);
     $('tabbar').classList.toggle('grid', inApp);
@@ -856,7 +859,7 @@
       store.set('lang', lang);
       applyLang();
       if (onChat()) renderChat();
-      else if (TAB_OF[currentScreen] || ['landing', 'parent'].includes(currentScreen)) showScreen(currentScreen);
+      else if (TAB_OF[currentScreen] || ['landing', 'parent', 'teacher'].includes(currentScreen)) showScreen(currentScreen);
     };
   });
 
@@ -1498,7 +1501,7 @@
     resetAuthFlow();
     showAuthError(null);
     // Parents and staff have their own single screen.
-    if (u.role === 'parent' || u.role === 'admin') return showScreen(u.role);
+    if (u.role === 'parent' || u.role === 'teacher' || u.role === 'admin') return showScreen(u.role);
     setup = store.get('setup', null);
     sessions = store.get('sessions', []);
     sessions.forEach((x) => { if (!x.id) x.id = newId(); });

@@ -235,6 +235,16 @@ async function init() {
     );
     CREATE INDEX IF NOT EXISTS room_messages_room ON room_messages (room, id);
   `);
+  // Teachers and their students: a teacher adds a student with the student's login and password.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS teacher_students (
+      teacher_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      student_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      added_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (teacher_id, student_id)
+    );
+    CREATE INDEX IF NOT EXISTS teacher_students_student ON teacher_students (student_id);
+  `);
   console.log('Accounts database ready');
 }
 
@@ -797,6 +807,13 @@ async function resetPassword(req, body) {
 }
 
 async function login(req, body) {
+  const user = await checkCredentials(req, body);
+  return { user: { ...user, has_password: true }, cookie: await startSession(req, user.id) };
+}
+
+// Login and password checked with the same protection as signing in (failures counted per IP and
+// per account, locked after too many). Used by sign-in and when a teacher adds a student.
+async function checkCredentials(req, body) {
   const db = requirePool();
   const email = normalizeLogin(body.email);
   const password = typeof body.password === 'string' ? body.password.slice(0, 128) : '';
@@ -824,7 +841,7 @@ async function login(req, body) {
   }
   failedLogins.delete(key);
   failedLogins.delete(accountKey);
-  return { user: { ...user, has_password: true }, cookie: await startSession(req, user.id) };
+  return user;
 }
 
 async function verifyGoogleToken(credential) {
@@ -1044,6 +1061,86 @@ async function roomAdminList(limit = 100) {
     `SELECT m.id, m.room, m.text, m.created_at, m.user_id, u.email FROM room_messages m JOIN users u ON u.id = m.user_id
       WHERE NOT m.hidden ORDER BY m.id DESC LIMIT $1`, [limit]);
   return rows.map((r) => ({ id: Number(r.id), room: r.room, text: r.text, at: r.created_at, email: r.email, ...nickOf(r.user_id) }));
+}
+
+// ---------- teachers: a cabinet like the parent's, for all of the teacher's students ----------
+const TEACHER_MAX_STUDENTS = 300;
+
+// Made by an admin (admin panel or the admin key). An existing login of another kind is never
+// turned into a teacher; an existing teacher gets a new password.
+async function createTeacherAccount(login, chosenPassword) {
+  const name = normalizeLogin(login);
+  if (name.includes('@') || isPhoneLike(name)) throw new AuthError('invalid_email');
+  const password = chosenPassword ? validatePassword(chosenPassword) : readablePassword();
+  const { rows } = await requirePool().query(
+    `INSERT INTO users (email, password_hash, role) VALUES ($1, $2, 'teacher')
+     ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash WHERE users.role = 'teacher'
+     RETURNING id`,
+    [name, await hashPassword(password)],
+  );
+  if (!rows.length) throw new AuthError('email_taken', 409);
+  await requirePool().query('DELETE FROM sessions WHERE user_id = $1', [rows[0].id]);
+  return { login: name, password };
+}
+
+async function listTeachers() {
+  const { rows } = await requirePool().query(
+    `SELECT u.id, u.email, u.created_at, count(ts.student_id)::int AS students
+       FROM users u LEFT JOIN teacher_students ts ON ts.teacher_id = u.id
+      WHERE u.role = 'teacher' GROUP BY u.id ORDER BY u.created_at DESC LIMIT 200`);
+  return rows.map((r) => ({ id: Number(r.id), login: r.email, created_at: r.created_at, students: r.students }));
+}
+
+async function deleteTeacher(teacherId) {
+  const { rowCount } = await requirePool().query(`DELETE FROM users WHERE id = $1 AND role = 'teacher'`, [teacherId]);
+  return rowCount > 0;
+}
+
+// The student's login and password prove the teacher may see this student.
+async function addTeacherStudent(req, teacherId, body) {
+  const student = await checkCredentials(req, { email: body.login, password: body.password });
+  if ((student.role || 'student') !== 'student') throw new AuthError('not_student', 400);
+  const db = requirePool();
+  const { rows: [c] } = await db.query('SELECT count(*)::int AS n FROM teacher_students WHERE teacher_id = $1', [teacherId]);
+  if (c.n >= TEACHER_MAX_STUDENTS) throw new AuthError('too_many_students', 400);
+  await db.query('INSERT INTO teacher_students (teacher_id, student_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [teacherId, student.id]);
+  return { id: Number(student.id), email: student.email };
+}
+
+async function removeTeacherStudent(teacherId, studentId) {
+  const { rowCount } = await requirePool().query('DELETE FROM teacher_students WHERE teacher_id = $1 AND student_id = $2', [teacherId, studentId]);
+  return rowCount > 0;
+}
+
+// The teacher's students with what the list needs: progress, today's questions, access.
+async function teacherStudents(teacherId, day) {
+  const db = requirePool();
+  const { rows } = await db.query(
+    `SELECT u.id, u.email, u.created_at, u.premium_until, u.plan_kind, u.plan_tier, u.free_used, u.role, ts.added_at,
+            d.value AS progress, COALESCE(g.count, 0)::int AS used_today
+       FROM teacher_students ts JOIN users u ON u.id = ts.student_id
+       LEFT JOIN user_data d ON d.user_id = u.id AND d.key = 'progress'
+       LEFT JOIN usage g ON g.user_id = u.id AND g.day = $2
+      WHERE ts.teacher_id = $1 ORDER BY ts.added_at`,
+    [teacherId, day],
+  );
+  return rows;
+}
+
+// One student of this teacher (null when the student is not theirs).
+async function teacherStudent(teacherId, studentId) {
+  const { rows } = await requirePool().query(
+    `SELECT u.* FROM teacher_students ts JOIN users u ON u.id = ts.student_id WHERE ts.teacher_id = $1 AND ts.student_id = $2`,
+    [teacherId, studentId]);
+  return rows[0] || null;
+}
+
+// For the student's Settings: who sees their progress; the student can remove a teacher.
+async function studentTeachers(studentId) {
+  const { rows } = await requirePool().query(
+    `SELECT u.id, u.email, ts.added_at FROM teacher_students ts JOIN users u ON u.id = ts.teacher_id WHERE ts.student_id = $1 ORDER BY ts.added_at`,
+    [studentId]);
+  return rows.map((r) => ({ id: Number(r.id), login: r.email, added_at: r.added_at }));
 }
 
 // ---------- admin broadcasts: SMS (owner's phone, SMSGate) and email (Brevo) ----------
@@ -1419,6 +1516,14 @@ async function revokeAllExcept(keep, apply) {
 }
 
 module.exports = {
+  createTeacherAccount,
+  listTeachers,
+  deleteTeacher,
+  addTeacherStudent,
+  removeTeacherStudent,
+  teacherStudents,
+  teacherStudent,
+  studentTeachers,
   roomMessages,
   roomView,
   addRoomMessage,

@@ -671,6 +671,10 @@ async function handleAdmin(req, res, body, user, action) {
     return sendJson(res, 200, { keys: await passkeys.list(user) });
   }
   // Lost phone: the owner asks Claude, Claude removes the passkeys with the admin key.
+  // Teachers: made only here (or with the admin key); the admin passes the login and password on.
+  if (action === 'teachers') return sendJson(res, 200, { teachers: await auth.listTeachers() });
+  if (action === 'create-teacher') return sendJson(res, 200, await auth.createTeacherAccount(cleanText(body.login, 32), cleanText(body.password, 128)));
+  if (action === 'teacher-delete') return sendJson(res, 200, { ok: await auth.deleteTeacher(Number(body.id) || 0) });
   // Students' chat: the latest messages with the author's login, and removing one.
   if (action === 'room-list') return sendJson(res, 200, { messages: await auth.roomAdminList(), subjects: ROOM_SUBJECTS });
   if (action === 'room-delete') return sendJson(res, 200, { ok: await auth.hideRoomMessage(Number(body.id) || 0, 0, true) });
@@ -690,7 +694,9 @@ async function handleLeaderboard(req, res, body, user) {
 
 // ---------- student settings: the parent's login and password ----------
 async function handleAccount(req, res, body, user, action) {
-  if (action === 'settings') return sendJson(res, 200, { email: user.email, parent: await auth.ensureParent(user.id), marketing: !!user.marketing });
+  if (action === 'settings') return sendJson(res, 200, { email: user.email, parent: await auth.ensureParent(user.id), marketing: !!user.marketing, teachers: await auth.studentTeachers(user.id) });
+  // The student removes a teacher who can see their progress.
+  if (action === 'teacher-remove') return sendJson(res, 200, { ok: await auth.removeTeacherStudent(Number(body.id) || 0, user.id), teachers: await auth.studentTeachers(user.id) });
   // The rules (once) and news by SMS / email / calls (given or withdrawn at any time).
   if (action === 'consent') {
     await auth.applyConsents(req, user.id, { terms: body.terms === true, marketing: typeof body.marketing === 'boolean' ? body.marketing : undefined, lang: body.lang });
@@ -793,7 +799,6 @@ async function handleParent(req, res, body, user, action) {
   sendJson(res, 404, { code: 'not_found' });
 }
 
-// API areas with a sub-action in the path: /api/<area>/<action>.
 // ---------- reading aloud with Google's voice (for languages the phone has no voice for, mostly Uzbek) ----------
 // Phones and browsers almost never have an Uzbek voice, so the site asks the server: the server turns
 // the text into speech with Gemini (the same AI_API_KEY) and sends back a WAV file. The same text is
@@ -1021,7 +1026,68 @@ async function handleRoom(req, res, body, user, action) {
   sendJson(res, 200, { ok: true, id });
 }
 
-const AREA_HANDLERS = { admin: handleAdmin, parent: handleParent, account: handleAccount, chats: handleChats, room: handleRoom };
+// ---------- teacher's cabinet: like the parent's, for every student the teacher added ----------
+// A student is added with the student's own login and password (proof the teacher may see them).
+// The teacher sees progress, topics, the knowledge map and the AI report; no subscription
+// requests and no password changes (those stay with the parent).
+function shortProgress(p) {
+  const days = Array.isArray(p?.days) ? p.days : [];
+  const stats = p?.stats || {};
+  const set = new Set(days);
+  let streak = 0;
+  const d = new Date(`${today()}T12:00:00Z`);
+  if (!set.has(d.toISOString().slice(0, 10))) d.setUTCDate(d.getUTCDate() - 1);
+  while (set.has(d.toISOString().slice(0, 10))) { streak++; d.setUTCDate(d.getUTCDate() - 1); }
+  return { streak, lastDay: days.length ? [...days].sort().at(-1) : null, tasks: Number(stats.tasks) || 0, correct: Number(stats.correct) || 0 };
+}
+
+async function handleTeacher(req, res, body, user, action) {
+  if (action === 'list') {
+    const rows = await auth.teacherStudents(user.id, today());
+    return sendJson(res, 200, {
+      login: user.email,
+      students: rows.map((r) => ({ id: Number(r.id), email: r.email, plan: auth.plan(r), usedToday: r.used_today, ...shortProgress(r.progress) })),
+    });
+  }
+  if (action === 'add') return sendJson(res, 200, { student: await auth.addTeacherStudent(req, user.id, body) });
+  const studentId = Number(body.id) || 0;
+  const child = studentId ? await auth.teacherStudent(user.id, studentId) : null;
+  if (!child) return sendJson(res, 404, { code: 'user_not_found' });
+  if (action === 'remove') return sendJson(res, 200, { ok: await auth.removeTeacherStudent(user.id, studentId) });
+  if (action === 'overview') {
+    const data = await auth.getData(child.id);
+    return sendJson(res, 200, {
+      child: { id: Number(child.id), email: child.email, plan: auth.plan(child), free: auth.freeLeft(child) },
+      usedToday: await auth.usedToday(child.id, today()),
+      limit: dailyLimit(child),
+      progress: data.progress || null,
+      diag: data.diag || null,
+    });
+  }
+  if (action === 'report') {
+    // Same rule as for parents: the AI report spends the student's tokens (or their one free try).
+    const trying = !auth.plan(child).active;
+    if (trying && !auth.freeLeft(child).report) return sendJson(res, 402, { code: 'premium_required', feature: 'report' });
+    if (!(await tokensLeft(child))) return sendJson(res, 429, { code: 'tokens_out' });
+    const data = await auth.getData(child.id);
+    const stats = JSON.stringify({ progress: data.progress || {}, diary: (data.diary || []).slice(-30) }).slice(0, 20000);
+    const lang = body.lang === 'uz' ? 'узбекский (латиница)' : 'русский';
+    try {
+      const meter = newMeter();
+      const prompt = PARENT_REPORT_PROMPT.replace('{LANG}', lang) + '\nОтчёт читает не родитель, а учитель этого ученика: обращайся к учителю, советы — что повторить на уроке и дома.';
+      const report = await generate(prompt, [{ role: 'user', content: `Статистика ученика (JSON): ${stats}` }], { meter });
+      await chargeTokens(child, meter);
+      if (trying) await auth.useFree(child.id, 'report');
+      return sendJson(res, 200, { report: stripEmoji(report) });
+    } catch (err) {
+      return aiErrorResponse(res, err);
+    }
+  }
+  sendJson(res, 404, { code: 'not_found' });
+}
+
+// API areas with a sub-action in the path: /api/<area>/<action>.
+const AREA_HANDLERS = { admin: handleAdmin, parent: handleParent, account: handleAccount, chats: handleChats, room: handleRoom, teacher: handleTeacher };
 
 // Account actions: each returns { user, cookie }.
 const AUTH_ACTIONS = { '/api/auth/register': auth.register, '/api/auth/login': auth.login, '/api/auth/google': auth.google, '/api/auth/reset': auth.resetPassword };
@@ -1174,8 +1240,9 @@ async function handleApiPost(req, res, urlPath) {
   if (!user) return sendJson(res, 401, { code: 'unauthorized' });
   // Each kind of account has its own part of the API.
   const role = user.apiAdmin ? 'admin' : user.role || 'student';
-  const area = areaName === 'admin' ? 'admin' : areaName === 'parent' ? 'parent' : 'student';
+  const area = ['admin', 'parent', 'teacher'].includes(areaName) ? areaName : 'student';
   if (area === 'parent' && role !== 'parent') return sendJson(res, 403, { code: 'forbidden' });
+  if (area === 'teacher' && role !== 'teacher') return sendJson(res, 403, { code: 'forbidden' });
   if (area === 'student' && role !== 'student') return sendJson(res, 403, { code: 'forbidden' });
   if (areaName === 'account' && !auth.enabled()) return sendJson(res, 503, { code: 'auth_unavailable' });
   // Without access (no free week or subscription) cards, games, the diary and chat history stay open,
