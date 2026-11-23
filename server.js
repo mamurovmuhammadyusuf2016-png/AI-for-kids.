@@ -406,11 +406,11 @@ async function handleReport(req, res, body, user) {
 
 // ---------- main address of the site ----------
 // PUBLIC_URL on Render (e.g. https://nimi.uz) makes that the main address: pages opened through any
-// other address (nimi-ai.onrender.com, www.nimi.uz) move there, and links in index.html, sitemap.xml
+// other address (nimi-uz.onrender.com, www.nimi.uz) move there, and links in index.html, sitemap.xml
 // and robots.txt point there. Unset: everything stays on the Render address.
 // Not moved: the API, /health (keep-awake), the Android app (its WebView and its Chrome pages
 // app-login), the APK and .well-known — they keep working on both addresses.
-const RENDER_URL = 'https://nimi-ai.onrender.com';
+const RENDER_URL = 'https://nimi-uz.onrender.com';
 const PUBLIC_URL = (process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
 const PUBLIC_HOST = (() => { try { return PUBLIC_URL ? new URL(PUBLIC_URL).host : ''; } catch { return ''; } })();
 function redirectToPublic(req, res, urlPath) {

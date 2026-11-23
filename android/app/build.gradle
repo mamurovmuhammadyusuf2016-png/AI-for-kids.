@@ -1,4 +1,4 @@
-// Nimi AI for Android: the site https://nimi-ai.onrender.com inside the app's own WebView,
+// Nimi AI for Android: the site https://nimi-uz.onrender.com inside the app's own WebView,
 // so it works on any phone (no Chrome needed). The page talks to the app through
 // window.NimiAndroid (MainActivity.Bridge): reading aloud, voice input, Google sign-in via Chrome.
 // Signing: the keystore is not in the repository; pass its path and passwords as
@@ -15,8 +15,8 @@ android {
         applicationId 'uz.nimi.app'
         minSdk 24
         targetSdk 36
-        versionCode 3
-        versionName '1.2'
+        versionCode 4
+        versionName '1.3'
     }
 
     signingConfigs {

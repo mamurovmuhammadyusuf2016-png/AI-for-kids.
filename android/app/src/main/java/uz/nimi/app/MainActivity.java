@@ -51,8 +51,8 @@ import java.util.Locale;
 
 /** The whole app: the Nimi site in a WebView plus a few phone features the page asks for. */
 public class MainActivity extends ComponentActivity {
-    static final String SITE = "https://nimi-ai.onrender.com";
-    static final String HOST = "nimi-ai.onrender.com";
+    static final String SITE = "https://nimi-uz.onrender.com";
+    static final String HOST = "nimi-uz.onrender.com";
     // Languages the site reads aloud (word cards: 17 languages).
     static final String[] TTS_LANGS = {"ru-RU", "uz-UZ", "en-US", "es-ES", "fr-FR", "de-DE", "zh-CN", "ja-JP", "ko-KR",
             "ar-SA", "tr-TR", "it-IT", "pt-BR", "hi-IN", "nl-NL", "pl-PL", "sv-SE"};
